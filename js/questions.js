@@ -12,8 +12,9 @@
  *   as_of           - year the answer / source is from
  *   reference_anchors - [{ label, value }] tap-to-insert numbers for the scribble pad
  *
- * The daily order is shuffled per-install (see storage.deck), so this file's
- * order doesn't matter.
+ * The daily question is a shared date-keyed rotation (see window.NAPKIN.dailyOrder
+ * at the bottom of this file + storage.dayNumber), so this array's order doesn't
+ * matter — dailyOrder does.
  */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.questions = [
@@ -304,4 +305,18 @@ window.NAPKIN.questions = [
     source: "Fermi estimate; turf-grass shoot density is typically 10,000–75,000 per m².",
     sanity_check: "140 million blades on 7,000 m² is about two per square centimetre — right for a lawn."
   }
+];
+
+// The shared daily rotation: the same question for everyone on a given calendar
+// day, keyed to the date (see storage.dayNumber / storage.EPOCH). Cycles when it
+// runs out. Day 0 — launch day — is the Greggs one.
+window.NAPKIN.dailyOrder = [
+  "q0006", // Greggs sausage rolls per day
+  "q0003", // cups of tea in the UK per day
+  "q0001", // Premier League matchday attendance
+  "q0004", // pints pulled on a Friday night
+  "q0007", // TfL journeys per weekday
+  "q0002", // matchday pies across English football
+  "q0005", // coastline of mainland Britain
+  "q0008"  // blades of grass on a football pitch
 ];

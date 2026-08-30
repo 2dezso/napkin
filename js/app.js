@@ -81,7 +81,7 @@
       wrap.appendChild(back);
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
-        el("span", { class: "chip" }, "Napkin #" + (storage.load().results.length + 1)),
+        el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
         el("span", { class: "muted" }, storage.todayISO())
       ));
     }
@@ -656,8 +656,11 @@
     var played = {};
     storage.load().results.forEach(function (r) { played[r.questionId] = 1; });
 
+    var order = (window.NAPKIN.dailyOrder || []).map(byId).filter(Boolean);
+    QUESTIONS.forEach(function (q) { if (order.indexOf(q) === -1) order.push(q); });
+
     var list = el("div", { class: "qlist" });
-    storage.deck(QUESTIONS).forEach(function (q, i) {
+    order.forEach(function (q, i) {
       var item = el("button", { class: "qcard" },
         el("span", { class: "qnum" }, "#" + (i + 1)),
         el("span", { class: "qtext" }, q.question),
@@ -685,10 +688,6 @@
 
     if (s.series.length) wrap.appendChild(sparkline(s.series));
     else wrap.appendChild(el("p", { class: "muted" }, "No games yet — go do today's."));
-
-    if (s.caughtUp) {
-      wrap.appendChild(el("p", { class: "muted" }, "You've answered every question in the bank — they'll start repeating."));
-    }
 
     var backup = el("div", { class: "backup" });
     backup.appendChild(el("h3", { class: "hand" }, "Backup"));

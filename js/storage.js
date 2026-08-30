@@ -1,20 +1,26 @@
-/* Local persistence: rotation pointer, per-day results, streak, stats, export/import.
+/* Local persistence: results log, streak, stats, export/import.
  * See plan.md section 7. Everything lives in one localStorage key.
+ *
+ * The daily question is a shared global rotation keyed to the calendar date
+ * (dayNumber + dailyOrder) — same for everyone, like Wordle. No per-user
+ * pointer: what's stored is just the log of what you've played.
  *
  * State shape:
  *   { version: 1,
- *     pointer: <int>,            // index of the next unplayed question (mod bank length)
  *     results: [
- *       { date: "YYYY-MM-DD", napkinNumber: <int>, questionId, guess,
- *         rows: [{ op, label, value }], assisted: <bool>,
- *         ratio: <number>, band: "<key>", inRange: <bool>, mode: "napkin"|"eyeball" }
+ *       { date: "YYYY-MM-DD", napkinNumber: <global day #>, questionId, guess,
+ *         rows: [{ op, label, value }], pad: "<raw text>", assisted, adjusted,
+ *         ratio, band: "<key>", inRange, mode: "napkin"|"eyeball" }
  *     ] }
  */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.storage = (function () {
-  // Bumped from v1 when the question bank was replaced (old results referenced
-  // now-defunct question IDs). A key bump = a clean local history.
-  var KEY = "napkin.v2";
+  // v3: switched from a per-install shuffled pointer to a shared date-keyed
+  // rotation. Old results carried a per-user napkinNumber, so start clean.
+  var KEY = "napkin.v3";
+
+  // Launch day = day 0. dayNumber() counts calendar days from here.
+  var EPOCH = "2026-08-30";
 
   function fmt(d) {
     return d.getFullYear() + "-" +
@@ -28,54 +34,41 @@ window.NAPKIN.storage = (function () {
     return fmt(d);
   }
 
-  function blank() {
-    return { version: 1, pointer: 0, results: [], seed: (Math.floor(Math.random() * 2147483647) || 1) };
+  function dayNumber() {
+    var epoch = new Date(EPOCH + "T00:00:00");
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((today - epoch) / 86400000));
   }
 
+  function blank() { return { version: 1, results: [] }; }
+
+  function save(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full / blocked */ }
+  }
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
       if (!raw) return blank();
       var o = JSON.parse(raw);
       if (!o || !Array.isArray(o.results)) return blank();
-      o.version = 1;
-      o.pointer = o.pointer || 0;
-      if (!o.seed) { o.seed = (Math.floor(Math.random() * 2147483647) || 1); save(o); }
-      return o;
+      return { version: 1, results: o.results };
     } catch (e) {
       return blank();
     }
-  }
-
-  // Deterministic per-install shuffle so the daily order feels random but is
-  // stable for a given player (keeps the pointer + streak logic intact).
-  function deck(bank) {
-    var seed = load().seed || 1;
-    var arr = bank.slice();
-    function rnd() {
-      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    }
-    for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(rnd() * (i + 1));
-      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    }
-    return arr;
-  }
-  function save(state) {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage full / blocked */ }
   }
 
   function bankLength() {
     return (window.NAPKIN.questions || []).length || 1;
   }
 
+  // The shared question for today: same for everyone, keyed to the date.
   function currentQuestion(bank) {
-    var s = load();
-    var d = deck(bank);
-    return d[s.pointer % d.length];
+    var order = (window.NAPKIN.dailyOrder && window.NAPKIN.dailyOrder.length)
+      ? window.NAPKIN.dailyOrder
+      : bank.map(function (q) { return q.id; });
+    var id = order[dayNumber() % order.length];
+    var hit = bank.filter(function (q) { return q.id === id; })[0];
+    return hit || bank[0];
   }
 
   function resultForDate(date) {
@@ -83,16 +76,11 @@ window.NAPKIN.storage = (function () {
   }
   function playedToday() { return !!resultForDate(todayISO()); }
 
-  // rec: { questionId, guess, rows, assisted, ratio, band, inRange, mode }
   function recordResult(rec) {
     var s = load();
-    var full = {
-      date: todayISO(),
-      napkinNumber: s.results.length + 1
-    };
+    var full = { date: todayISO(), napkinNumber: dayNumber() + 1 };
     for (var k in rec) if (rec.hasOwnProperty(k)) full[k] = rec[k];
     s.results.push(full);
-    s.pointer = s.results.length; // next unplayed
     save(s);
     return full;
   }
@@ -122,7 +110,7 @@ window.NAPKIN.storage = (function () {
       streak: streak(),
       avgRatio: avg,
       bestRatio: best,
-      caughtUp: s.pointer >= bankLength(),
+      caughtUp: false,
       series: s.results.map(function (r) { return { n: r.napkinNumber, ratio: r.ratio, band: r.band }; })
     };
   }
@@ -132,19 +120,15 @@ window.NAPKIN.storage = (function () {
   function importJSON(str) {
     var o = JSON.parse(str);
     if (!o || !Array.isArray(o.results)) throw new Error("That doesn't look like a Napkin backup.");
-    save({
-      version: 1,
-      pointer: typeof o.pointer === "number" ? o.pointer : o.results.length,
-      results: o.results,
-      seed: o.seed || (Math.floor(Math.random() * 2147483647) || 1)
-    });
+    save({ version: 1, results: o.results });
   }
 
   function reset() { save(blank()); }
 
   return {
-    todayISO: todayISO, isoOffset: isoOffset,
-    load: load, deck: deck,
+    EPOCH: EPOCH,
+    todayISO: todayISO, isoOffset: isoOffset, dayNumber: dayNumber,
+    load: load,
     currentQuestion: currentQuestion,
     resultForDate: resultForDate, playedToday: playedToday,
     recordResult: recordResult,

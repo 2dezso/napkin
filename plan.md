@@ -230,17 +230,26 @@ every `measured` answer against a real source before publishing.
 
 ## 7. Suggested Tech Stack
 
-**V1 (personal, local):**
-- Plain React (or even plain HTML/JS) + `localStorage` for history/streak — no backend needed since it's just you.
-- Question bank as a static JSON file. Rotation = a **sequential completion pointer** (advances only when you finish a question) plus a date stamp on each result, *not* day-of-year. Missing a day shouldn't burn a question or silently skip ahead; it just breaks the streak. The pointer value is the `Napkin #N` on the share card.
-- Streak = consecutive calendar days with a completed question (assisted still counts). "Today's question" is locked once completed for that date.
-- History export/import: a button that downloads the full `localStorage` history as JSON, and one that restores it. Cheap, and it's the only backup in V1.
-- Optional: simple charting (recharts or Chart.js) for the accuracy-over-time stat.
+**V1 (built — static, no backend):**
+- Plain HTML/JS + `localStorage`. Hosted on GitHub Pages (`?v=N` on the
+  asset URLs to dodge the CDN cache).
+- **Shared daily rotation, no server.** The question is a pure function of
+  the calendar date: `dayNumber = days since EPOCH`, and
+  `dailyOrder[dayNumber % dailyOrder.length]` is today's question — the
+  *same for everyone*, like Wordle. `dayNumber + 1` is the `Napkin #N`.
+  No per-user pointer; what's stored is just the log of what you've played.
+  Cycles once the `dailyOrder` list runs out (extend it as the bank grows).
+- Streak = consecutive calendar days with a completed question (assisted
+  still counts). Today's question is locked once completed for that date.
+- History export/import: downloads / restores the full `localStorage`
+  history as JSON. The only backup in V1.
+- Inline SVG sparkline for the accuracy-over-time stat (no chart lib).
 
 **V2 (published):**
-- Add a lightweight backend (e.g. Next.js API routes + a small hosted DB like Supabase/Postgres, or Firebase) for shared daily rotation + accounts.
-- Auth via Supabase Auth / Clerk / NextAuth.
-- Keep the question bank in the DB instead of a static file so it can grow via submissions.
+- Add a lightweight backend for **accounts + a server-authoritative daily**
+  (so the rotation can't be skewed by a wrong device clock), plus
+  server-side streaks and a leaderboard.
+- Keep the question bank in a DB so it can grow via user submissions.
 
 ---
 
