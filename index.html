@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Napkin — the daily guesstimate</title>
-  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/styles.css?v=3">
 </head>
 <body>
   <header class="topbar">
@@ -20,10 +20,12 @@
 
   <footer class="foot">One question a day. Work it out on a napkin. See how close you got.</footer>
 
-  <!-- Zero-build: plain classic scripts, loaded in order, sharing window.NAPKIN -->
-  <script src="js/questions.js"></script>
-  <script src="js/scoring.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Zero-build: plain classic scripts, loaded in order, sharing window.NAPKIN.
+       Bump ?v= on every deploy so phones don't serve stale cached files
+       (GitHub Pages sets max-age=600 on these). -->
+  <script src="js/questions.js?v=3"></script>
+  <script src="js/scoring.js?v=3"></script>
+  <script src="js/storage.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>
