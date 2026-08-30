@@ -127,15 +127,26 @@ else:
     ratio = max(guess, actual) / min(guess, actual)
 ```
 
-- inside `estimate_range` → "Nailed it 🎯"
-- `ratio ≤ 1.5` → "Nailed it 🎯" (tight, even if just outside the band)
-- `ratio ≤ 3` → "Solid ballpark"
-- `ratio ≤ 10` → "In the right neighborhood"
-- `ratio > 10` → "Off by a mile"
+- inside `estimate_range` → **Bang on 🎯**
+- `ratio ≤ 1.5` → **Bang on 🎯** (tight, even if just outside the band)
+- `ratio ≤ 3` → **Solid ballpark 👍**
+- `ratio ≤ 10` → **Right idea, wrong number 🤏**
+- `ratio > 10` → **Off by a mile 🙈**
 
-This mirrors how these questions are actually graded in real PM interviews
-— the interviewer cares about the reasoning process and the ballpark, not
-decimal precision.
+Each band carries a pool of `quips` — one is picked at random for the
+reveal. Close bands give credit ("You'd survive the interview"), the miss
+band takes the piss ("{n}× out — that's Sunday league vs Wembley",
+`{n}` = the miss factor). This mirrors how these questions are actually
+graded in a real interview — process and ballpark, not decimal precision —
+but the tone is a mate reacting, not a marking scheme.
+
+### Reveal: the score lands big
+
+After the narrative animates, a **band-coloured hero panel** scales in:
+big emoji, big vibe label, the ratio ("1.2× off" / "spot on"), and the
+random quip. Below it: the real figure with a count-up + pop, and a
+**log-scale bar** with two markers (you vs actual) so the gap is visible
+at a glance.
 
 ### Process feedback (not a grade)
 
@@ -180,54 +191,40 @@ Follow the *Cracking the PM Interview* framework when authoring each entry:
 
 ---
 
-## 6. Starter Question Bank (30 prompts, to flesh out with full breakdowns)
+## 6. Question Bank — British-leaning, mixed topics
 
-**Physical / structural estimation**
-1. How many windows are on the Empire State Building?
-2. How many golf balls fit in a school bus?
-3. How many bricks are in the Great Wall of China?
-4. How many piano tuners are there in New York City?
-5. How many gallons of paint would it take to paint the Golden Gate Bridge?
-6. How many trees are in Central Park?
-7. How many light bulbs are in Las Vegas?
-8. How many floors are in all the office buildings in Manhattan combined?
+Tone: British frame of reference, plenty of football/sport, and a spread
+across everyday life, operations, geography and daft physical Fermis. The
+daily order is **shuffled per install** (`storage.deck`, seeded once and
+stored) so it feels random but stays stable + keeps the streak logic.
 
-**Market sizing (classic PM)**
-9. How many Ubers/Lyfts are in San Francisco at any given time?
-10. How many people in the US buy a new pair of running shoes each year?
-11. How big is the market for dog food in the US?
-12. How many people fly out of JFK airport per day?
-13. How many coffee cups does Starbucks sell in the US per day?
-14. How many iPhones are sold globally per day?
-15. How many weddings happen in the US per year?
-16. How many gym memberships are active in the US?
+**Built (8, fully fleshed):** PL matchday attendance · matchday pies across
+English football · UK cups of tea per day · pints pulled on a Friday night
+· GB mainland coastline · Greggs sausage rolls per day · TfL journeys per
+weekday · blades of grass on a football pitch.
 
-**Operations / delivery / throughput**
-17. How many pizzas are delivered in New York City per day?
-18. How many packages does Amazon deliver in the US per day?
-19. How many Ubers Eats orders happen in Chicago on a Friday night?
-20. How many gallons of gasoline are pumped in the US per day?
-21. How many emails are sent worldwide per day?
-22. How many Google searches happen per second?
-23. How many miles do all NYC taxis collectively drive per day?
+**More prompts to add** (fill in per the template; verify `measured`
+answers, mark the rest `consensus-estimate`):
+- **Football / sport:** Premier League season-ticket holders · players in
+  the FA's registered pyramid · people who play 5-a-side each week · cost
+  of every replica shirt sold in a season · Wembley hot dogs on a cup
+  final · miles run by a Premier League team in a match · golf balls lost
+  in UK water hazards per year · county-cricket spectators on a weekday.
+- **Everyday UK:** roast dinners served on a Sunday · Freddos sold per year
+  · miles cycled on London hire bikes per day · wheelie bins in the UK ·
+  first-class stamps posted per day · dogs walked in UK parks on a Saturday
+  morning · fish-and-chip portions sold on a Friday.
+- **Operations / throughput:** parcels delivered in the UK per day · litres
+  of tea bags brewed by a big office per year · NHS GP appointments per day
+  · pints of milk still delivered to doorsteps · trains through Clapham
+  Junction per day · Nando's chickens served per day.
+- **Geography / physical:** Tube-tunnel miles · sheep in Wales · trees in
+  the New Forest · bricks in a typical terraced street · roundabouts in
+  the UK · red phone boxes still standing · steps to the top of the
+  Scott Monument (silly-precise, good contrast).
 
-**Everyday-life estimation**
-24. How many times does the average person check their phone per day?
-25. How many haircuts happen in the US per day?
-26. How many diapers are used in the US per day?
-27. How many people ride the NYC subway on a weekday?
-28. How many hot dogs are eaten in the US on July 4th?
-29. How many books are checked out from US libraries per year?
-30. How many songs are streamed on Spotify globally per day?
-
-(These are prompts only — the `framework` rows, `framework_notes`,
-`narrative`, and `actual_answer`/`answer_type`/`as_of`/`source` fields need
-to be filled in per the template above. Good approach: batch this with an
-LLM to draft first-pass breakdowns, then spot-check the measured answers
-against real sources before publishing. For the physical questions where a
-true count exists (windows, trees in Central Park), verify. For the ones
-that are inherently Fermi (golf balls in a bus), mark `consensus-estimate`
-and don't pretend there's a source.)
+Good workflow: batch first-pass breakdowns with an LLM, then spot-check
+every `measured` answer against a real source before publishing.
 
 ---
 

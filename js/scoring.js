@@ -159,10 +159,51 @@ window.NAPKIN.scoring = (function () {
   var util = window.NAPKIN.util;
 
   var BANDS = [
-    { key: "nailed", max: 1.5, label: "Nailed it", emoji: "🎯", blurb: "Dead on. That's interview gold." },
-    { key: "solid", max: 3, label: "Solid ballpark", emoji: "👍", blurb: "Right order of magnitude, comfortably." },
-    { key: "close", max: 10, label: "In the right neighborhood", emoji: "🤏", blurb: "Off, but the thinking was in the zone." },
-    { key: "miss", max: Infinity, label: "Off by a mile", emoji: "🌌", blurb: "Order-of-magnitude miss — check which row went wild." }
+    {
+      key: "nailed", max: 1.5, label: "Bang on", emoji: "🎯",
+      blurb: "Dead on. That's interview gold.",
+      quips: [
+        "Frame that one.",
+        "Are you secretly a quantity surveyor?",
+        "Genuinely — that's a gold-star answer.",
+        "Suspiciously good. Did you peek?",
+        "The interviewer just offered you the job."
+      ]
+    },
+    {
+      key: "solid", max: 3, label: "Solid ballpark", emoji: "👍",
+      blurb: "Right order of magnitude, comfortably.",
+      quips: [
+        "You'd survive the interview.",
+        "Tidy. A confident nod from across the table.",
+        "Not perfect, but nobody's quibbling.",
+        "Right ballpark — pint's on them.",
+        "That'll do nicely."
+      ]
+    },
+    {
+      key: "close", max: 10, label: "Right idea, wrong number", emoji: "🤏",
+      blurb: "The reasoning was in the zone, the number wandered off.",
+      quips: [
+        "Right postcode, wrong street.",
+        "In the right stadium, wrong stand.",
+        "The interviewer's eyebrow is now raised.",
+        "You'd talk your way out of that one. Just.",
+        "Close-ish. We'll allow it, grudgingly."
+      ]
+    },
+    {
+      key: "miss", max: Infinity, label: "Off by a mile", emoji: "🙈",
+      blurb: "Order-of-magnitude miss — check which number went walkabout.",
+      quips: [
+        "{n}× out. Were you guessing in a different currency?",
+        "Bold. Wrong, but bold.",
+        "{n}× off — that's Sunday league vs Wembley.",
+        "Did you panic? It rather looks like you panicked.",
+        "That is… a number you have chosen.",
+        "Off by {n}×. The napkin has questions for you."
+      ]
+    }
   ];
 
   function ratio(guess, actual) {
@@ -175,6 +216,13 @@ window.NAPKIN.scoring = (function () {
     var inRange = !!q.estimate_range && guess >= q.estimate_range[0] && guess <= q.estimate_range[1];
     var band = inRange ? BANDS[0] : BANDS.filter(function (b) { return r <= b.max; })[0];
     return { ratio: r, inRange: inRange, band: band };
+  }
+
+  // A random roast/credit line for the result, with {n} -> the miss factor.
+  function quip(band, r) {
+    var list = band.quips || [""];
+    var pick = list[Math.floor(Math.random() * list.length)];
+    return pick.replace(/\{n\}/g, util.roundFactor(r));
   }
 
   // ---- fuzzy row alignment for the "your napkin vs the model's" comparison ----
@@ -226,5 +274,5 @@ window.NAPKIN.scoring = (function () {
     return { pairs: pairs, extras: extras };
   }
 
-  return { ratio: ratio, score: score, compareRows: compareRows, BANDS: BANDS };
+  return { ratio: ratio, score: score, quip: quip, compareRows: compareRows, BANDS: BANDS };
 })();

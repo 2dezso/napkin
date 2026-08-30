@@ -454,7 +454,7 @@
     });
     wrap.appendChild(narr);
 
-    var skip = el("button", { class: "linkbtn skip" }, "skip to the answer ▸");
+    var skip = el("button", { class: "linkbtn skip" }, "skip to the score ▸");
     wrap.appendChild(skip);
 
     var after = el("div", { class: "after" });
@@ -472,7 +472,13 @@
     function reveal() {
       if (skip.parentNode) skip.remove();
       after.hidden = false;
-      countUp(after.querySelector(".actualnum"), q.actual_answer);
+      var hero = after.querySelector(".hero");
+      if (hero) requestAnimationFrame(function () {
+        requestAnimationFrame(function () { hero.classList.add("in"); });
+      });
+      var num = after.querySelector(".actualnum");
+      countUp(num, q.actual_answer);
+      if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
     }
     return wrap;
   }
@@ -480,24 +486,26 @@
   function buildAfter(container, q, res, opts) {
     var sc = scoring.score(res.guess, q);
     var band = sc.band;
+    var roast = scoring.quip(band, sc.ratio);
+    var ratioLine = sc.inRange ? "inside the sensible range"
+      : sc.ratio < 1.1 ? "spot on"
+      : util.roundFactor(sc.ratio) + "× off";
 
-    container.appendChild(el("div", { class: "verdict " + band.key },
-      el("div", { class: "verdict-emoji" }, band.emoji),
-      el("div", {},
-        el("div", { class: "verdict-label hand" }, band.label),
-        el("div", { class: "muted" }, band.blurb)
-      )
+    container.appendChild(el("div", { class: "hero " + band.key },
+      el("div", { class: "hero-emoji" }, band.emoji),
+      el("div", { class: "hero-score hand" }, band.label),
+      el("div", { class: "hero-ratio" }, ratioLine),
+      el("div", { class: "hero-quip" }, roast)
     ));
 
-    var ansType = q.answer_type === "measured" ? "the real figure" : "the accepted estimate";
+    var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
     container.appendChild(el("div", { class: "answerbox" },
-      el("div", { class: "muted" }, "And " + ansType + (q.as_of ? " (as of " + q.as_of + ")" : "") + ":"),
-      el("div", { class: "hand big actualnum" }, "0"),
-      el("div", { class: "ratio muted" },
-        sc.inRange ? "inside the sensible range" : (util.roundFactor(sc.ratio) + "× off"))
+      el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
+      el("div", { class: "hand actualnum" }, "0")
     ));
-    container.appendChild(el("p", { class: "source muted" }, q.source));
 
+    container.appendChild(guessBar(res.guess, q.actual_answer));
+    container.appendChild(el("p", { class: "source muted" }, q.source));
     container.appendChild(buildComparison(q, res));
 
     if (!opts.practice) {
@@ -509,6 +517,39 @@
       again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
     }
+  }
+
+  function guessBar(guess, actual) {
+    var lo = Math.max(1, Math.min(guess, actual));
+    var hi = Math.max(1, guess, actual);
+    var min = Math.pow(10, Math.floor(Math.log10(lo)) - 0.4);
+    var max = Math.pow(10, Math.ceil(Math.log10(hi)) + 0.4);
+    function pct(v) {
+      v = Math.max(min, Math.min(max, v));
+      return (Math.log(v / min) / Math.log(max / min)) * 100;
+    }
+    var gp = pct(guess), ap = pct(actual);
+
+    var track = el("div", { class: "gbar-track" });
+    var span = el("div", { class: "gbar-span" });
+    span.style.left = Math.min(gp, ap) + "%";
+    span.style.width = Math.max(0, Math.abs(gp - ap)) + "%";
+    track.appendChild(span);
+
+    var mAct = el("div", { class: "gbar-mark actual" }, el("span", { class: "gbar-tag" }, "actual"));
+    mAct.style.left = ap + "%";
+    var mYou = el("div", { class: "gbar-mark you" }, el("span", { class: "gbar-tag" }, "you"));
+    mYou.style.left = gp + "%";
+    track.appendChild(mAct);
+    track.appendChild(mYou);
+
+    return el("div", { class: "gbar" },
+      track,
+      el("div", { class: "gbar-scale muted" },
+        el("span", {}, util.humanize(min)),
+        el("span", {}, util.humanize(max))
+      )
+    );
   }
 
   function verdictText(p) {
@@ -606,7 +647,7 @@
     storage.load().results.forEach(function (r) { played[r.questionId] = 1; });
 
     var list = el("div", { class: "qlist" });
-    QUESTIONS.forEach(function (q, i) {
+    storage.deck(QUESTIONS).forEach(function (q, i) {
       var item = el("button", { class: "qcard" },
         el("span", { class: "qnum" }, "#" + (i + 1)),
         el("span", { class: "qtext" }, q.question),

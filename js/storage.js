@@ -12,7 +12,9 @@
  */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.storage = (function () {
-  var KEY = "napkin.v1";
+  // Bumped from v1 when the question bank was replaced (old results referenced
+  // now-defunct question IDs). A key bump = a clean local history.
+  var KEY = "napkin.v2";
 
   function fmt(d) {
     return d.getFullYear() + "-" +
@@ -26,7 +28,9 @@ window.NAPKIN.storage = (function () {
     return fmt(d);
   }
 
-  function blank() { return { version: 1, pointer: 0, results: [] }; }
+  function blank() {
+    return { version: 1, pointer: 0, results: [], seed: (Math.floor(Math.random() * 2147483647) || 1) };
+  }
 
   function load() {
     try {
@@ -36,10 +40,29 @@ window.NAPKIN.storage = (function () {
       if (!o || !Array.isArray(o.results)) return blank();
       o.version = 1;
       o.pointer = o.pointer || 0;
+      if (!o.seed) { o.seed = (Math.floor(Math.random() * 2147483647) || 1); save(o); }
       return o;
     } catch (e) {
       return blank();
     }
+  }
+
+  // Deterministic per-install shuffle so the daily order feels random but is
+  // stable for a given player (keeps the pointer + streak logic intact).
+  function deck(bank) {
+    var seed = load().seed || 1;
+    var arr = bank.slice();
+    function rnd() {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(rnd() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
   }
   function save(state) {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage full / blocked */ }
@@ -51,7 +74,8 @@ window.NAPKIN.storage = (function () {
 
   function currentQuestion(bank) {
     var s = load();
-    return bank[s.pointer % bank.length];
+    var d = deck(bank);
+    return d[s.pointer % d.length];
   }
 
   function resultForDate(date) {
@@ -111,7 +135,8 @@ window.NAPKIN.storage = (function () {
     save({
       version: 1,
       pointer: typeof o.pointer === "number" ? o.pointer : o.results.length,
-      results: o.results
+      results: o.results,
+      seed: o.seed || (Math.floor(Math.random() * 2147483647) || 1)
     });
   }
 
@@ -119,7 +144,7 @@ window.NAPKIN.storage = (function () {
 
   return {
     todayISO: todayISO, isoOffset: isoOffset,
-    load: load,
+    load: load, deck: deck,
     currentQuestion: currentQuestion,
     resultForDate: resultForDate, playedToday: playedToday,
     recordResult: recordResult,
