@@ -265,7 +265,8 @@ body {
   text-decoration: underline;
 }
 
-.anchorchips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0 0; align-items: center; }
+.hintbtn { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; }
+.anchorchips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; align-items: center; }
 .chips-h { width: 100%; font-style: italic; }
 .achip {
   font: inherit;

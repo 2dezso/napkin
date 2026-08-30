@@ -9,15 +9,14 @@
 
   var STATE = { view: "daily", practiceQ: null };
 
-  // Generic "how to type" hints for the scribble pad — one picked at random.
-  // Kept deliberately vague so they never look like an answer to the question.
-  var PAD_HINTS = [
-    "type it however you like — I read the numbers\n\ne.g.\n3 million people\n1 in 4 of them\n÷ 7 days",
-    "just scribble the maths\n\ne.g.\n500 of something\n20 each\nper 12 months",
-    "numbers can be 5k · 2.5M · 25% · 1 in 3 · 1/4\n\ne.g.\n8 million homes\n0.5 each a week\n÷ 7",
-    "one rough number per line\n\ne.g.\na big starting number\n× or ÷ a few more\n\"per\" also divides",
-    "think out loud — I'll pick out the numbers\n\ne.g.\n2,000 places\n30 a day each\n× 6 days"
-  ];
+  // The scribble-pad placeholder — always this generic "type out your thinking"
+  // template, so it never looks like an answer to the day's question.
+  var PAD_HINT =
+    "type out your thinking — I'll read the numbers\n\n" +
+    "e.g.\n" +
+    "3 million people\n" +
+    "1 in 4 of them\n" +
+    "÷ 7 days";
 
   /* ---------- tiny DOM helpers ---------- */
   function el(tag, attrs) {
@@ -125,7 +124,7 @@
     var padWrap = el("div", { class: "padwrap" });
     var pad = el("textarea", {
       class: "pad hand", rows: "6", spellcheck: "false", autocapitalize: "off", autocomplete: "off",
-      placeholder: PAD_HINTS[Math.floor(Math.random() * PAD_HINTS.length)]
+      placeholder: PAD_HINT
     });
     pad.setAttribute("autocorrect", "off");
     pad.setAttribute("enterkeyhint", "enter");
@@ -158,15 +157,22 @@
     totalRow.appendChild(revertBtn);
     napkinPanel.appendChild(totalRow);
 
-    /* value chips */
+    /* value chips — hidden behind a hint button */
     if (q.reference_anchors && q.reference_anchors.length) {
-      var chips = el("div", { class: "anchorchips" }, el("span", { class: "chips-h muted" }, "drop in a number:"));
+      var chips = el("div", { class: "anchorchips" });
+      chips.hidden = true;
       q.reference_anchors.forEach(function (a) {
         var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
         chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
         chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
         chips.appendChild(chip);
       });
+      var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "need a number?");
+      hintBtn.addEventListener("click", function () {
+        chips.hidden = !chips.hidden;
+        hintBtn.textContent = chips.hidden ? "need a number?" : "hide the hints";
+      });
+      napkinPanel.appendChild(hintBtn);
       napkinPanel.appendChild(chips);
     }
 
