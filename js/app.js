@@ -111,14 +111,9 @@
 
     var napkinPanel = el("div", { class: "panel" });
 
+    // Caret-aware: sitting on a plain number shows scale buttons that rewrite
+    // it in place; anywhere else shows a couple of typing shortcuts instead.
     var toolbar = el("div", { class: "toolbar" });
-    [["×", " × "], ["÷", " ÷ "], ["%", "% "], ["1 in", "1 in "], ["000", "000"], ["K", "K "], ["M", "M "]]
-      .forEach(function (b) {
-        var t = el("button", { class: "tbtn", type: "button" }, b[0]);
-        t.addEventListener("mousedown", function (e) { e.preventDefault(); });
-        t.addEventListener("click", function () { insertText(b[1]); });
-        toolbar.appendChild(t);
-      });
     napkinPanel.appendChild(toolbar);
 
     var padWrap = el("div", { class: "padwrap" });
@@ -138,6 +133,9 @@
     pad.addEventListener("keydown", function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); doLock(); }
     });
+    pad.addEventListener("click", renderToolbar);
+    pad.addEventListener("keyup", renderToolbar);
+    pad.addEventListener("focus", renderToolbar);
 
     var ribbon = el("div", { class: "ribbon" });
     napkinPanel.appendChild(ribbon);
@@ -321,7 +319,72 @@
       Object.keys(muted).forEach(function (s) { if (!live[s]) delete muted[s]; });
       Object.keys(flipped).forEach(function (s) { if (!live[s]) delete flipped[s]; });
       renderRibbon();
+      renderToolbar();
       refreshTotal();
+    }
+
+    // The number the caret is currently sitting inside/right after, if any.
+    function factorAtCaret() {
+      if (pad.selectionStart !== pad.selectionEnd) return null;
+      var pos = pad.selectionStart;
+      var fs = scan();
+      for (var i = 0; i < fs.length; i++) {
+        if (pos >= fs[i].start && pos <= fs[i].end) return fs[i];
+      }
+      return null;
+    }
+
+    // Rewrite a "plain" factor's raw text scaled by mult. Uses the already-
+    // parsed value as the source of truth (so "3 million" rescales correctly
+    // too, not just "3M"), keeping k/m/b/t shorthand if that's how it was
+    // written, otherwise falling back to a comma-formatted plain number.
+    var LETTER_MULT = { k: 1e3, m: 1e6, b: 1e9, t: 1e12 };
+    function rescaledText(f, mult) {
+      var next = f.value * mult;
+      var short = f.raw.match(/(k|m|b|t)\b/i);
+      if (short && LETTER_MULT[short[1].toLowerCase()]) {
+        var mantissa = Math.round((next / LETTER_MULT[short[1].toLowerCase()]) * 100) / 100;
+        return String(mantissa) + short[1];
+      }
+      if (Math.abs(next - Math.round(next)) < 1e-9) return util.withCommas(Math.round(next));
+      return String(Math.round(next * 100) / 100);
+    }
+
+    function applyRescale(mult) {
+      var f = factorAtCaret();
+      if (!f || f.kind !== "plain") return;
+      var text = rescaledText(f, mult);
+      if (text == null) return;
+      var v = pad.value;
+      pad.value = v.slice(0, f.start) + text + v.slice(f.end);
+      var caret = f.start + text.length;
+      pad.focus();
+      pad.setSelectionRange(caret, caret);
+      onPad();
+    }
+
+    // Caret on a plain number -> scale it in place. Anywhere else -> a
+    // couple of quick typing shortcuts for characters that aren't easy to
+    // reach on a phone keyboard.
+    function renderToolbar() {
+      var f = factorAtCaret();
+      toolbar.innerHTML = "";
+      if (f && f.kind === "plain") {
+        [["÷10", 0.1], ["÷2", 0.5], ["×2", 2], ["×10", 10]].forEach(function (b) {
+          var t = el("button", { class: "tbtn tbtn-scale", type: "button" }, b[0]);
+          t.addEventListener("mousedown", function (e) { e.preventDefault(); });
+          t.addEventListener("click", function () { applyRescale(b[1]); });
+          toolbar.appendChild(t);
+        });
+        toolbar.appendChild(el("span", { class: "toolbar-hint muted" }, "scaling " + util.humanize(f.value)));
+      } else {
+        [["÷", " ÷ "], ["%", "% "], ["1 in", "1 in "]].forEach(function (b) {
+          var t = el("button", { class: "tbtn", type: "button" }, b[0]);
+          t.addEventListener("mousedown", function (e) { e.preventDefault(); });
+          t.addEventListener("click", function () { insertText(b[1]); });
+          toolbar.appendChild(t);
+        });
+      }
     }
 
     function renderRibbon() {
@@ -329,13 +392,14 @@
       ribbon.innerHTML = "";
       ribbonHint.hidden = fs.length === 0;
       if (!fs.length) return;
+      ribbon.appendChild(el("span", { class: "ribbon-label muted" }, "reading:"));
       fs.forEach(function (f, idx) {
         var isMuted = !!muted[f.sig];
         var isFlip = !!flipped[f.sig];
         var op = flipped[f.sig] || f.op;
         var pill = el("button", {
           class: "pill" + (isMuted ? " muted" : "") + (isFlip ? " flip" : ""),
-          type: "button", title: f.label || f.raw
+          type: "button", title: (f.label || f.raw) + " = " + util.withCommas(f.value)
         },
           el("span", { class: "pill-op" }, (idx === 0 && !isFlip && !isMuted) ? "" : (op === "/" ? "÷" : "×")),
           el("span", {}, util.humanize(f.value))
@@ -478,9 +542,10 @@
       el("span", { class: "muted" }, q.question)
     ));
 
+    var guessNumEl = el("span", { class: "hand big guessnum" }, "?");
     wrap.appendChild(el("div", { class: "yourcall" },
-      el("span", { class: "muted" }, res.mode === "eyeball" ? "You eyeballed" : "Your napkin said"),
-      el("span", { class: "hand big" }, util.humanize(res.guess))
+      el("span", { class: "muted" }, res.mode === "eyeball" ? "You eyeballed…" : "Your napkin said…"),
+      guessNumEl
     ));
 
     var narr = el("div", { class: "narrative" });
@@ -510,6 +575,8 @@
     function reveal() {
       if (skip.parentNode) skip.remove();
       after.hidden = false;
+      guessNumEl.textContent = util.humanize(res.guess);
+      guessNumEl.classList.add("pop");
       var hero = after.querySelector(".hero");
       if (hero) requestAnimationFrame(function () {
         requestAnimationFrame(function () { hero.classList.add("in"); });
@@ -529,11 +596,13 @@
       : sc.ratio < 1.1 ? "spot on"
       : util.roundFactor(sc.ratio) + "× off";
 
+    var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
     container.appendChild(el("div", { class: "hero " + band.key },
       el("div", { class: "hero-emoji" }, band.emoji),
       el("div", { class: "hero-score hand" }, band.label),
       el("div", { class: "hero-ratio" }, ratioLine),
-      el("div", { class: "hero-quip" }, roast)
+      el("div", { class: "hero-quip" }, roast),
+      highlight ? el("div", { class: "hero-highlight" }, highlight) : null
     ));
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
@@ -588,6 +657,25 @@
         el("span", {}, util.humanize(max))
       )
     );
+  }
+
+  // Pick out the single number you nailed and the single number that hurt
+  // you most, so the hero can call out *why* you scored what you scored —
+  // not just the final ratio.
+  function buildHighlight(cmp) {
+    var lc = function (s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; };
+    var tight = cmp.pairs.filter(function (p) { return p.verdict === "tight"; });
+    var misses = cmp.pairs
+      .filter(function (p) { return p.verdict === "low" || p.verdict === "high"; })
+      .sort(function (a, b) { return (b.factor || 0) - (a.factor || 0); });
+    var mvp = tight[0], culprit = misses[0];
+    if (!mvp && !culprit) return null;
+    if (mvp && culprit) {
+      return "🎯 nailed " + lc(mvp.model.label) + " — " + lc(culprit.model.label) +
+        " was the culprit, " + util.roundFactor(culprit.factor) + "× too " + culprit.verdict + ".";
+    }
+    if (mvp) return "🎯 every number you used was spot on — especially " + lc(mvp.model.label) + ".";
+    return lc(culprit.model.label) + " was the culprit — " + util.roundFactor(culprit.factor) + "× too " + culprit.verdict + ".";
   }
 
   function verdictText(p) {

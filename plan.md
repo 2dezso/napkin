@@ -142,11 +142,17 @@ but the tone is a mate reacting, not a marking scheme.
 
 ### Reveal: the score lands big
 
-After the narrative animates, a **band-coloured hero panel** scales in:
-big emoji, big vibe label, the ratio ("1.2× off" / "spot on"), and the
-random quip. Below it: the real figure with a count-up + pop, and a
-**log-scale bar** with two markers (you vs actual) so the gap is visible
-at a glance.
+Your own guess is **held back**, not shown until reveal — "Your napkin
+said…?" sits unanswered through the whole narrative, so the payoff isn't
+spoiled before the story's even played. After the narrative animates, your
+guess and the band-coloured **hero panel** land together: big emoji, big
+vibe label, the ratio ("1.2× off" / "spot on"), a random quip, and — when
+the napkin comparison can tell — a one-line **callout naming which number
+you nailed and which one cost you** ("🎯 nailed the crowd size — the fill
+rate was the culprit, 3× too high"), so the score explains itself instead
+of being just a number. Below it: the real figure with a count-up + pop
+landing a beat later, and a **log-scale bar** with two markers (you vs
+actual) so the gap is visible at a glance.
 
 ### Process feedback (not a grade)
 
@@ -285,8 +291,17 @@ input, and pacing should all feel like a quick game, not a study session.
   (drops out of the math, your text untouched); **tap again to flip ×/÷**.
   Re-resolved every keystroke, so it can't go stale. This is how you fix
   "why did it multiply that" without editing prose.
-- **Symbol toolbar** above the pad — `×  ÷  %  1 in  000  K  M` — inserts
-  the characters that are painful to type, especially on a phone.
+- **Caret-aware toolbar** above the pad. Sitting on a plain number (not a
+  fraction/percent/`1 in N`) shows `÷10  ÷2  ×2  ×10` and rewrites that
+  number in place — the fastest way to correct an order-of-magnitude
+  slip without retyping. Anywhere else it shows `÷  %  1 in` — the
+  characters/phrases that are awkward to type, especially on a phone. (An
+  earlier version was a static row of insert-only buttons including
+  `000 K M`; it felt pointless since those are easy to type anyway — the
+  scale mode is what actually earns the toolbar its space.)
+- **Ribbon labelled "reading:"** and each pill's long-press/hover tooltip
+  shows the exact comma-formatted value — both there so it's never
+  ambiguous what the app understood from a line of typed thinking.
 - **Back-pocket numbers** (shown first) — a separate, always-available panel
   of universal reference facts (population/area/time only —
   `window.NAPKIN.commonFacts`), not tied to any question. Deliberately

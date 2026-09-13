@@ -110,6 +110,16 @@ window.NAPKIN.util = (function () {
     return NaN;
   }
 
+  // 'plain' factors (bare numbers, optionally k/m/b/t) are the only ones the
+  // pad's caret-scale buttons (÷10 ÷2 ×2 ×10) will touch — rescaling "1 in 4"
+  // or "25%" in place doesn't have an unambiguous meaning.
+  function kindFromMatch(m) {
+    if (m[1] != null) return "ratio";
+    if (m[3] != null) return "fraction";
+    if (m[5] != null) return "percent";
+    return "plain";
+  }
+
   function scanFactors(text) {
     var out = [], seen = {}, base = 0;
     var lines = String(text == null ? "" : text).split("\n");
@@ -121,7 +131,7 @@ window.NAPKIN.util = (function () {
       while ((m = re.exec(line)) !== null) {
         if (m[0] === "") { re.lastIndex++; continue; }
         var v = valueFromMatch(m);
-        if (isFinite(v)) toks.push({ v: v, raw: m[0], start: m.index, end: m.index + m[0].length });
+        if (isFinite(v)) toks.push({ v: v, raw: m[0], start: m.index, end: m.index + m[0].length, kind: kindFromMatch(m) });
       }
       for (var ti = 0; ti < toks.length; ti++) {
         var t = toks[ti];
@@ -137,6 +147,7 @@ window.NAPKIN.util = (function () {
           op: divides ? "/" : "x",
           label: cleanLabel(after) || cleanLabel(gap) || "",
           raw: t.raw,
+          kind: t.kind,
           start: base + t.start,
           end: base + t.end,
           line: li,
