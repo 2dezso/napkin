@@ -176,6 +176,28 @@
       napkinPanel.appendChild(chips);
     }
 
+    /* back-pocket numbers — universal facts, always available, any question */
+    if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
+      var factsBtn = el("button", { class: "linkbtn factsbtn", type: "button" }, "📖 back-pocket numbers");
+      var factsPanel = el("div", { class: "factspanel" });
+      factsPanel.hidden = true;
+      window.NAPKIN.commonFacts.forEach(function (f) {
+        var row = el("button", { class: "factrow", type: "button" },
+          el("span", {}, f.label),
+          el("span", { class: "hand" }, inputNumber(f.value))
+        );
+        row.addEventListener("mousedown", function (e) { e.preventDefault(); });
+        row.addEventListener("click", function () { insertLine(f.label + " " + inputNumber(f.value)); });
+        factsPanel.appendChild(row);
+      });
+      factsBtn.addEventListener("click", function () {
+        factsPanel.hidden = !factsPanel.hidden;
+        factsBtn.textContent = factsPanel.hidden ? "📖 back-pocket numbers" : "hide the numbers";
+      });
+      napkinPanel.appendChild(factsBtn);
+      napkinPanel.appendChild(factsPanel);
+    }
+
     /* peek */
     var peekWrap = el("div", { class: "peekwrap" });
     var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "stuck? show me the framework");

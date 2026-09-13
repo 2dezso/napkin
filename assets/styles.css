@@ -280,6 +280,34 @@ body {
 }
 .achip:hover { border-color: var(--pen); color: var(--pen); }
 
+.factsbtn { display: block; margin-top: 0.6rem; font-size: 0.85rem; }
+.factspanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px dashed var(--rule);
+  border-radius: 8px;
+  background: var(--card);
+}
+.factrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 0.3rem 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.factrow + .factrow { border-top: 1px dotted var(--rule); }
+.factrow:hover { color: var(--pen); }
+.factrow span:last-child { color: var(--pen); white-space: nowrap; }
+
 .gutbtn { display: inline-block; margin-top: 0.4rem; }
 .gutcheck-panel {
   border: 1px dashed var(--rule);

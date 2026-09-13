@@ -284,7 +284,14 @@ input, and pacing should all feel like a quick game, not a study session.
 - **Symbol toolbar** above the pad — `×  ÷  %  1 in  000  K  M` — inserts
   the characters that are painful to type, especially on a phone.
 - **Value chips** from the question's anchors — tap to drop a ready-made
-  line in (`NYC population 8,300,000`).
+  line in (`NYC population 8,300,000`). Hidden behind a "need a number?"
+  toggle so they're not shoved in your face.
+- **Back-pocket numbers** — a separate, always-available panel of universal
+  reference facts (population/area/time only — `window.NAPKIN.commonFacts`),
+  not tied to any question. Deliberately narrow: 6 entries. Anything more
+  specific than "world population" or "seconds in a day" belongs in that
+  question's own anchors instead, not here — the point is a small mental
+  toolkit, not a lookup table.
 - **Running total** rolls when it changes; shown words + digits
   ("≈ 296K" · "296 thousand · 296,428"). Tap it to **hand-write your own
   final number** — result gets a quiet *adjusted* mark.

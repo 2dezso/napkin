@@ -320,3 +320,16 @@ window.NAPKIN.dailyOrder = [
   "q0005", // coastline of mainland Britain
   "q0008"  // blades of grass on a football pitch
 ];
+
+// Universal reference facts, always available from the pad — deliberately
+// narrow (population/area/time only) and NOT tied to any one question.
+// Anything more specific than this belongs in that question's own
+// `reference_anchors` instead, not here.
+window.NAPKIN.commonFacts = [
+  { label: "seconds in a day", value: 86400 },
+  { label: "days in a year", value: 365 },
+  { label: "world population", value: 8100000000 },
+  { label: "UK population", value: 67000000 },
+  { label: "Greater London population", value: 9000000 },
+  { label: "Greater London area, km²", value: 1570 }
+];
