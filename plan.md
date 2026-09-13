@@ -174,8 +174,12 @@ Follow the *Cracking the PM Interview* framework when authoring each entry:
 2. **Framework** — the chain of variables that multiply/divide together
    to get from "known" to "unknown." Author these as the structured
    `framework` rows (`label` / `op` / `model_value` / `unit` /
-   `plausible_range`). Keep it to 2–4 rows; more than that and the daily
-   question is too heavy. → `framework`
+   `plausible_range`). Prefer **4–5 rows over 2** — decompose further
+   rather than blending straight to a single "average X" figure (e.g. split
+   "average crowd" into stadium capacity × fill rate, or derive "matches"
+   from clubs ÷ 2 instead of asserting it). A slightly long-winded, honest
+   route to the answer is the goal, not the leanest possible shortcut.
+   → `framework`
 3. **Assumptions** — one line per row justifying the `model_value` and the
    `plausible_range` (why 55 windows/floor? why could 40–80 be defensible?).
    → `framework_notes`
@@ -283,15 +287,16 @@ input, and pacing should all feel like a quick game, not a study session.
   "why did it multiply that" without editing prose.
 - **Symbol toolbar** above the pad — `×  ÷  %  1 in  000  K  M` — inserts
   the characters that are painful to type, especially on a phone.
-- **Value chips** from the question's anchors — tap to drop a ready-made
-  line in (`NYC population 8,300,000`). Hidden behind a "need a number?"
-  toggle so they're not shoved in your face.
-- **Back-pocket numbers** — a separate, always-available panel of universal
-  reference facts (population/area/time only — `window.NAPKIN.commonFacts`),
-  not tied to any question. Deliberately narrow: 6 entries. Anything more
-  specific than "world population" or "seconds in a day" belongs in that
-  question's own anchors instead, not here — the point is a small mental
-  toolkit, not a lookup table.
+- **Back-pocket numbers** (shown first) — a separate, always-available panel
+  of universal reference facts (population/area/time only —
+  `window.NAPKIN.commonFacts`), not tied to any question. Deliberately
+  narrow: 6 entries. Anything more specific than "world population" or
+  "seconds in a day" belongs in that question's own anchors instead, not
+  here — the point is a small mental toolkit, not a lookup table.
+- **Value chips** from the question's anchors (shown second, below the
+  general ones) — tap to drop a ready-made line in. Hidden behind a
+  "need another number?" toggle — the wording follows on from the general
+  panel above it.
 - **Running total** rolls when it changes; shown words + digits
   ("≈ 296K" · "296 thousand · 296,428"). Tap it to **hand-write your own
   final number** — result gets a quiet *adjusted* mark.

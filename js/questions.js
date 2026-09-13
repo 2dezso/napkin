@@ -2,7 +2,10 @@
  * geography, retail, transport, daft physical Fermis).
  *
  * Each entry follows the data model in plan.md section 3:
- *   framework       - ordered napkin rows for one good solution
+ *   framework       - ordered napkin rows for one good solution. Deliberately
+ *                     a few steps long (4-5), even a slightly long-winded route
+ *                     to the answer — this is meant to model genuine step-by-step
+ *                     reasoning, not the leanest possible two-variable shortcut.
  *                     { label, op: 'x' | '/', model_value, unit, plausible_range: [lo, hi] }
  *   framework_notes - one line justifying each row's value / range
  *   narrative       - spoken-aloud reveal lines, one clause / one number, ending on the answer
@@ -28,23 +31,29 @@ window.NAPKIN.questions = [
       "Bums on seats across every ground, not the TV audience."
     ],
     reference_anchors: [
-      { label: "matches in a full PL round", value: 10 },
+      { label: "clubs in the Premier League", value: 20 },
       { label: "seats at Old Trafford", value: 74000 },
       { label: "seats at the smallest PL ground", value: 11000 }
     ],
     framework: [
-      { label: "Matches in the round", op: "x", model_value: 10, unit: "matches", plausible_range: [10, 10] },
-      { label: "Average crowd per match", op: "x", model_value: 40000, unit: "fans/match", plausible_range: [30000, 50000] }
+      { label: "Clubs in the Premier League", op: "x", model_value: 20, unit: "clubs", plausible_range: [20, 20] },
+      { label: "Teams per match", op: "/", model_value: 2, unit: "teams/match", plausible_range: [2, 2] },
+      { label: "Average stadium capacity", op: "x", model_value: 42000, unit: "seats", plausible_range: [30000, 55000] },
+      { label: "Average how full grounds are", op: "x", model_value: 0.95, unit: "fraction", plausible_range: [0.85, 1.0] }
     ],
     framework_notes: [
-      "20 clubs means 10 matches in a complete round.",
-      "Average Premier League attendance is around 40,000 — from ~11,000 at the smallest grounds to 74,000 at Old Trafford."
+      "20 clubs make up the Premier League.",
+      "Two teams contest each match, so clubs ÷ 2 gives the number of fixtures in a round.",
+      "The average Premier League ground holds around 42,000.",
+      "Most match­days sell close to capacity — 95% is a fair average fill rate."
     ],
     narrative: [
-      "A full Premier League weekend is 10 matches.",
-      "The average crowd is about 40,000 — a blend of 25,000-seat grounds and 60,000-plus giants.",
-      "10 times 40,000 is 400,000.",
-      "Official figures put a typical round near 400,000 — among the highest average attendances in world football."
+      "20 clubs make up the Premier League.",
+      "Two teams a match, so that's 10 fixtures in a full round.",
+      "The average ground holds around 42,000.",
+      "Most Premier League games sell close to full — call it 95% average.",
+      "10 matches × 42,000 × 0.95 comes out around 400,000.",
+      "That matches the real figures almost exactly — English top-flight football fills its grounds."
     ],
     estimate_range: [300000, 550000],
     actual_answer: 400000,
@@ -64,25 +73,30 @@ window.NAPKIN.questions = [
       "One pie or pasty per person who buys one."
     ],
     reference_anchors: [
-      { label: "matches on a full English Saturday", value: 40 },
+      { label: "divisions playing (PL + EFL)", value: 4 },
       { label: "a League Two crowd", value: 5000 }
     ],
     framework: [
-      { label: "Matches that Saturday", op: "x", model_value: 40, unit: "matches", plausible_range: [30, 50] },
-      { label: "Average crowd", op: "x", model_value: 15000, unit: "fans/match", plausible_range: [8000, 25000] },
-      { label: "Fraction who buy a pie", op: "x", model_value: 0.15, unit: "fraction", plausible_range: [0.05, 0.3] }
+      { label: "Divisions playing that Saturday", op: "x", model_value: 4, unit: "divisions", plausible_range: [4, 4] },
+      { label: "Matches per division", op: "x", model_value: 10, unit: "matches", plausible_range: [8, 12] },
+      { label: "Average crowd per match", op: "x", model_value: 15000, unit: "fans/match", plausible_range: [8000, 25000] },
+      { label: "Fraction who queue at a food kiosk", op: "x", model_value: 0.35, unit: "fraction", plausible_range: [0.2, 0.5] },
+      { label: "Of those, fraction who pick a pie", op: "x", model_value: 0.43, unit: "fraction", plausible_range: [0.25, 0.6] }
     ],
     framework_notes: [
-      "Premier League + Championship + League One + League Two on a full Saturday is about 40 games.",
-      "Blend a 40,000 top-flight crowd with 5,000 in League Two — call it 15,000 average.",
-      "Maybe one fan in seven actually queues up for a pie."
+      "Four divisions (Premier League, Championship, League One, League Two) play a full Saturday.",
+      "Call it 10 matches a division on average.",
+      "Blending 40,000 top-flight crowds with 5,000 in League Two gives roughly 15,000 average.",
+      "Maybe a third of fans queue at a food kiosk at all that afternoon.",
+      "Of kiosk buyers, less than half pick a pie specifically over chips, a burger or tea."
     ],
     narrative: [
-      "A full Saturday across England's top four divisions is about 40 matches.",
-      "Average crowd, blending the Premier League down to League Two, is maybe 15,000.",
-      "That's 600,000 people through the turnstiles.",
-      "If one in seven buys a pie, that's about 90,000 pies.",
-      "Nobody counts them — but that's the right ballpark for a proper matchday tradition."
+      "Four divisions play English football on a Saturday: Premier League down to League Two.",
+      "Call it 10 matches a division — 40 games in total.",
+      "Average crowd across all four, blending 40,000 crowds with 5,000 ones, is about 15,000.",
+      "Maybe a third of fans queue at a food kiosk at all.",
+      "Of those, less than half actually pick a pie over chips, a burger or just a tea.",
+      "40 × 15,000 × 0.35 × 0.43 lands around 90,000 pies — nobody counts them, but that's the honest long way round."
     ],
     estimate_range: [30000, 250000],
     actual_answer: 90000,
@@ -107,17 +121,22 @@ window.NAPKIN.questions = [
     ],
     framework: [
       { label: "UK population", op: "x", model_value: 67000000, unit: "people", plausible_range: [65000000, 68000000] },
-      { label: "Cups per person per day", op: "x", model_value: 1.5, unit: "cups/person", plausible_range: [0.5, 3] }
+      { label: "Fraction who are adults", op: "x", model_value: 0.78, unit: "fraction", plausible_range: [0.7, 0.85] },
+      { label: "Fraction of adults who drink tea regularly", op: "x", model_value: 0.85, unit: "fraction", plausible_range: [0.6, 0.95] },
+      { label: "Cups per tea-drinking adult per day", op: "x", model_value: 2.3, unit: "cups/person", plausible_range: [1.5, 4] }
     ],
     framework_notes: [
       "The UK is about 67 million people.",
-      "Committed tea drinkers manage several a day, plenty of people drink none — blend it to roughly 1.5 each."
+      "Roughly 78% are adults — children drink far less tea.",
+      "About 85% of adults are regular tea drinkers.",
+      "A regular drinker gets through something like 2 to 3 cups a day."
     ],
     narrative: [
-      "The UK is about 67 million people.",
-      "Tea-drinkers get through several cups a day; plenty drink none. Blend it to about 1.5 each.",
-      "67 million times 1.5 is roughly 100 million.",
-      "The figure everyone quotes is 100 million cups of tea a day — around 36 billion a year."
+      "Start with 67 million people in the UK.",
+      "About 78% are adults — kids drink less tea.",
+      "Of those adults, maybe 85% are regular tea drinkers.",
+      "A regular drinker gets through something like 2 to 3 cups a day — call it 2.3.",
+      "67 million × 0.78 × 0.85 × 2.3 lands just over 100 million cups a day — matching the number everyone quotes."
     ],
     estimate_range: [40000000, 200000000],
     actual_answer: 100000000,
@@ -141,21 +160,26 @@ window.NAPKIN.questions = [
       { label: "pints in a barrel", value: 288 }
     ],
     framework: [
-      { label: "Pubs and bars", op: "x", model_value: 45000, unit: "pubs", plausible_range: [40000, 50000] },
-      { label: "Drinkers per pub that evening", op: "x", model_value: 60, unit: "people/pub", plausible_range: [20, 150] },
-      { label: "Pints each", op: "x", model_value: 3, unit: "pints/person", plausible_range: [1, 5] }
+      { label: "Pubs and bars in the UK", op: "x", model_value: 45000, unit: "pubs", plausible_range: [40000, 50000] },
+      { label: "Average pub capacity", op: "x", model_value: 70, unit: "people", plausible_range: [40, 150] },
+      { label: "Fill rate on a Friday evening", op: "x", model_value: 0.6, unit: "fraction", plausible_range: [0.3, 0.9] },
+      { label: "Turnover through the evening", op: "x", model_value: 1.4, unit: "x", plausible_range: [1, 2] },
+      { label: "Pints per person across their visit", op: "x", model_value: 3, unit: "pints/person", plausible_range: [1, 5] }
     ],
     framework_notes: [
       "The UK has around 45,000 pubs and bars.",
-      "A pub might see 60 drinkers over a Friday evening — from a quiet local to a heaving city bar.",
-      "Three pints each is a fair Friday-night average."
+      "An average pub holds maybe 70 people.",
+      "Call a Friday evening 60% full on average, blending packed city bars with quiet locals.",
+      "People come and go all night, so tables and seats turn over roughly 1.4 times.",
+      "Across a visit, a drinker gets through about three pints."
     ],
     narrative: [
       "There are about 45,000 pubs and bars in the UK.",
-      "On a Friday night a pub might see 60 drinkers pass through.",
-      "That's 2.7 million people out for a pint.",
-      "At three pints each, that's roughly 8 million pints in one evening.",
-      "No one tallies them all — but that's the right order for a national Friday night."
+      "An average one holds maybe 70 people.",
+      "On a Friday evening call it 60% full on average — some rammed, some quiet.",
+      "People come and go all night, so count on about 1.4x turnover through the evening.",
+      "Across their visit, a drinker gets through about 3 pints.",
+      "Multiply it all out and you land close to 8 million pints in one evening — nobody's counting, but that's the honest long way there."
     ],
     estimate_range: [2000000, 30000000],
     actual_answer: 8000000,
@@ -179,19 +203,24 @@ window.NAPKIN.questions = [
       { label: "width of Britain, miles", value: 300 }
     ],
     framework: [
-      { label: "Smooth loop around the island", op: "x", model_value: 1800, unit: "miles", plausible_range: [1400, 2400] },
-      { label: "Crinkliness multiplier", op: "x", model_value: 6, unit: "x", plausible_range: [3, 10] }
+      { label: "Length of Britain, north to south", op: "x", model_value: 600, unit: "miles", plausible_range: [500, 700] },
+      { label: "Loop-to-length ratio for this shape", op: "x", model_value: 3, unit: "x", plausible_range: [2.5, 4] },
+      { label: "Base wiggle factor for an ordinary coastline", op: "x", model_value: 3, unit: "x", plausible_range: [2, 4] },
+      { label: "Extra crinkle from Scotland's lochs and fjords", op: "x", model_value: 2, unit: "x", plausible_range: [1.5, 3] }
     ],
     framework_notes: [
-      "Treat Britain as a lozenge about 600 miles by 300 — a smooth loop round it is roughly 1,800 miles.",
-      "The real coast is all firths, estuaries and headlands — multiply the smooth figure by around 6."
+      "Britain runs about 600 miles north to south.",
+      "For a shape this elongated, a smooth loop around it works out to roughly 3 times that length.",
+      "A normal coastline wiggles about 3x more than a smooth loop, from ordinary headlands and bays.",
+      "Scotland's sea lochs and fjords add a further crinkle on top — call it another 2x."
     ],
     narrative: [
-      "Britain is roughly 600 miles top to bottom and 300 across.",
-      "A smooth loop around that shape is about 1,800 miles.",
-      "But the real coast is all firths, estuaries and headlands — crinkle it up by a factor of about 6.",
-      "That gives roughly 11,000 miles.",
-      "Ordnance Survey puts the mainland coastline near 11,000 — and it climbs higher the finer you measure. That's the 'coastline paradox'."
+      "Britain is roughly 600 miles from top to bottom.",
+      "For a shape this stretched, a smooth loop around it works out to about 3 times that length — 1,800 miles.",
+      "Any real coastline wiggles more than a smooth loop; a normal factor is about 3x for headlands and bays.",
+      "Scotland alone adds sea lochs and fjords on top of that — call it another 2x.",
+      "600 × 3 × 3 × 2 comes out around 11,000 miles.",
+      "Ordnance Survey's mainland figure is almost exactly that — and it only grows if you measure with a finer ruler. That's the coastline paradox."
     ],
     estimate_range: [5000, 25000],
     actual_answer: 11000,
@@ -215,18 +244,24 @@ window.NAPKIN.questions = [
       { label: "days in a week", value: 7 }
     ],
     framework: [
-      { label: "Greggs shops", op: "x", model_value: 2400, unit: "shops", plausible_range: [2200, 2600] },
-      { label: "Sausage rolls per shop per day", op: "x", model_value: 160, unit: "rolls/shop", plausible_range: [80, 300] }
+      { label: "Greggs shops in the UK", op: "x", model_value: 2400, unit: "shops", plausible_range: [2200, 2600] },
+      { label: "Average customers per shop per day", op: "x", model_value: 600, unit: "customers/shop", plausible_range: [300, 900] },
+      { label: "Fraction who buy something hot and savoury", op: "x", model_value: 0.55, unit: "fraction", plausible_range: [0.3, 0.7] },
+      { label: "Of those, fraction who pick a sausage roll", op: "x", model_value: 0.48, unit: "fraction", plausible_range: [0.3, 0.65] }
     ],
     framework_notes: [
-      "Greggs has roughly 2,400 shops across the UK.",
-      "A shop might shift about 160 sausage rolls a day — more at a busy station, fewer on a quiet high street."
+      "Greggs runs about 2,400 shops across the UK.",
+      "A shop might see 600 customers through the door on an average day.",
+      "Around 55% buy something hot and savoury rather than just a coffee or a sandwich.",
+      "Sausage rolls are Greggs' best-seller among savouries — call it roughly half of those buyers."
     ],
     narrative: [
       "Greggs has about 2,400 shops across the UK.",
-      "A typical shop sells on the order of 160 sausage rolls a day.",
-      "That's around 380,000 a day.",
-      "Greggs has said it sells roughly 2.5 million sausage rolls a week — which works out about the same."
+      "A shop might see 600 customers through the door on an average day.",
+      "Around 55% of them buy something hot and savoury rather than just a coffee or a sandwich.",
+      "Of those, sausage rolls are the best-seller — call it roughly half.",
+      "2,400 × 600 × 0.55 × 0.48 comes out around 380,000.",
+      "Greggs has said it sells about 2.5 million sausage rolls a week — which lines up almost exactly."
     ],
     estimate_range: [150000, 800000],
     actual_answer: 380000,
@@ -250,18 +285,24 @@ window.NAPKIN.questions = [
       { label: "Tube stations", value: 272 }
     ],
     framework: [
-      { label: "People making a TfL trip", op: "x", model_value: 5000000, unit: "people", plausible_range: [4000000, 7000000] },
-      { label: "Journey legs each", op: "x", model_value: 2.2, unit: "legs/person", plausible_range: [1.5, 3] }
+      { label: "Population of Greater London", op: "x", model_value: 9000000, unit: "people", plausible_range: [8000000, 9500000] },
+      { label: "Fraction of Londoners using TfL that day", op: "x", model_value: 0.45, unit: "fraction", plausible_range: [0.35, 0.6] },
+      { label: "Uplift for commuters/tourists from outside London", op: "x", model_value: 1.25, unit: "x", plausible_range: [1.1, 1.6] },
+      { label: "Journey legs per traveller", op: "x", model_value: 2.2, unit: "legs/person", plausible_range: [1.5, 3] }
     ],
     framework_notes: [
-      "On a weekday maybe 5 million people make at least one TfL journey.",
-      "Most do a there-and-back, some change lines or hop buses — average about 2.2 legs each."
+      "Greater London holds about 9 million people.",
+      "Maybe 45% of residents use TfL at all on a given weekday.",
+      "Commuters and tourists from outside London add a further 25% on top of that.",
+      "Most trips are a there-and-back, some involve a change — average about 2.2 legs each."
     ],
     narrative: [
-      "On a weekday roughly 5 million people travel on London's network.",
-      "Most do a there-and-back, some change lines or hop on a bus — call it 2.2 journeys each.",
-      "That's about 11 million journeys a day.",
-      "TfL reports around 10 to 12 million on a typical weekday, split roughly half Tube, half bus."
+      "Greater London holds about 9 million people.",
+      "On a weekday maybe 45% of them use TfL at all.",
+      "On top of residents, add commuters and tourists coming in from outside London — call it a 25% uplift.",
+      "That gives just over 5 million people travelling on the network that day.",
+      "Most make a there-and-back, some change lines — call it 2.2 journey legs each.",
+      "Multiply it through and you land around 11 million, which is exactly what TfL reports for a typical weekday."
     ],
     estimate_range: [5000000, 20000000],
     actual_answer: 11000000,
@@ -285,18 +326,24 @@ window.NAPKIN.questions = [
       { label: "pitch width, metres", value: 68 }
     ],
     framework: [
-      { label: "Pitch area", op: "x", model_value: 7140, unit: "m²", plausible_range: [6000, 8000] },
-      { label: "Blades per square metre", op: "x", model_value: 20000, unit: "blades/m²", plausible_range: [10000, 50000] }
+      { label: "Pitch length", op: "x", model_value: 105, unit: "metres", plausible_range: [95, 115] },
+      { label: "Pitch width", op: "x", model_value: 68, unit: "metres", plausible_range: [60, 75] },
+      { label: "Square centimetres in a square metre", op: "x", model_value: 10000, unit: "cm²/m²", plausible_range: [10000, 10000] },
+      { label: "Blades of grass per square centimetre", op: "x", model_value: 2, unit: "blades/cm²", plausible_range: [1, 5] }
     ],
     framework_notes: [
-      "A pitch is about 105 by 68 metres — call it 7,000 square metres.",
-      "Dense mown ryegrass runs maybe 20,000 blades per square metre — a couple per square centimetre."
+      "A pitch is about 105 metres long.",
+      "And about 68 metres wide, giving the playing area.",
+      "There are 10,000 square centimetres in a square metre — the scale grass is actually counted at.",
+      "Mown turf carries roughly 2 blades per square centimetre."
     ],
     narrative: [
-      "A football pitch is about 105 by 68 metres — roughly 7,000 square metres.",
-      "Mown turf carries something like 20,000 blades per square metre.",
-      "7,000 times 20,000 is about 140 million.",
-      "So a pitch holds on the order of a hundred million blades of grass. Nobody's counted — but that's the Fermi answer."
+      "A football pitch is about 105 metres long.",
+      "And about 68 metres wide.",
+      "Multiply those and you get roughly 7,140 square metres of turf.",
+      "There are 10,000 square centimetres in a square metre — worth converting, since grass is counted at the centimetre scale.",
+      "Mown turf carries maybe 2 blades per square centimetre.",
+      "7,140 × 10,000 × 2 comes out to about 140 million blades — nobody's counted, but that's the Fermi answer."
     ],
     estimate_range: [20000000, 1000000000],
     actual_answer: 140000000,

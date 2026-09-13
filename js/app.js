@@ -157,25 +157,6 @@
     totalRow.appendChild(revertBtn);
     napkinPanel.appendChild(totalRow);
 
-    /* value chips — hidden behind a hint button */
-    if (q.reference_anchors && q.reference_anchors.length) {
-      var chips = el("div", { class: "anchorchips" });
-      chips.hidden = true;
-      q.reference_anchors.forEach(function (a) {
-        var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
-        chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
-        chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
-        chips.appendChild(chip);
-      });
-      var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "need a number?");
-      hintBtn.addEventListener("click", function () {
-        chips.hidden = !chips.hidden;
-        hintBtn.textContent = chips.hidden ? "need a number?" : "hide the hints";
-      });
-      napkinPanel.appendChild(hintBtn);
-      napkinPanel.appendChild(chips);
-    }
-
     /* back-pocket numbers — universal facts, always available, any question */
     if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
       var factsBtn = el("button", { class: "linkbtn factsbtn", type: "button" }, "📖 back-pocket numbers");
@@ -196,6 +177,25 @@
       });
       napkinPanel.appendChild(factsBtn);
       napkinPanel.appendChild(factsPanel);
+    }
+
+    /* value chips — question-specific, hidden behind a hint button */
+    if (q.reference_anchors && q.reference_anchors.length) {
+      var chips = el("div", { class: "anchorchips" });
+      chips.hidden = true;
+      q.reference_anchors.forEach(function (a) {
+        var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
+        chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
+        chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
+        chips.appendChild(chip);
+      });
+      var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "need another number?");
+      hintBtn.addEventListener("click", function () {
+        chips.hidden = !chips.hidden;
+        hintBtn.textContent = chips.hidden ? "need another number?" : "hide the hints";
+      });
+      napkinPanel.appendChild(hintBtn);
+      napkinPanel.appendChild(chips);
     }
 
     /* peek */
