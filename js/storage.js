@@ -40,7 +40,7 @@ window.NAPKIN.storage = (function () {
     return Math.max(0, Math.round((today - epoch) / 86400000));
   }
 
-  function blank() { return { version: 1, results: [] }; }
+  function blank() { return { version: 1, results: [], challengeBest: 0 }; }
 
   function save(state) {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full / blocked */ }
@@ -51,10 +51,18 @@ window.NAPKIN.storage = (function () {
       if (!raw) return blank();
       var o = JSON.parse(raw);
       if (!o || !Array.isArray(o.results)) return blank();
-      return { version: 1, results: o.results };
+      return { version: 1, results: o.results, challengeBest: o.challengeBest || 0 };
     } catch (e) {
       return blank();
     }
+  }
+
+  // Challenge mode's high score: longest streak survived in a single run.
+  function challengeBest() { return load().challengeBest || 0; }
+  function recordChallengeBest(n) {
+    var s = load();
+    if (n > (s.challengeBest || 0)) { s.challengeBest = n; save(s); }
+    return s.challengeBest;
   }
 
   function bankLength() {
@@ -120,7 +128,7 @@ window.NAPKIN.storage = (function () {
   function importJSON(str) {
     var o = JSON.parse(str);
     if (!o || !Array.isArray(o.results)) throw new Error("That doesn't look like a Napkin backup.");
-    save({ version: 1, results: o.results });
+    save({ version: 1, results: o.results, challengeBest: o.challengeBest || 0 });
   }
 
   function reset() { save(blank()); }
@@ -133,6 +141,7 @@ window.NAPKIN.storage = (function () {
     resultForDate: resultForDate, playedToday: playedToday,
     recordResult: recordResult,
     streak: streak, stats: stats,
+    challengeBest: challengeBest, recordChallengeBest: recordChallengeBest,
     exportJSON: exportJSON, importJSON: importJSON, reset: reset
   };
 })();

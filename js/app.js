@@ -7,7 +7,7 @@
   var storage = window.NAPKIN.storage;
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "daily", practiceQ: null };
+  var STATE = { view: "daily", practiceQ: null, challenge: null };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
@@ -53,6 +53,11 @@
     var node;
     if (STATE.view === "daily") node = viewDaily();
     else if (STATE.view === "practice") node = STATE.practiceQ ? napkinScreen(STATE.practiceQ, { practice: true }) : viewPracticeList();
+    else if (STATE.view === "challenge") {
+      node = (STATE.challenge && !STATE.challenge.over)
+        ? napkinScreen(byId(STATE.challenge.lastId), { challenge: true })
+        : viewChallengeIntro();
+    }
     else node = viewStats();
     mount(node);
   }
@@ -78,6 +83,18 @@
       var back = el("button", { class: "linkbtn" }, "‹ back to list");
       back.addEventListener("click", function () { STATE.practiceQ = null; renderApp(); });
       wrap.appendChild(back);
+    } else if (opts.challenge) {
+      var quit = el("button", { class: "linkbtn" }, "‹ quit run");
+      quit.addEventListener("click", function () {
+        if (!window.confirm("Quit this run? Your streak ends here.")) return;
+        STATE.challenge = null;
+        renderApp();
+      });
+      wrap.appendChild(quit);
+      wrap.appendChild(el("div", { class: "chud-row" },
+        heartsNode(STATE.challenge.lives, STATE.challenge.maxLives),
+        el("span", { class: "chud-streak hand" }, fireLabel(STATE.challenge.streak))
+      ));
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
         el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
@@ -277,7 +294,10 @@
       };
 
       function finish() {
-        if (opts.practice) {
+        if (opts.challenge) {
+          applyChallengeResult(sc);
+          mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { challenge: true }));
+        } else if (opts.practice) {
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
           storage.recordResult(rec);
@@ -534,11 +554,11 @@
   /* ---------- the reveal screen ---------- */
   function revealScreen(q, res, opts) {
     opts = opts || {};
-    var isPractice = !!opts.practice;
+    var chipLabel = opts.challenge ? "Challenge" : opts.practice ? "Practice" : ("Napkin #" + res.napkinNumber);
     var wrap = el("section", { class: "screen reveal" });
 
     wrap.appendChild(el("div", { class: "reveal-head" },
-      el("span", { class: "chip" }, isPractice ? "Practice" : ("Napkin #" + res.napkinNumber)),
+      el("span", { class: "chip" }, chipLabel),
       el("span", { class: "muted" }, q.question)
     ));
 
@@ -615,14 +635,16 @@
     container.appendChild(el("p", { class: "source muted" }, q.source));
     container.appendChild(buildComparison(q, res));
 
-    if (!opts.practice) {
-      container.appendChild(buildShareCard(q, res));
-      container.appendChild(el("p", { class: "muted comeback" },
-        "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
-    } else {
+    if (opts.challenge) {
+      container.appendChild(buildChallengeOutcome());
+    } else if (opts.practice) {
       var again = el("button", { class: "btn" }, "Try another question");
       again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
+    } else {
+      container.appendChild(buildShareCard(q, res));
+      container.appendChild(el("p", { class: "muted comeback" },
+        "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
     }
   }
 
@@ -761,6 +783,137 @@
     btn.addEventListener("click", function () { copyText(text, btn); });
     card.appendChild(btn);
     return card;
+  }
+
+  /* ---------- challenge mode ----------
+   * Rapid-fire questions, no retries. Three hearts. A "miss" (off by more
+   * than 10×) costs a heart and resets the in-run streak to zero; the run
+   * itself only ends when hearts hit zero. Longest streak survived in a
+   * run is saved as the all-time best (storage.challengeBest). */
+  function heartsNode(lives, max) {
+    var s = "";
+    for (var i = 0; i < max; i++) s += i < lives ? "❤️" : "🖤";
+    return el("span", { class: "hearts" }, s);
+  }
+  function fireLabel(streak) {
+    var flames = streak >= 10 ? "🔥🔥🔥" : streak >= 5 ? "🔥🔥" : "🔥";
+    return (streak > 0 ? flames + " " : "") + "Streak: " + streak;
+  }
+
+  // Shuffled "bag" of every question id — deals through the whole bank
+  // before any question can repeat, then reshuffles.
+  function shuffledIds() {
+    var ids = QUESTIONS.map(function (q) { return q.id; });
+    for (var i = ids.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = ids[i]; ids[i] = ids[j]; ids[j] = t;
+    }
+    return ids;
+  }
+  function nextChallengeQuestion(c) {
+    if (!c.queue.length) c.queue = shuffledIds();
+    var id = c.queue.shift();
+    if (id === c.lastId && c.queue.length) { c.queue.push(id); id = c.queue.shift(); }
+    c.lastId = id;
+    return byId(id);
+  }
+  function startChallenge() {
+    STATE.challenge = {
+      lives: 3, maxLives: 3, streak: 0, runBest: 0,
+      queue: [], lastId: null, over: false, lastLifeLost: false, isNewBest: false
+    };
+    nextChallengeQuestion(STATE.challenge);
+    STATE.view = "challenge";
+    renderApp();
+  }
+  function applyChallengeResult(sc) {
+    var c = STATE.challenge;
+    var lifeLost = sc.band.key === "miss";
+    c.lastLifeLost = lifeLost;
+    if (lifeLost) {
+      c.lives -= 1;
+      c.streak = 0;
+    } else {
+      c.streak += 1;
+      c.runBest = Math.max(c.runBest, c.streak);
+    }
+    c.over = c.lives <= 0;
+    if (c.over) {
+      c.isNewBest = c.runBest > storage.challengeBest();
+      storage.recordChallengeBest(c.runBest);
+    }
+  }
+
+  function viewChallengeIntro() {
+    var wrap = el("section", { class: "screen challenge-intro" });
+    wrap.appendChild(el("h2", { class: "hand" }, "Challenge mode"));
+
+    var c = STATE.challenge;
+    if (c && c.over) {
+      wrap.appendChild(el("div", { class: "panel challenge-summary" },
+        el("div", { class: "hand big" }, "Game over"),
+        el("p", {}, "Your streak topped out at " + c.runBest + "."),
+        c.isNewBest ? el("p", { class: "newbest" }, "🏆 New best!") : null
+      ));
+    }
+
+    wrap.appendChild(el("p", { class: "muted" },
+      "Rapid-fire questions, no retries. Miss badly (10× or more off) and you lose a heart — " +
+      "lose all three and the run's over. How long can you keep the streak alive?"));
+
+    var grid = el("div", { class: "statgrid" },
+      stat("Best streak", String(storage.challengeBest())),
+      stat("Lives", "❤️❤️❤️")
+    );
+    wrap.appendChild(grid);
+
+    var startBtn = el("button", { class: "btn" }, c && c.over ? "Play again" : "Start challenge");
+    startBtn.addEventListener("click", startChallenge);
+    wrap.appendChild(startBtn);
+    return wrap;
+  }
+
+  function buildChallengeOutcome() {
+    var c = STATE.challenge;
+    var box = el("div", { class: "challenge-hud" });
+
+    var hudRow = el("div", { class: "chud-row" + (c.lastLifeLost ? " hit" : "") },
+      heartsNode(c.lives, c.maxLives),
+      el("span", { class: "chud-streak hand" }, fireLabel(c.streak))
+    );
+    box.appendChild(hudRow);
+
+    if (c.lastLifeLost) {
+      box.appendChild(el("p", { class: "challenge-msg miss" },
+        "💔 Off by a mile — that one cost a heart. Streak's back to zero."));
+    } else if (c.streak > 0) {
+      box.appendChild(el("p", { class: "challenge-msg" }, "Streak's alive. Keep the napkins coming."));
+    }
+
+    if (c.over) {
+      box.appendChild(el("div", { class: "challenge-gameover" },
+        el("div", { class: "hand big" }, "Game over"),
+        el("p", {}, "Your streak topped out at " + c.runBest + "."),
+        c.isNewBest
+          ? el("p", { class: "newbest" }, "🏆 New best!")
+          : el("p", { class: "muted" }, "Best: " + storage.challengeBest() + ".")
+      ));
+      var again = el("button", { class: "btn" }, "Play again");
+      again.addEventListener("click", startChallenge);
+      var menu = el("button", { class: "linkbtn" }, "‹ back to menu");
+      menu.addEventListener("click", function () { STATE.challenge = null; STATE.view = "challenge"; renderApp(); });
+      box.appendChild(again);
+      box.appendChild(menu);
+    } else {
+      var next = el("button", { class: "btn" }, "Next question ▸");
+      next.addEventListener("click", function () {
+        nextChallengeQuestion(STATE.challenge);
+        STATE.view = "challenge";
+        renderApp();
+      });
+      box.appendChild(next);
+    }
+    return box;
   }
 
   /* ---------- practice list ---------- */

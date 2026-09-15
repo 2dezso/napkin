@@ -506,6 +506,47 @@ body {
 }
 .comeback { text-align: center; }
 
+/* ---------- challenge mode ---------- */
+.challenge-intro .statgrid { margin: 1rem 0; }
+.challenge-summary { text-align: center; margin-bottom: 1rem; }
+.challenge-summary .big { font-size: 1.9rem; }
+
+.chud-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.3rem 0 1rem;
+}
+.hearts { font-size: 1.25rem; letter-spacing: 0.08rem; }
+.chud-streak { font-size: 1.1rem; color: var(--pen); }
+.chud-row.hit { animation: chudshake 0.4s ease; }
+@keyframes chudshake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.challenge-hud {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+.challenge-hud .chud-row { justify-content: center; }
+.challenge-msg { margin: 0.4rem 0 0.9rem; }
+.challenge-msg.miss { color: var(--red); font-weight: 600; }
+.challenge-gameover {
+  margin: 0.6rem 0 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 2px dashed var(--rule);
+}
+.challenge-gameover .big { font-size: 2rem; }
+.newbest { color: var(--green); font-weight: 700; }
+.challenge-hud .btn, .challenge-hud .linkbtn { margin: 0.3rem 0.3rem 0 0; }
+
 /* ---------- practice list ---------- */
 .qlist { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
 .qcard {
