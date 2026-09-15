@@ -211,6 +211,12 @@ body {
 .pill-op { color: var(--faint); font-size: 0.85rem; }
 .pill.muted { opacity: 0.45; text-decoration: line-through; }
 .pill.flip { border-color: var(--amber); background: #f6ecd8; }
+.pill.pill-new { animation: pillpop 0.32s cubic-bezier(0.2, 1.6, 0.35, 1); }
+@keyframes pillpop {
+  0% { transform: scale(0.4) translateY(6px); opacity: 0; }
+  60% { transform: scale(1.12) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
 .ribbon-eq { font-family: var(--hand); color: var(--pen); margin-left: 0.2rem; }
 .ribbon-label { font-size: 0.78rem; font-style: italic; margin-right: 0.1rem; }
 .ribbon-hint { margin: 0.3rem 0 0; font-size: 0.8rem; }

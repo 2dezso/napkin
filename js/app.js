@@ -18,6 +18,51 @@
     "1 in 4 of them\n" +
     "÷ 7 days";
 
+  /* ---------- tiny sound effects (synthesized, no asset files) ----------
+   * Small bits of audio feedback for the pad: a tick when a number is
+   * recognized, a ding when the running total updates, a thunk on lock-in.
+   * Built with Web Audio oscillators/noise so there's nothing to load. */
+  var audioCtx = null;
+  function ensureAudio() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq, dur, type, peak) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+    var now = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peak || 0.07, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + dur + 0.02);
+  }
+  function noiseThud(dur, peak) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    var n = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    var buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var src = ctx.createBufferSource(), gain = ctx.createGain();
+    src.buffer = buf;
+    gain.gain.value = peak || 0.1;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  }
+  function sfxTick() { beep(920, 0.05, "square", 0.045); }
+  function sfxDing() { beep(1300, 0.09, "sine", 0.05); }
+  function sfxLock() { noiseThud(0.06, 0.14); beep(85, 0.16, "sine", 0.16); }
+
   /* ---------- tiny DOM helpers ---------- */
   function el(tag, attrs) {
     var n = document.createElement(tag);
@@ -125,6 +170,7 @@
     var muted = {};             // factor sig -> true  (left out of the math)
     var flipped = {};           // factor sig -> "x"|"/"  (operator overridden by a pill tap)
     var rollFrom = 0;
+    var seenFactorSigs = {};    // factor sig -> true once its pill has popped in / ticked
 
     var napkinPanel = el("div", { class: "panel" });
 
@@ -309,6 +355,7 @@
       if (mode === "napkin") {
         stamp.hidden = false;
         stamp.classList.add("go");
+        sfxLock();
         setTimeout(finish, 480);
       } else {
         finish();
@@ -417,8 +464,10 @@
         var isMuted = !!muted[f.sig];
         var isFlip = !!flipped[f.sig];
         var op = flipped[f.sig] || f.op;
+        var isNew = !seenFactorSigs[f.sig];
+        if (isNew) { seenFactorSigs[f.sig] = true; sfxTick(); }
         var pill = el("button", {
-          class: "pill" + (isMuted ? " muted" : "") + (isFlip ? " flip" : ""),
+          class: "pill" + (isMuted ? " muted" : "") + (isFlip ? " flip" : "") + (isNew ? " pill-new" : ""),
           type: "button", title: (f.label || f.raw) + " = " + util.withCommas(f.value)
         },
           el("span", { class: "pill-op" }, (idx === 0 && !isFlip && !isMuted) ? "" : (op === "/" ? "÷" : "×")),
@@ -448,6 +497,7 @@
         approxBtn.textContent = "≈ …";
         wordsEl.textContent = "";
       } else {
+        if (g !== rollFrom) sfxDing();
         rollNumber(approxBtn, rollFrom, g);
         rollFrom = g;
         wordsEl.textContent = humanizeWords(g) + " · " + util.withCommas(g) + (totalOverride != null ? " · your call" : "");
