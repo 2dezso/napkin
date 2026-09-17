@@ -180,6 +180,10 @@
     napkinPanel.appendChild(toolbar);
 
     var padWrap = el("div", { class: "padwrap" });
+    // Sits behind the real textarea (which is made transparent) and mirrors
+    // its text so recognized numbers can get a highlight *in place* — proof,
+    // right on what you typed, that the pad is actually reading it.
+    var padHighlight = el("div", { class: "pad-highlight hand", "aria-hidden": "true" });
     var pad = el("textarea", {
       class: "pad hand", rows: "6", spellcheck: "false", autocapitalize: "off", autocomplete: "off",
       placeholder: PAD_HINT
@@ -188,9 +192,14 @@
     pad.setAttribute("enterkeyhint", "enter");
     var stamp = el("div", { class: "stamp" }, "LOCKED IN");
     stamp.hidden = true;
+    padWrap.appendChild(padHighlight);
     padWrap.appendChild(pad);
     padWrap.appendChild(stamp);
     napkinPanel.appendChild(padWrap);
+
+    var demoNote = el("p", { class: "muted demo-note" }, "🪄 numbers get picked up automatically — watch...");
+    demoNote.hidden = true;
+    napkinPanel.insertBefore(demoNote, padWrap);
 
     pad.addEventListener("input", onPad);
     pad.addEventListener("keydown", function (e) {
@@ -199,6 +208,10 @@
     pad.addEventListener("click", renderToolbar);
     pad.addEventListener("keyup", renderToolbar);
     pad.addEventListener("focus", renderToolbar);
+    pad.addEventListener("scroll", function () {
+      padHighlight.scrollTop = pad.scrollTop;
+      padHighlight.scrollLeft = pad.scrollLeft;
+    });
 
     var ribbon = el("div", { class: "ribbon" });
     napkinPanel.appendChild(ribbon);
@@ -388,6 +401,30 @@
       renderRibbon();
       renderToolbar();
       refreshTotal();
+      renderPadHighlight();
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    // Mirrors pad.value into the layer sitting behind the (transparent) pad,
+    // wrapping each recognized number in a <mark> so it's highlighted right
+    // where you typed it — not just reflected in the ribbon below.
+    function renderPadHighlight() {
+      var text = pad.value;
+      var fs = scan();
+      var html = "", pos = 0;
+      fs.forEach(function (f) {
+        if (f.start < pos) return;
+        html += escapeHtml(text.slice(pos, f.start));
+        html += '<mark class="hl' + (muted[f.sig] ? " hl-muted" : "") + '">' +
+          escapeHtml(text.slice(f.start, f.end)) + "</mark>";
+        pos = f.end;
+      });
+      html += escapeHtml(text.slice(pos));
+      // pre-wrap collapses a bare trailing newline's blank line; a trailing
+      // zero-width space keeps it the same height as the real textarea.
+      padHighlight.innerHTML = html + (text.slice(-1) === "\n" ? "​" : "");
     }
 
     // The number the caret is currently sitting inside/right after, if any.
@@ -484,6 +521,7 @@
           }
           renderRibbon();
           refreshTotal();
+          renderPadHighlight();
         });
         ribbon.appendChild(pill);
       });
@@ -596,8 +634,39 @@
     segNapkin.addEventListener("click", function () { setMode("napkin"); });
     segEye.addEventListener("click", function () { setMode("eyeball"); });
 
+    // First-ever visit: type an example into the empty pad so the "your
+    // numbers get read live" trick is seen once, not just asserted. Any
+    // click/keypress anywhere on the screen cancels it immediately.
+    function startPadDemo() {
+      if (opts.practice || opts.challenge) return;
+      if (storage.hasSeenPadDemo() || pad.value !== "" || mode !== "napkin") return;
+      var demoText = "3 million people\n1 in 4 of them\n÷ 7 days";
+      var i = 0, done = false;
+      var timer = setInterval(function () {
+        if (i >= demoText.length) { clearInterval(timer); setTimeout(function () { stopDemo(true); }, 1100); return; }
+        pad.value += demoText.charAt(i);
+        i++;
+        onPad();
+      }, 45);
+      function stopDemo(finished) {
+        if (done) return;
+        done = true;
+        clearInterval(timer);
+        demoNote.hidden = true;
+        pad.classList.remove("demo-typing");
+        // Only clear it if the user never actually touched the pad themselves.
+        if (demoText.indexOf(pad.value) === 0) { pad.value = ""; onPad(); }
+        storage.markPadDemoSeen();
+      }
+      demoNote.hidden = false;
+      pad.classList.add("demo-typing");
+      wrap.addEventListener("pointerdown", function () { stopDemo(false); }, { once: true, capture: true });
+      wrap.addEventListener("keydown", function () { stopDemo(false); }, { once: true, capture: true });
+    }
+
     onPad();
     refreshTotal();
+    startPadDemo();
     return wrap;
   }
 

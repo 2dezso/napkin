@@ -19,6 +19,16 @@ window.NAPKIN.storage = (function () {
   // rotation. Old results carried a per-user napkinNumber, so start clean.
   var KEY = "napkin.v3";
 
+  // Separate flag (not part of the results backup) for the one-time "watch
+  // the pad read your numbers" demo shown before anyone's first attempt.
+  var DEMO_KEY = "napkin.padDemoSeen";
+  function hasSeenPadDemo() {
+    try { return localStorage.getItem(DEMO_KEY) === "1"; } catch (e) { return true; }
+  }
+  function markPadDemoSeen() {
+    try { localStorage.setItem(DEMO_KEY, "1"); } catch (e) { /* full / blocked */ }
+  }
+
   // Launch day = day 0. dayNumber() counts calendar days from here.
   var EPOCH = "2026-08-30";
 
@@ -142,6 +152,7 @@ window.NAPKIN.storage = (function () {
     recordResult: recordResult,
     streak: streak, stats: stats,
     challengeBest: challengeBest, recordChallengeBest: recordChallengeBest,
+    hasSeenPadDemo: hasSeenPadDemo, markPadDemoSeen: markPadDemoSeen,
     exportJSON: exportJSON, importJSON: importJSON, reset: reset
   };
 })();

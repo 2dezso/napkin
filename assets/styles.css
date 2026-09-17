@@ -153,12 +153,36 @@ body {
   min-height: 9.5rem;
   border: 1px solid var(--rule);
   border-radius: 8px;
-  background-color: var(--card);
+  background: transparent;
   color: var(--ink);
   font-size: 16px;
   line-height: 2rem;
   padding: 0.35rem 0.7rem 0.7rem 2.6rem;
   resize: vertical;
+  position: relative;
+}
+.pad:focus { outline: 0; border-color: var(--pen); }
+.pad::placeholder { color: var(--rule); }
+
+/* Sits behind the (now-transparent) pad, mirroring its text box exactly so
+   <mark> highlights land right under what you typed. Also carries the
+   ruled-paper background that used to live on .pad itself. */
+.pad-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 2rem;
+  padding: 0.35rem 0.7rem 0.7rem 2.6rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+  background-color: var(--card);
   background-image:
     linear-gradient(to right,
       transparent 2rem, rgba(178, 59, 46, 0.35) 2rem,
@@ -167,8 +191,19 @@ body {
       rgba(47, 87, 166, 0.16) calc(2rem - 1px), rgba(47, 87, 166, 0.16) 2rem);
   background-attachment: local;
 }
-.pad:focus { outline: 0; border-color: var(--pen); }
-.pad::placeholder { color: var(--rule); }
+.pad-highlight mark.hl {
+  background: rgba(47, 87, 166, 0.16);
+  box-shadow: inset 0 -2px 0 var(--pen);
+  border-radius: 3px;
+  color: transparent;
+}
+.pad-highlight mark.hl.hl-muted {
+  background: transparent;
+  box-shadow: inset 0 -2px 0 var(--rule);
+}
+
+.demo-note { margin: 0 0 0.5rem; font-style: italic; }
+.pad.demo-typing { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
 
 .stamp {
   position: absolute;
