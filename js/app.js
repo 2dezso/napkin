@@ -409,17 +409,23 @@
     }
     // Mirrors pad.value into the layer sitting behind the (transparent) pad,
     // wrapping each recognized number in a <mark> so it's highlighted right
-    // where you typed it — not just reflected in the ribbon below.
+    // where you typed it — not just reflected in the ribbon below. Trims any
+    // trailing space the match swallowed, and holds off marking the token
+    // you're still actively typing until a space/newline finishes it.
     function renderPadHighlight() {
       var text = pad.value;
       var fs = scan();
       var html = "", pos = 0;
       fs.forEach(function (f) {
         if (f.start < pos) return;
+        var end = f.end;
+        while (end > f.start && /\s/.test(text.charAt(end - 1))) end--;
+        var finished = end < text.length && /[ \n\t]/.test(text.charAt(end));
+        if (!finished) return;
         html += escapeHtml(text.slice(pos, f.start));
         html += '<mark class="hl' + (muted[f.sig] ? " hl-muted" : "") + '">' +
-          escapeHtml(text.slice(f.start, f.end)) + "</mark>";
-        pos = f.end;
+          escapeHtml(text.slice(f.start, end)) + "</mark>";
+        pos = end;
       });
       html += escapeHtml(text.slice(pos));
       // pre-wrap collapses a bare trailing newline's blank line; a trailing
@@ -634,21 +640,42 @@
     segNapkin.addEventListener("click", function () { setMode("napkin"); });
     segEye.addEventListener("click", function () { setMode("eyeball"); });
 
-    // First-ever visit: type an example into the empty pad so the "your
-    // numbers get read live" trick is seen once, not just asserted. Any
-    // click/keypress anywhere on the screen cancels it immediately.
+    // First-ever visit: a short welcome, then (if they want it) type an
+    // example into the empty pad so the "your numbers get read live" trick
+    // is seen once, not just asserted. Any click/keypress cancels it.
     function startPadDemo() {
       if (opts.practice || opts.challenge) return;
       if (storage.hasSeenPadDemo() || pad.value !== "" || mode !== "napkin") return;
+      showDemoIntro();
+    }
+
+    function showDemoIntro() {
+      var showBtn = el("button", { class: "btn" }, "Show me ▸");
+      var skipBtn = el("button", { class: "linkbtn" }, "skip, I've got it");
+      var overlay = el("div", { class: "demo-overlay" },
+        el("div", { class: "demo-modal" },
+          el("div", { class: "hand big" }, "Welcome to Napkin 👋"),
+          el("p", {}, "Write out your thinking in plain English — we'll pick up the numbers as you go. Click below to see a quick example, then good luck!"),
+          showBtn,
+          skipBtn
+        )
+      );
+      wrap.appendChild(overlay);
+      function close() { if (overlay.parentNode) overlay.remove(); }
+      showBtn.addEventListener("click", function () { close(); runPadDemo(); });
+      skipBtn.addEventListener("click", function () { close(); storage.markPadDemoSeen(); });
+    }
+
+    function runPadDemo() {
       var demoText = "3 million people\n1 in 4 of them\n÷ 7 days";
       var i = 0, done = false;
       var timer = setInterval(function () {
-        if (i >= demoText.length) { clearInterval(timer); setTimeout(function () { stopDemo(true); }, 1100); return; }
+        if (i >= demoText.length) { clearInterval(timer); setTimeout(function () { stopDemo(); }, 1600); return; }
         pad.value += demoText.charAt(i);
         i++;
         onPad();
-      }, 45);
-      function stopDemo(finished) {
+      }, 90);
+      function stopDemo() {
         if (done) return;
         done = true;
         clearInterval(timer);
@@ -660,8 +687,8 @@
       }
       demoNote.hidden = false;
       pad.classList.add("demo-typing");
-      wrap.addEventListener("pointerdown", function () { stopDemo(false); }, { once: true, capture: true });
-      wrap.addEventListener("keydown", function () { stopDemo(false); }, { once: true, capture: true });
+      wrap.addEventListener("pointerdown", function () { stopDemo(); }, { once: true, capture: true });
+      wrap.addEventListener("keydown", function () { stopDemo(); }, { once: true, capture: true });
     }
 
     onPad();

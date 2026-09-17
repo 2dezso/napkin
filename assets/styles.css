@@ -205,6 +205,31 @@ body {
 .demo-note { margin: 0 0 0.5rem; font-style: italic; }
 .pad.demo-typing { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
 
+.demo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  background: rgba(44, 42, 36, 0.45);
+  animation: fadein 0.2s ease;
+}
+.demo-modal {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 1.5rem 1.6rem;
+  max-width: 22rem;
+  text-align: center;
+  box-shadow: 4px 4px 0 rgba(44, 42, 36, 0.25);
+}
+.demo-modal .big { font-size: 1.6rem; margin-bottom: 0.5rem; }
+.demo-modal p { margin: 0 0 1.1rem; }
+.demo-modal .btn { width: 100%; }
+.demo-modal .linkbtn { display: block; margin: 0.6rem auto 0; }
+
 .stamp {
   position: absolute;
   top: 50%;
