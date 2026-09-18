@@ -215,6 +215,20 @@
       padHighlight.scrollLeft = pad.scrollLeft;
     });
 
+    // Back-pocket numbers and gut check — sit right under the pad, not the
+    // toolbar, since neither is about the caret/current line. Gut check is
+    // only enabled once there's an actual guess to react to.
+    var padActions = el("div", { class: "padactions" });
+    if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
+      var factsActionBtn = el("button", { class: "tbtn", type: "button" }, "📖 back-pocket numbers");
+      factsActionBtn.addEventListener("click", openFactsModal);
+      padActions.appendChild(factsActionBtn);
+    }
+    var gutActionBtn = el("button", { class: "tbtn", type: "button" }, "🤔 gut check");
+    gutActionBtn.addEventListener("click", openGutCheckModal);
+    padActions.appendChild(gutActionBtn);
+    napkinPanel.appendChild(padActions);
+
     var ribbon = el("div", { class: "ribbon" });
     napkinPanel.appendChild(ribbon);
     var ribbonHint = el("p", { class: "muted ribbon-hint" }, "tap a chip to mute it · tap again to flip × / ÷");
@@ -443,9 +457,9 @@
       onPad();
     }
 
-    // Caret on a plain number -> scale it in place. Anywhere else -> a
-    // couple of quick typing shortcuts for characters that aren't easy to
-    // reach on a phone keyboard.
+    // Caret-aware only: shows scale buttons when sitting on a plain number,
+    // otherwise stays empty (back-pocket numbers / gut check live below the
+    // pad now, in padActions — see above).
     function renderToolbar() {
       var f = factorAtCaret();
       toolbar.innerHTML = "";
@@ -457,17 +471,6 @@
           toolbar.appendChild(t);
         });
         toolbar.appendChild(el("span", { class: "toolbar-hint muted" }, "scaling " + util.humanize(f.value)));
-      } else {
-        if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
-          var factsBtn = el("button", { class: "tbtn", type: "button" }, "📖 back-pocket numbers");
-          factsBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
-          factsBtn.addEventListener("click", openFactsModal);
-          toolbar.appendChild(factsBtn);
-        }
-        var gutBtn = el("button", { class: "tbtn", type: "button" }, "🤔 gut check");
-        gutBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
-        gutBtn.addEventListener("click", openGutCheckModal);
-        toolbar.appendChild(gutBtn);
       }
     }
 
@@ -503,9 +506,10 @@
     }
 
     function openGutCheckModal() {
-      var g = mode === "eyeball" ? sliderValue() : effectiveGuess();
+      var g = effectiveGuess();
+      if (g == null) return; // button's disabled for this, but stay safe
       var content = el("div", {},
-        el("p", {}, "You're at " + (g == null ? "—" : "≈ " + util.humanize(g)) + "."),
+        el("p", {}, "You're at ≈ " + util.humanize(g) + "."),
         el("p", { class: "muted" }, q.sanity_check)
       );
       openInfoModal("🤔 Gut check", content);
@@ -617,9 +621,12 @@
       });
     }
 
-    function refreshTotal() { renderTotal(); updateSubmit(); }
+    function refreshTotal() { renderTotal(); updateSubmit(); updateGutBtn(); }
     function updateSubmit() {
       submit.disabled = mode === "eyeball" ? false : !(effectiveGuess() > 0);
+    }
+    function updateGutBtn() {
+      gutActionBtn.disabled = !(effectiveGuess() > 0);
     }
     function setMode(m) {
       mode = m;
