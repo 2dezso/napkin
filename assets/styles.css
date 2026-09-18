@@ -128,25 +128,55 @@ body {
 }
 
 /* ---------- the scribble pad (C) ---------- */
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin-bottom: 0.5rem; min-height: 2.1rem; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem; min-height: 2.1rem; }
+/* No caret on a number = no scale buttons; don't reserve a dead gap for them. */
+.toolbar:empty { min-height: 0; margin-bottom: 0; }
+
+/* Tool chip: the one secondary-action style. Quiet until you reach for it. */
 .tbtn {
   font: inherit;
-  font-family: var(--hand);
-  font-size: 1rem;
-  min-width: 2.2rem;
-  padding: 0.3rem 0.55rem;
+  font-size: 0.85rem;
+  padding: 0.38rem 0.8rem;
   border: 1px solid var(--rule);
   background: var(--card);
-  color: var(--pen);
-  border-radius: 8px;
+  color: var(--ink);
+  border-radius: 999px;
   cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.tbtn:active { background: var(--pen-soft); }
-.tbtn:disabled { opacity: 0.4; cursor: not-allowed; }
-.tbtn-scale { border-color: var(--pen); font-weight: 700; }
+.tbtn:hover:not(:disabled) { border-color: var(--pen); color: var(--pen); }
+.tbtn:active:not(:disabled) { background: var(--pen-soft); }
+.tbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Math operators stay in the handwriting — they're arithmetic, not chrome. */
+.tbtn-scale {
+  font-family: var(--hand);
+  font-size: 1rem;
+  min-width: 2.4rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 8px;
+  border-color: var(--pen);
+  color: var(--pen);
+  font-weight: 700;
+}
 .toolbar-hint { font-size: 0.78rem; margin-left: 0.2rem; }
 
-.padactions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 0; }
+.padactions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0; }
+
+/* Shared label column so the Tools and Lifelines rows line up. */
+.helper-label {
+  min-width: 4.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Optional help, fenced off from the pad → reading → total chain above it. */
+.helpers {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--rule);
+}
 
 .padwrap { position: relative; }
 .pad {
@@ -261,6 +291,8 @@ body {
 }
 
 .ribbon { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.7rem; min-height: 1.8rem; }
+/* Nothing typed yet = nothing to read; don't hold open an empty strip. */
+.ribbon:empty { min-height: 0; margin-top: 0; }
 .pill {
   font: inherit;
   font-family: var(--hand);
@@ -288,18 +320,32 @@ body {
 .ribbon-label { font-size: 0.78rem; font-style: italic; margin-right: 0.1rem; }
 .ribbon-hint { margin: 0.3rem 0 0; font-size: 0.8rem; }
 
+/* Quiet tier: no underline until you're actually reaching for it. */
 .linkbtn {
   font: inherit;
+  font-size: 0.85rem;
   border: 0;
   background: transparent;
-  color: var(--pen);
+  color: var(--faint);
   cursor: pointer;
   padding: 0.3rem 0;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 3px;
+  transition: color 0.15s ease;
 }
-.peekwrap { margin-top: 0.7rem; }
+.linkbtn:hover { color: var(--pen); text-decoration: underline; }
+.peekwrap { margin-top: 0.2rem; }
 .peeknote { margin: 0.3rem 0 0; }
+
+/* The two optional-help links share a row instead of stacking as a list.
+   No rule above it — the total's dashed line is already the divider here. */
+.padhelp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 1.2rem;
+  margin-top: 0.8rem;
+}
 
 .total {
   display: flex;
@@ -571,6 +617,30 @@ body {
 
 /* ---------- challenge mode ---------- */
 .challenge-intro .statgrid { margin: 1rem 0; }
+.lede { font-size: 1.05rem; line-height: 1.5; margin: 0.2rem 0 0; max-width: 34rem; }
+
+.rulebox {
+  margin: 1.2rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+}
+.rulebox-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--faint);
+}
+.rulelist { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.9rem; }
+.rulelist dt { font-weight: 600; font-size: 0.92rem; white-space: nowrap; }
+.rulelist dd { margin: 0; font-size: 0.92rem; color: var(--faint); }
+@media (max-width: 480px) {
+  .rulelist { grid-template-columns: 1fr; gap: 0.1rem; }
+  .rulelist dd { margin-bottom: 0.5rem; }
+}
 .challenge-summary { text-align: center; margin-bottom: 1rem; }
 .challenge-summary .big { font-size: 1.9rem; }
 
@@ -583,7 +653,14 @@ body {
 .hearts { font-size: 1.25rem; letter-spacing: 0.08rem; }
 .chud-streak { font-size: 1.1rem; color: var(--pen); }
 .chud-streak.streak-big { font-size: 1.7rem; font-weight: 700; }
-.chud-diff { font-size: 0.85rem; }
+.chud-diff {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+}
 .chud-chase { margin: -0.4rem 0 0.6rem; font-size: 0.85rem; }
 .chud-row.hit { animation: chudshake 0.4s ease; }
 @keyframes chudshake {
@@ -594,7 +671,7 @@ body {
   80% { transform: translateX(4px); }
 }
 
-.lifelines { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; }
+.lifelines { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.45rem 0 0; }
 
 .milestone-banner {
   font-size: 1.6rem;
@@ -682,4 +759,13 @@ body {
   .hero-emoji { font-size: 2.8rem; }
   .hero-score { font-size: 1.9rem; }
   .actualnum { font-size: 1.9rem; }
+
+  /* Four tabs led by "Challenge" don't fit a phone at full size. */
+  .topbar { padding: 0.7rem 0.75rem; gap: 0.4rem; }
+  .brand { font-size: 1.25rem; }
+  .tabs { gap: 0.1rem; }
+  .tab { padding: 0.3rem 0.45rem; font-size: 0.85rem; }
+
+  /* Helper label above its buttons rather than stealing a column of width. */
+  .helper-label { min-width: 100%; margin-bottom: 0.1rem; }
 }
