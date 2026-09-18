@@ -63,6 +63,30 @@
   function sfxDing() { beep(1300, 0.09, "sine", 0.05); }
   function sfxLock() { noiseThud(0.06, 0.14); beep(85, 0.16, "sine", 0.16); }
 
+  /* ---------- gut check: put an arbitrary guess in relatable terms ----------
+   * Deliberately question-independent (population/time only, same territory
+   * as commonFacts) so it never hints at the actual answer being estimated. */
+  var GUESS_ANCHORS = [
+    { value: 86400, name: "the seconds in a day" },
+    { value: 604800, name: "the seconds in a week" },
+    { value: 9000000, name: "everyone in Greater London" },
+    { value: 31536000, name: "the seconds in a year" },
+    { value: 67000000, name: "everyone in the UK" },
+    { value: 8100000000, name: "everyone on Earth" }
+  ];
+  function contextualizeGuess(n) {
+    if (!(n > 0)) return null;
+    var best = null, bestDist = Infinity;
+    GUESS_ANCHORS.forEach(function (a) {
+      var dist = Math.abs(Math.log10(n / a.value));
+      if (dist < bestDist) { bestDist = dist; best = a; }
+    });
+    var ratio = n / best.value;
+    if (ratio >= 0.7 && ratio <= 1.4) return "roughly " + best.name;
+    if (ratio > 1.4) return "about " + util.roundFactor(ratio) + "× " + best.name;
+    return "about " + util.roundFactor(1 / ratio) + "× smaller than " + best.name;
+  }
+
   /* ---------- tiny DOM helpers ---------- */
   function el(tag, attrs) {
     var n = document.createElement(tag);
@@ -508,11 +532,9 @@
     function openGutCheckModal() {
       var g = effectiveGuess();
       if (g == null) return; // button's disabled for this, but stay safe
-      var content = el("div", {},
-        el("p", {}, "You're at ≈ " + util.humanize(g) + "."),
-        el("p", { class: "muted" }, q.sanity_check)
-      );
-      openInfoModal("🤔 Gut check", content);
+      var ctx = contextualizeGuess(g);
+      var line = "You're at ≈ " + util.humanize(g) + (ctx ? " — that's " + ctx + "." : ".");
+      openInfoModal("🤔 Gut check", el("p", {}, line));
     }
 
     function renderRibbon() {
