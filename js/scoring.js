@@ -61,7 +61,7 @@ window.NAPKIN.util = (function () {
       if (m) { value = parseFloat(m[1]) / 100; span = [m.index, m.index + m[0].length]; }
     }
     if (span == null) {                                               // plain number
-      m = s.match(/(\d[\d,]*(?:\.\d+)?)(e-?\d+)?\s*(k|m|b|t|thousand|million|billion|trillion)?\b/i);
+      m = s.match(/(\d[\d,]*(?:\.\d+)?)(e-?\d+)?\s*(thousand|million|billion|trillion|k|m|b|t)?\b/i);
       if (m) {
         var n = parseFloat(m[1].replace(/,/g, "") + (m[2] || ""));
         if (isFinite(n)) {
@@ -97,7 +97,7 @@ window.NAPKIN.util = (function () {
     "(\\d+(?:\\.\\d+)?)\\s+in\\s+(\\d+(?:\\.\\d+)?)" +
     "|(\\d+(?:\\.\\d+)?)\\s*/\\s*(\\d+(?:\\.\\d+)?)" +
     "|(\\d+(?:\\.\\d+)?)\\s*%" +
-    "|(\\d[\\d,]*(?:\\.\\d+)?)(e-?\\d+)?\\s*(k|m|b|t|thousand|million|billion|trillion)?(?![.\\d])";
+    "|(\\d[\\d,]*(?:\\.\\d+)?)(e-?\\d+)?\\s*(thousand|million|billion|trillion|k|m|b|t)?(?![.\\d])";
 
   function valueFromMatch(m) {
     if (m[1] != null) return parseFloat(m[1]) / parseFloat(m[2]);

@@ -7,7 +7,7 @@
   var storage = window.NAPKIN.storage;
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "daily", practiceQ: null, challenge: null };
+  var STATE = { view: "daily", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
@@ -122,6 +122,7 @@
   /* ---------- the napkin screen ---------- */
   function napkinScreen(q, opts) {
     opts = opts || {};
+    var isEasyChallenge = !!(opts.challenge && STATE.challenge && STATE.challenge.difficulty === "easy");
     var wrap = el("section", { class: "screen napkin" });
 
     if (opts.practice) {
@@ -138,7 +139,8 @@
       wrap.appendChild(quit);
       wrap.appendChild(el("div", { class: "chud-row" },
         heartsNode(STATE.challenge.lives, STATE.challenge.maxLives),
-        el("span", { class: "chud-streak hand" }, fireLabel(STATE.challenge.streak))
+        el("span", { class: "chud-streak hand" }, fireLabel(STATE.challenge.streak)),
+        el("span", { class: "chud-diff muted" }, STATE.challenge.difficulty === "easy" ? "🧩 easy" : "🔥 hard")
       ));
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
@@ -231,27 +233,8 @@
     totalRow.appendChild(revertBtn);
     napkinPanel.appendChild(totalRow);
 
-    /* back-pocket numbers — universal facts, always available, any question */
-    if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
-      var factsBtn = el("button", { class: "linkbtn factsbtn", type: "button" }, "📖 back-pocket numbers");
-      var factsPanel = el("div", { class: "factspanel" });
-      factsPanel.hidden = true;
-      window.NAPKIN.commonFacts.forEach(function (f) {
-        var row = el("button", { class: "factrow", type: "button" },
-          el("span", {}, f.label),
-          el("span", { class: "hand" }, inputNumber(f.value))
-        );
-        row.addEventListener("mousedown", function (e) { e.preventDefault(); });
-        row.addEventListener("click", function () { insertLine(f.label + " " + inputNumber(f.value)); });
-        factsPanel.appendChild(row);
-      });
-      factsBtn.addEventListener("click", function () {
-        factsPanel.hidden = !factsPanel.hidden;
-        factsBtn.textContent = factsPanel.hidden ? "📖 back-pocket numbers" : "hide the numbers";
-      });
-      napkinPanel.appendChild(factsBtn);
-      napkinPanel.appendChild(factsPanel);
-    }
+    // Back-pocket numbers and gut check now live as popups triggered from the
+    // toolbar (see renderToolbar / openFactsModal / openGutCheckModal below).
 
     /* value chips — question-specific, hidden behind a hint button */
     if (q.reference_anchors && q.reference_anchors.length) {
@@ -272,23 +255,25 @@
       napkinPanel.appendChild(chips);
     }
 
-    /* peek */
-    var peekWrap = el("div", { class: "peekwrap" });
-    var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "stuck? show me the framework");
-    var peekNote = el("p", { class: "muted peeknote" }, "👀 framework peeked — this one counts as assisted");
-    peekNote.hidden = true;
-    peekBtn.addEventListener("click", function () {
-      if (!window.confirm("Show the framework? You'll see the variable names (not the numbers), and this result gets an assisted mark.")) return;
-      assisted = true;
-      pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label; }).join("\n") + "\n";
-      onPad();
-      pad.focus();
-      peekBtn.remove();
-      peekNote.hidden = false;
-    });
-    peekWrap.appendChild(peekBtn);
-    peekWrap.appendChild(peekNote);
-    napkinPanel.appendChild(peekWrap);
+    /* peek — not offered in Challenge's easy mode, where the framework's already laid out */
+    if (!isEasyChallenge) {
+      var peekWrap = el("div", { class: "peekwrap" });
+      var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "stuck? show me the framework");
+      var peekNote = el("p", { class: "muted peeknote" }, "👀 framework peeked — this one counts as assisted");
+      peekNote.hidden = true;
+      peekBtn.addEventListener("click", function () {
+        if (!window.confirm("Show the framework? You'll see the variable names (not the numbers), and this result gets an assisted mark.")) return;
+        assisted = true;
+        pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label; }).join("\n") + "\n";
+        onPad();
+        pad.focus();
+        peekBtn.remove();
+        peekNote.hidden = false;
+      });
+      peekWrap.appendChild(peekBtn);
+      peekWrap.appendChild(peekNote);
+      napkinPanel.appendChild(peekWrap);
+    }
 
     /* eyeball escape hatch */
     var eyePanel = el("div", { class: "panel" });
@@ -305,21 +290,6 @@
 
     wrap.appendChild(napkinPanel);
     wrap.appendChild(eyePanel);
-
-    /* gut check + lock in (F) */
-    var gutBtn = el("button", { class: "linkbtn gutbtn", type: "button" }, "🤔 gut check");
-    var gutPanel = el("div", { class: "gutcheck-panel" });
-    gutPanel.hidden = true;
-    gutBtn.addEventListener("click", function () {
-      if (!gutPanel.hidden) { gutPanel.hidden = true; return; }
-      var g = mode === "eyeball" ? sliderValue() : effectiveGuess();
-      gutPanel.innerHTML = "";
-      gutPanel.appendChild(el("p", {}, "You're at " + (g == null ? "—" : "≈ " + util.humanize(g)) + "."));
-      gutPanel.appendChild(el("p", { class: "muted" }, q.sanity_check));
-      gutPanel.hidden = false;
-    });
-    wrap.appendChild(gutBtn);
-    wrap.appendChild(gutPanel);
 
     wrap.appendChild(el("p", { class: "muted undohint" }, "⌘Z / Ctrl+Z undoes — it's just one page of text"));
 
@@ -488,13 +458,57 @@
         });
         toolbar.appendChild(el("span", { class: "toolbar-hint muted" }, "scaling " + util.humanize(f.value)));
       } else {
-        [["÷", " ÷ "], ["%", "% "], ["1 in", "1 in "]].forEach(function (b) {
-          var t = el("button", { class: "tbtn", type: "button" }, b[0]);
-          t.addEventListener("mousedown", function (e) { e.preventDefault(); });
-          t.addEventListener("click", function () { insertText(b[1]); });
-          toolbar.appendChild(t);
-        });
+        if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
+          var factsBtn = el("button", { class: "tbtn", type: "button" }, "📖 back-pocket numbers");
+          factsBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
+          factsBtn.addEventListener("click", openFactsModal);
+          toolbar.appendChild(factsBtn);
+        }
+        var gutBtn = el("button", { class: "tbtn", type: "button" }, "🤔 gut check");
+        gutBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
+        gutBtn.addEventListener("click", openGutCheckModal);
+        toolbar.appendChild(gutBtn);
       }
+    }
+
+    // Generic dismissable popup: a titled card over a dark backdrop, closed by
+    // its own close button or a tap on the backdrop. Returns the close fn.
+    function openInfoModal(titleText, contentNode) {
+      var closeBtn = el("button", { class: "linkbtn modal-close", type: "button" }, "close ✕");
+      var card = el("div", { class: "demo-modal info-modal" },
+        el("div", { class: "hand big" }, titleText),
+        contentNode,
+        closeBtn
+      );
+      var overlay = el("div", { class: "demo-overlay" }, card);
+      function close() { if (overlay.parentNode) overlay.remove(); }
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+      closeBtn.addEventListener("click", close);
+      wrap.appendChild(overlay);
+      return close;
+    }
+
+    function openFactsModal() {
+      var close;
+      var list = el("div", { class: "factspanel" });
+      (window.NAPKIN.commonFacts || []).forEach(function (f) {
+        var row = el("button", { class: "factrow", type: "button" },
+          el("span", {}, f.label),
+          el("span", { class: "hand" }, inputNumber(f.value))
+        );
+        row.addEventListener("click", function () { insertLine(f.label + " " + inputNumber(f.value)); close(); });
+        list.appendChild(row);
+      });
+      close = openInfoModal("📖 Back-pocket numbers", list);
+    }
+
+    function openGutCheckModal() {
+      var g = mode === "eyeball" ? sliderValue() : effectiveGuess();
+      var content = el("div", {},
+        el("p", {}, "You're at " + (g == null ? "—" : "≈ " + util.humanize(g)) + "."),
+        el("p", { class: "muted" }, q.sanity_check)
+      );
+      openInfoModal("🤔 Gut check", content);
     }
 
     function renderRibbon() {
@@ -689,6 +703,11 @@
       pad.classList.add("demo-typing");
       wrap.addEventListener("pointerdown", function () { stopDemo(); }, { once: true, capture: true });
       wrap.addEventListener("keydown", function () { stopDemo(); }, { once: true, capture: true });
+    }
+
+    // Easy mode: the framework's rows are laid out for you already — just plug in a number per line.
+    if (isEasyChallenge) {
+      pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label + " "; }).join("\n") + "\n";
     }
 
     onPad();
@@ -966,7 +985,8 @@
   function startChallenge() {
     STATE.challenge = {
       lives: 3, maxLives: 3, streak: 0, runBest: 0,
-      queue: [], lastId: null, over: false, lastLifeLost: false, isNewBest: false
+      queue: [], lastId: null, over: false, lastLifeLost: false, isNewBest: false,
+      difficulty: STATE.challengeDifficulty
     };
     nextChallengeQuestion(STATE.challenge);
     STATE.view = "challenge";
@@ -1013,6 +1033,16 @@
     );
     wrap.appendChild(grid);
 
+    var easyBtn = el("button", { class: "seg" + (STATE.challengeDifficulty === "easy" ? " active" : "") }, "Easy");
+    var hardBtn = el("button", { class: "seg" + (STATE.challengeDifficulty === "easy" ? "" : " active") }, "Hard");
+    easyBtn.addEventListener("click", function () { STATE.challengeDifficulty = "easy"; renderApp(); });
+    hardBtn.addEventListener("click", function () { STATE.challengeDifficulty = "hard"; renderApp(); });
+    wrap.appendChild(el("div", { class: "segmented" }, easyBtn, hardBtn));
+    wrap.appendChild(el("p", { class: "muted diff-note" },
+      STATE.challengeDifficulty === "easy"
+        ? "Easy: the framework's laid out for you — just plug in the numbers."
+        : "Hard: build the whole napkin yourself, from a blank pad."));
+
     var startBtn = el("button", { class: "btn" }, c && c.over ? "Play again" : "Start challenge");
     startBtn.addEventListener("click", startChallenge);
     wrap.appendChild(startBtn);
@@ -1025,7 +1055,8 @@
 
     var hudRow = el("div", { class: "chud-row" + (c.lastLifeLost ? " hit" : "") },
       heartsNode(c.lives, c.maxLives),
-      el("span", { class: "chud-streak hand" }, fireLabel(c.streak))
+      el("span", { class: "chud-streak hand" }, fireLabel(c.streak)),
+      el("span", { class: "chud-diff muted" }, c.difficulty === "easy" ? "🧩 easy" : "🔥 hard")
     );
     box.appendChild(hudRow);
 

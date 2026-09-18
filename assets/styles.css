@@ -230,6 +230,10 @@ body {
 .demo-modal .btn { width: 100%; }
 .demo-modal .linkbtn { display: block; margin: 0.6rem auto 0; }
 
+.info-modal { text-align: left; max-height: 80vh; overflow-y: auto; }
+.info-modal .big { text-align: center; }
+.modal-close { display: block; margin: 1rem auto 0; }
+
 .stamp {
   position: absolute;
   top: 50%;
@@ -349,7 +353,6 @@ body {
 }
 .achip:hover { border-color: var(--pen); color: var(--pen); }
 
-.factsbtn { display: block; margin-top: 0.6rem; font-size: 0.85rem; }
 .factspanel {
   display: flex;
   flex-direction: column;
@@ -377,15 +380,6 @@ body {
 .factrow:hover { color: var(--pen); }
 .factrow span:last-child { color: var(--pen); white-space: nowrap; }
 
-.gutbtn { display: inline-block; margin-top: 0.4rem; }
-.gutcheck-panel {
-  border: 1px dashed var(--rule);
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  margin: 0.4rem 0;
-  background: var(--card);
-}
-.gutcheck-panel p { margin: 0.2rem 0; }
 .undohint { margin: 0.5rem 0 0.3rem; font-size: 0.78rem; }
 
 .slider { width: 100%; margin: 0.8rem 0 0.4rem; }
@@ -585,6 +579,7 @@ body {
 }
 .hearts { font-size: 1.25rem; letter-spacing: 0.08rem; }
 .chud-streak { font-size: 1.1rem; color: var(--pen); }
+.chud-diff { font-size: 0.85rem; }
 .chud-row.hit { animation: chudshake 0.4s ease; }
 @keyframes chudshake {
   0%, 100% { transform: translateX(0); }

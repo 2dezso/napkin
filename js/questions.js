@@ -27,7 +27,7 @@ window.NAPKIN.questions = [
     difficulty: "easy",
     question: "How many people attend Premier League matches on a normal weekend?",
     clarifications: [
-      "A full round — all 10 fixtures.",
+      "A full round of matches, not just a single game.",
       "Bums on seats across every ground, not the TV audience."
     ],
     reference_anchors: [
@@ -69,7 +69,7 @@ window.NAPKIN.questions = [
     difficulty: "hard",
     question: "How many matchday pies are sold across English football on a Saturday?",
     clarifications: [
-      "A busy Saturday across the top four divisions (Premier League + EFL) — roughly 40 matches.",
+      "A busy Saturday across the top four divisions (Premier League + EFL).",
       "One pie or pasty per person who buys one."
     ],
     reference_anchors: [
@@ -112,7 +112,7 @@ window.NAPKIN.questions = [
     difficulty: "easy",
     question: "How many cups of tea are drunk in the UK per day?",
     clarifications: [
-      "The whole UK — about 67 million people.",
+      "The whole UK, all ages included.",
       "Any cup of tea, at home or out, in a normal day."
     ],
     reference_anchors: [
@@ -236,7 +236,7 @@ window.NAPKIN.questions = [
     difficulty: "medium",
     question: "How many sausage rolls does Greggs sell in the UK per day?",
     clarifications: [
-      "Across every Greggs shop in the UK — around 2,400 of them.",
+      "Across every Greggs shop in the UK.",
       "A normal trading day."
     ],
     reference_anchors: [
@@ -318,7 +318,7 @@ window.NAPKIN.questions = [
     difficulty: "hard",
     question: "How many blades of grass are on a football pitch?",
     clarifications: [
-      "A full-size professional pitch, roughly 105 m by 68 m.",
+      "A full-size professional pitch.",
       "Healthy, mown turf."
     ],
     reference_anchors: [
