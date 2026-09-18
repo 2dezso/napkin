@@ -163,9 +163,40 @@
       wrap.appendChild(quit);
       wrap.appendChild(el("div", { class: "chud-row" },
         heartsNode(STATE.challenge.lives, STATE.challenge.maxLives),
-        el("span", { class: "chud-streak hand" }, fireLabel(STATE.challenge.streak)),
+        el("span", { class: "chud-streak hand streak-big" }, fireLabel(STATE.challenge.streak)),
         el("span", { class: "chud-diff muted" }, STATE.challenge.difficulty === "easy" ? "🧩 easy" : "🔥 hard")
       ));
+      var chase = bestChaseLabel(STATE.challenge.streak);
+      if (chase) wrap.appendChild(el("p", { class: "muted chud-chase" }, chase));
+
+      var lifelineRow = el("div", { class: "lifelines" });
+      var numberBtn = el("button", { class: "tbtn", type: "button" }, "🔢 Borrow a Number");
+      numberBtn.disabled = !!STATE.challenge.usedNumber;
+      numberBtn.addEventListener("click", function () {
+        if (STATE.challenge.usedNumber) return;
+        var row = nextUnfilledFrameworkRow();
+        insertLine((row.op === "/" ? "per " : "") + row.label + " " + inputNumber(row.model_value));
+        STATE.challenge.usedNumber = true;
+        numberBtn.disabled = true;
+      });
+      lifelineRow.appendChild(numberBtn);
+      if (!isEasyChallenge) {
+        var starterBtn = el("button", { class: "tbtn", type: "button" }, "🧩 Framework Starter");
+        starterBtn.disabled = !!STATE.challenge.usedFrameworkStarter;
+        starterBtn.addEventListener("click", function () {
+          if (STATE.challenge.usedFrameworkStarter) return;
+          var starter = q.framework.slice(0, 2)
+            .map(function (f) { return (f.op === "/" ? "per " : "") + f.label + " "; })
+            .join("\n") + "\n";
+          pad.value = starter + pad.value;
+          onPad();
+          pad.focus();
+          STATE.challenge.usedFrameworkStarter = true;
+          starterBtn.disabled = true;
+        });
+        lifelineRow.appendChild(starterBtn);
+      }
+      wrap.appendChild(lifelineRow);
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
         el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
@@ -387,6 +418,17 @@
     function scan() { return util.scanFactors(pad.value); }
     function activeFactors() {
       return scan().filter(function (f) { return !muted[f.sig]; });
+    }
+    // "Borrow a Number" reveals whichever framework row your pad hasn't
+    // matched yet, using the same fuzzy label-matching the reveal screen
+    // grades with — falls back to the first row if nothing's been typed.
+    function nextUnfilledFrameworkRow() {
+      var userRows = activeFactors().map(function (f) {
+        return { op: flipped[f.sig] || f.op, label: f.label, value: String(f.value) };
+      });
+      var cmp = scoring.compareRows(userRows, q.framework);
+      var unfilled = cmp.pairs.filter(function (p) { return !p.user; });
+      return unfilled.length ? unfilled[0].model : q.framework[0];
     }
     function computeTotal() {
       var acc = null;
@@ -993,6 +1035,15 @@
     var flames = streak >= 10 ? "🔥🔥🔥" : streak >= 5 ? "🔥🔥" : "🔥";
     return (streak > 0 ? flames + " " : "") + "Streak: " + streak;
   }
+  // 3, 5, then every 5 — matches the flame tiers above closely enough to feel earned.
+  function isMilestone(n) { return n === 3 || n === 5 || (n >= 10 && n % 5 === 0); }
+  function bestChaseLabel(streak) {
+    var best = storage.challengeBest();
+    if (best <= 0) return "";
+    if (streak > best) return "🏆 new best!";
+    if (streak === best) return "🏆 tied your best";
+    return (best - streak) + " to beat your best (" + best + ")";
+  }
 
   // Shuffled "bag" of every question id — deals through the whole bank
   // before any question can repeat, then reshuffles.
@@ -1013,9 +1064,10 @@
   }
   function startChallenge() {
     STATE.challenge = {
-      lives: 3, maxLives: 3, streak: 0, runBest: 0,
+      lives: 1, maxLives: 1, streak: 0, runBest: 0,
       queue: [], lastId: null, over: false, lastLifeLost: false, isNewBest: false,
-      difficulty: STATE.challengeDifficulty
+      difficulty: STATE.challengeDifficulty,
+      usedNumber: false, usedFrameworkStarter: false
     };
     nextChallengeQuestion(STATE.challenge);
     STATE.view = "challenge";
@@ -1053,12 +1105,14 @@
     }
 
     wrap.appendChild(el("p", { class: "muted" },
-      "Rapid-fire questions, no retries. Miss badly (10× or more off) and you lose a heart — " +
-      "lose all three and the run's over. How long can you keep the streak alive?"));
+      "Rapid-fire questions, no retries, one life — miss badly (10× or more off) and the run's over. " +
+      "You get two lifelines to help, each usable once a run: 🔢 Borrow a Number reveals one framework " +
+      "row's value, 🧩 Framework Starter lays out the first two rows to get you going. " +
+      "How long can you keep the streak alive?"));
 
     var grid = el("div", { class: "statgrid" },
       stat("Best streak", String(storage.challengeBest())),
-      stat("Lives", "❤️❤️❤️")
+      stat("Life", "❤️ one shot")
     );
     wrap.appendChild(grid);
 
@@ -1084,16 +1138,18 @@
 
     var hudRow = el("div", { class: "chud-row" + (c.lastLifeLost ? " hit" : "") },
       heartsNode(c.lives, c.maxLives),
-      el("span", { class: "chud-streak hand" }, fireLabel(c.streak)),
+      el("span", { class: "chud-streak hand streak-big" }, fireLabel(c.streak)),
       el("span", { class: "chud-diff muted" }, c.difficulty === "easy" ? "🧩 easy" : "🔥 hard")
     );
     box.appendChild(hudRow);
 
     if (c.lastLifeLost) {
-      box.appendChild(el("p", { class: "challenge-msg miss" },
-        "💔 Off by a mile — that one cost a heart. Streak's back to zero."));
-    } else if (c.streak > 0) {
-      box.appendChild(el("p", { class: "challenge-msg" }, "Streak's alive. Keep the napkins coming."));
+      box.appendChild(el("p", { class: "challenge-msg miss" }, "💔 Off by a mile — that's the run."));
+    } else if (isMilestone(c.streak)) {
+      box.appendChild(el("div", { class: "milestone-banner hand" }, "🔥 " + c.streak + " IN A ROW!"));
+    } else {
+      var chase = bestChaseLabel(c.streak);
+      box.appendChild(el("p", { class: "challenge-msg" }, chase || "Streak's alive. Keep the napkins coming."));
     }
 
     if (c.over) {
