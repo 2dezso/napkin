@@ -7,7 +7,7 @@
   var storage = window.NAPKIN.storage;
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "daily", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
+  var STATE = { view: "challenge", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
