@@ -196,7 +196,7 @@
     var totalOverride = null;   // set when the answer is typed by hand
     var assisted = false;
     var muted = {};             // factor sig -> true  (left out of the math)
-    var flipped = {};           // factor sig -> "x"|"/"  (operator overridden by a pill tap)
+    var flipped = {};           // factor sig -> "x"|"/"|"+"  (operator overridden by a pill tap)
     var rollFrom = 0;
     var seenFactorSigs = {};    // factor sig -> true once its pill has popped in / ticked
 
@@ -293,7 +293,7 @@
 
     var ribbon = el("div", { class: "ribbon" });
     napkinPanel.appendChild(ribbon);
-    var ribbonHint = el("p", { class: "muted ribbon-hint" }, "Tap a number to mute it · tap again to flip × / ÷");
+    var ribbonHint = el("p", { class: "muted ribbon-hint" }, "Tap a number to mute it · tap again to cycle × / ÷ / +");
     ribbonHint.hidden = true;
     napkinPanel.appendChild(ribbonHint);
 
@@ -450,7 +450,9 @@
       activeFactors().forEach(function (f) {
         var op = flipped[f.sig] || f.op;
         if (acc == null) acc = f.value;
-        else acc = op === "/" ? acc / f.value : acc * f.value;
+        else if (op === "/") acc = acc / f.value;
+        else if (op === "+") acc = acc + f.value;
+        else acc = acc * f.value;
       });
       return acc;
     }
@@ -610,15 +612,18 @@
           class: "pill" + (isMuted ? " muted" : "") + (isFlip ? " flip" : "") + (isNew ? " pill-new" : ""),
           type: "button", title: (f.label || f.raw) + " = " + util.withCommas(f.value)
         },
-          el("span", { class: "pill-op" }, (idx === 0 && !isFlip && !isMuted) ? "" : (op === "/" ? "÷" : "×")),
+          el("span", { class: "pill-op" }, (idx === 0 && !isFlip && !isMuted) ? "" : (op === "/" ? "÷" : op === "+" ? "+" : "×")),
           el("span", {}, util.humanize(f.value))
         );
         pill.addEventListener("click", function () {
+          // Cycle: detected op -> muted -> the other of ×/÷ -> forced + -> back to detected.
           if (!muted[f.sig] && !flipped[f.sig]) {
             muted[f.sig] = true;
           } else if (muted[f.sig]) {
             delete muted[f.sig];
             flipped[f.sig] = f.op === "/" ? "x" : "/";
+          } else if (flipped[f.sig] === "x" || flipped[f.sig] === "/") {
+            flipped[f.sig] = "+";
           } else {
             delete flipped[f.sig];
           }

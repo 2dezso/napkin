@@ -89,15 +89,16 @@ window.NAPKIN.util = (function () {
   }
 
   // Scan a whole free-typed blob and pull out every number as a factor.
-  // Returns [{ value, op:'x'|'/', label, raw, start, end, line, sig }]. This is
+  // Returns [{ value, op:'x'|'/'|'+', label, raw, start, end, line, sig }]. This is
   // the engine for "C" mode: multiply every number found; a number divides when
-  // "per" / "over" / a lone "/" or "÷" sits just before it on its line.
+  // "per" / "over" / a lone "/" or "÷" sits just before it on its line; a number
+  // adds when "plus" or a lone "+" sits just before it.
   // 1)"N in M"                         2)"A/B"                  3)"P%"                4) plain number
   var TOKEN_SRC =
     "(\\d+(?:\\.\\d+)?)\\s+in\\s+(\\d+(?:\\.\\d+)?)" +
     "|(\\d+(?:\\.\\d+)?)\\s*/\\s*(\\d+(?:\\.\\d+)?)" +
     "|(\\d+(?:\\.\\d+)?)\\s*%" +
-    "|(\\d[\\d,]*(?:\\.\\d+)?)(e-?\\d+)?\\s*(thousand|million|billion|trillion|k|m|b|t)?(?![.\\d])";
+    "|(\\d[\\d,]*(?:\\.\\d+)?)(e-?\\d+)?\\s*(thousand|million|billion|trillion|k|m|b|t)?\\b";
 
   function valueFromMatch(m) {
     if (m[1] != null) return parseFloat(m[1]) / parseFloat(m[2]);
@@ -141,10 +142,13 @@ window.NAPKIN.util = (function () {
           /(^|\s)(per|over)(\s|$)/i.test(gap) ||
           /(÷|(^|\s)divided by\s*)$/i.test(gap) ||
           /^\s*[/÷]\s*$/.test(gap);
+        var adds =
+          /(^|\s)plus(\s|$)/i.test(gap) ||
+          /\+\s*$/.test(gap);
         var c = seen[t.v] || 0; seen[t.v] = c + 1;
         out.push({
           value: t.v,
-          op: divides ? "/" : "x",
+          op: divides ? "/" : (adds ? "+" : "x"),
           label: cleanLabel(after) || cleanLabel(gap) || "",
           raw: t.raw,
           kind: t.kind,

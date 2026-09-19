@@ -4,8 +4,8 @@
   --ink: #2c2a24;
   --faint: #7c766a;
   --rule: #d9d1bd;
-  --pen: #2f57a6;
-  --pen-soft: #e7edf8;
+  --pen: #4a4d52;
+  --pen-soft: #eaeae6;
   --red: #b23b2e;
   --green: #4a8a4a;
   --amber: #bd8420;
@@ -225,7 +225,7 @@ body {
   background-attachment: local;
 }
 .pad-highlight mark.hl {
-  background: rgba(47, 87, 166, 0.16);
+  background: rgba(74, 77, 82, 0.16);
   box-shadow: inset 0 -2px 0 var(--pen);
   border-radius: 3px;
   color: transparent;
@@ -431,7 +431,7 @@ body {
 
 .undohint { margin: 0.5rem 0 0.3rem; font-size: 0.78rem; }
 
-.slider { width: 100%; margin: 0.8rem 0 0.4rem; }
+.slider { width: 100%; margin: 0.8rem 0 0.4rem; accent-color: var(--pen); }
 .eyeval { text-align: center; }
 
 /* ---------- buttons ---------- */
