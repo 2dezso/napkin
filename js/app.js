@@ -414,8 +414,7 @@
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
           var full = storage.recordResult(rec);
-          mount(revealScreen(q, full, { practice: false }));
-          showScoreModal(q, full, sc);
+          mount(revealScreen(q, full, { practice: false, justAnswered: true }));
         }
       }
 
@@ -878,6 +877,13 @@
       var num = after.querySelector(".actualnum");
       countUp(num, q.actual_answer);
       if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
+      // The score popup is a capstone on the reveal that already plays out
+      // here (narrative, then hero card, then the actual-answer count-up) —
+      // not a race to beat it to the punch. Only fires on a fresh answer,
+      // never when just reopening an already-answered day.
+      if (opts.justAnswered) {
+        setTimeout(function () { showScoreModal(wrap, q, res, scoring.score(res.guess, q)); }, 1300);
+      }
     }
     return wrap;
   }
@@ -912,10 +918,13 @@
     else { copyText(text, btn); }
   }
 
-  // A focused popup the instant the daily's answered — the full breakdown
-  // below still has all the detail, but the score itself deserves a moment
-  // rather than being just another line in a long scroll.
-  function showScoreModal(q, res, sc) {
+  // A focused popup once the daily's answered — the full breakdown below
+  // still has all the detail, but the score itself deserves a moment rather
+  // than being just another line in a long scroll. Appended inside the
+  // reveal screen's own container (not document.body) so navigating away
+  // to another tab tears it down along with everything else, instead of
+  // leaving it stuck floating over whatever screen comes next.
+  function showScoreModal(container, q, res, sc) {
     var streak = storage.streak();
     var shareTxt = resultShareText(q, res, sc);
     var shareBtn = el("button", { class: "btn", type: "button" }, "Share result");
@@ -935,7 +944,7 @@
     overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
     closeBtn.addEventListener("click", close);
     shareBtn.addEventListener("click", function () { shareResult(shareTxt, shareBtn); });
-    document.body.appendChild(overlay);
+    container.appendChild(overlay);
   }
 
   function buildAfter(container, q, res, opts) {
