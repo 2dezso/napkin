@@ -293,6 +293,11 @@ body {
 .ribbon { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.7rem; min-height: 1.8rem; }
 /* Nothing typed yet = nothing to read; don't hold open an empty strip. */
 .ribbon:empty { min-height: 0; margin-top: 0; }
+/* The scripted pad demo knows its content in advance, so it reserves the
+   ribbon's grown size up front instead of letting the page jump open the
+   instant the first number is recognized (and keeps it reserved for the
+   whole run, so settling in the first pill doesn't shrink it back down). */
+.demo-run .ribbon { min-height: 3.4rem; margin-top: 0.7rem; }
 .pill {
   font: inherit;
   font-family: var(--hand);

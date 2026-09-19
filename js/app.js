@@ -773,27 +773,41 @@
 
     function runPadDemo() {
       var demoText = "3 million people\n1 in 4 of them\n÷ 7 days";
-      var i = 0, done = false;
-      var timer = setInterval(function () {
-        if (i >= demoText.length) { clearInterval(timer); setTimeout(function () { stopDemo(); }, 1600); return; }
-        pad.value += demoText.charAt(i);
+      var i = 0, done = false, timer = null;
+      // Only re-run recognition (ribbon/total) once a token is actually
+      // finished — right after a space/newline, or at the very end. Doing it
+      // on every keystroke would let a still-typing shorthand letter ("3 m"
+      // typed on the way to "3 million") flash a wrong value before the word
+      // is even done.
+      function tick() {
+        if (i >= demoText.length) { timer = setTimeout(stopDemo, 2000); return; }
+        var ch = demoText.charAt(i);
+        pad.value += ch;
         i++;
-        onPad();
-      }, 90);
+        if (/\s/.test(ch) || i >= demoText.length) onPad();
+        timer = setTimeout(tick, ch === "\n" ? 620 : 130);
+      }
       function stopDemo() {
         if (done) return;
         done = true;
-        clearInterval(timer);
+        clearTimeout(timer);
         demoNote.hidden = true;
         pad.classList.remove("demo-typing");
+        napkinPanel.classList.remove("demo-run");
         // Only clear it if the user never actually touched the pad themselves.
         if (demoText.indexOf(pad.value) === 0) { pad.value = ""; onPad(); }
         storage.markPadDemoSeen();
       }
       demoNote.hidden = false;
       pad.classList.add("demo-typing");
+      // Reserves the ribbon's final height (and reveals its hint) up front,
+      // all in one go, so nothing pops the page open line by line as the
+      // scripted text types itself in.
+      napkinPanel.classList.add("demo-run");
+      ribbonHint.hidden = false;
       wrap.addEventListener("pointerdown", function () { stopDemo(); }, { once: true, capture: true });
       wrap.addEventListener("keydown", function () { stopDemo(); }, { once: true, capture: true });
+      timer = setTimeout(tick, 130);
     }
 
     // Easy mode: the framework's rows are laid out for you already — just plug in a number per line.
