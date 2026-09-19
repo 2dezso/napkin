@@ -472,13 +472,27 @@ body {
 }
 .guessnum { min-width: 2ch; display: inline-block; }
 .guessnum.pop { animation: numpop 0.45s cubic-bezier(0.2, 1.6, 0.35, 1); }
-.narrative { display: flex; flex-direction: column; gap: 0.7rem; min-height: 3rem; }
+.narrative { display: flex; flex-direction: column; gap: 0.7rem; min-height: 3rem; counter-reset: beatnum; }
 .beat {
+  position: relative;
   margin: 0;
+  padding-left: 1.6rem;
   font-size: 1.15rem;
   opacity: 0;
   transform: translateY(10px);
   animation: beatin 0.55s ease forwards;
+}
+/* A handwritten step number per line — marks where a new beat starts as
+   they land one by one, so the build-up reads as steps, not a wall of text. */
+.beat::before {
+  counter-increment: beatnum;
+  content: counter(beatnum) ".";
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  font-family: var(--hand);
+  font-size: 1.1rem;
+  color: var(--pen);
 }
 @keyframes beatin { to { opacity: 1; transform: none; } }
 .narrative.done .beat { animation: none; opacity: 1; transform: none; }
