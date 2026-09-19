@@ -7,7 +7,7 @@
   var storage = window.NAPKIN.storage;
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "challenge", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
+  var STATE = { view: "daily", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
@@ -413,8 +413,9 @@
         } else if (opts.practice) {
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
-          storage.recordResult(rec);
-          renderApp();
+          var full = storage.recordResult(rec);
+          mount(revealScreen(q, full, { practice: false }));
+          showScoreModal(q, full, sc);
         }
       }
 
@@ -832,11 +833,16 @@
       el("span", { class: "muted" }, q.question)
     ));
 
-    var guessNumEl = el("span", { class: "hand big guessnum" }, "?");
+    // Show what they actually answered right away — no coy "?" delay. The
+    // suspense is saved for the score/comparison further down, not this.
+    var guessNumEl = el("span", { class: "hand big guessnum" }, util.humanize(res.guess));
     wrap.appendChild(el("div", { class: "yourcall" },
-      el("span", { class: "muted" }, res.mode === "eyeball" ? "You eyeballed…" : "Your napkin said…"),
+      el("span", { class: "muted" }, res.mode === "eyeball" ? "You eyeballed…" : "You answered…"),
       guessNumEl
     ));
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { guessNumEl.classList.add("pop"); });
+    });
 
     var narr = el("div", { class: "narrative" });
     q.narrative.forEach(function (line, i) {
@@ -865,8 +871,6 @@
     function reveal() {
       if (skip.parentNode) skip.remove();
       after.hidden = false;
-      guessNumEl.textContent = util.humanize(res.guess);
-      guessNumEl.classList.add("pop");
       var hero = after.querySelector(".hero");
       if (hero) requestAnimationFrame(function () {
         requestAnimationFrame(function () { hero.classList.add("in"); });
@@ -878,13 +882,67 @@
     return wrap;
   }
 
+  // Close misses read better as a percentage ("14% away") than a multiplier;
+  // order-of-magnitude misses read better the other way round ("40× off").
+  // Shared by the full breakdown, the share text, and the score popup so the
+  // framing is consistent everywhere it shows up.
+  function scoreLine(sc) {
+    if (sc.inRange) return "inside the sensible range";
+    if (sc.ratio < 1.1) return "spot on";
+    if (sc.ratio <= 2) return Math.round((sc.ratio - 1) * 100) + "% away";
+    return util.roundFactor(sc.ratio) + "× off";
+  }
+
+  function resultShareText(q, res, sc) {
+    var streak = storage.streak();
+    var rowsBit = res.assisted
+      ? "👀 assisted"
+      : res.mode === "eyeball"
+        ? "eyeballed"
+        : (res.rows && res.rows.length ? res.rows.length + (res.rows.length === 1 ? " number" : " numbers") : "hand-called");
+    return [
+      "Napkin #" + res.napkinNumber,
+      scoreLine(sc) + " " + sc.band.emoji,
+      rowsBit + " · " + streak + "-day streak"
+    ].join("\n");
+  }
+
+  function shareResult(text, btn) {
+    if (navigator.share) { navigator.share({ text: text }).catch(function () {}); }
+    else { copyText(text, btn); }
+  }
+
+  // A focused popup the instant the daily's answered — the full breakdown
+  // below still has all the detail, but the score itself deserves a moment
+  // rather than being just another line in a long scroll.
+  function showScoreModal(q, res, sc) {
+    var streak = storage.streak();
+    var shareTxt = resultShareText(q, res, sc);
+    var shareBtn = el("button", { class: "btn", type: "button" }, "Share result");
+    var closeBtn = el("button", { class: "linkbtn modal-close", type: "button" }, "See the full breakdown ▾");
+    var card = el("div", { class: "demo-modal score-modal" },
+      el("div", { class: "score-modal-emoji" }, sc.band.emoji),
+      el("div", { class: "hand big" }, sc.band.label),
+      el("div", { class: "score-modal-line" }, scoreLine(sc)),
+      el("div", { class: "muted score-modal-nums" },
+        "You answered " + util.humanize(res.guess) + " · actual " + util.humanize(q.actual_answer)),
+      streak > 1 ? el("div", { class: "score-modal-streak" }, "🔥 " + streak + "-day streak") : null,
+      shareBtn,
+      closeBtn
+    );
+    var overlay = el("div", { class: "demo-overlay" }, card);
+    function close() { if (overlay.parentNode) overlay.remove(); }
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    closeBtn.addEventListener("click", close);
+    shareBtn.addEventListener("click", function () { shareResult(shareTxt, shareBtn); });
+    document.body.appendChild(overlay);
+  }
+
   function buildAfter(container, q, res, opts) {
     var sc = scoring.score(res.guess, q);
     var band = sc.band;
     var roast = scoring.quip(band, sc.ratio);
-    var ratioLine = sc.inRange ? "inside the sensible range"
-      : sc.ratio < 1.1 ? "spot on"
-      : util.roundFactor(sc.ratio) + "× off";
+    var ratioLine = scoreLine(sc);
 
     var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
     container.appendChild(el("div", { class: "hero " + band.key },
@@ -1031,26 +1089,13 @@
   }
 
   function buildShareCard(q, res) {
-    var streak = storage.streak();
     var sc = scoring.score(res.guess, q);
-    var line2 = (sc.inRange || sc.ratio < 1.1)
-      ? "spot on " + sc.band.emoji
-      : util.roundFactor(sc.ratio) + "× off " + sc.band.emoji;
-    var rowsBit = res.assisted
-      ? "👀 assisted"
-      : res.mode === "eyeball"
-        ? "eyeballed"
-        : (res.rows && res.rows.length ? res.rows.length + (res.rows.length === 1 ? " number" : " numbers") : "hand-called");
-    var text = [
-      "Napkin #" + res.napkinNumber,
-      line2,
-      rowsBit + " · " + streak + "-day streak"
-    ].join("\n");
+    var text = resultShareText(q, res, sc);
 
     var card = el("div", { class: "sharecard" });
     card.appendChild(el("pre", { class: "sharetext" }, text));
-    var btn = el("button", { class: "btn" }, "Copy result");
-    btn.addEventListener("click", function () { copyText(text, btn); });
+    var btn = el("button", { class: "btn" }, "Share result");
+    btn.addEventListener("click", function () { shareResult(text, btn); });
     card.appendChild(btn);
     return card;
   }
