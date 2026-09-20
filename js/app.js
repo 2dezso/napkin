@@ -337,46 +337,85 @@
     if (lifelineRow) helpers.appendChild(lifelineRow);
     napkinPanel.appendChild(helpers);
 
-    /* Optional help — one quiet row, with each toggle's panel underneath it. */
+    /* Optional help — one quiet row, with each toggle's panel underneath it.
+       Challenge keeps its own separate one-shot lifelines (above) exactly as
+       they were. Practice/Daily get a single escalating "Stuck?" button
+       instead of two separate links: first press gives a number (if this
+       question has any back-pocket facts), second press shows the full
+       framework — no extra browser confirm() gate, since the two presses
+       already are the commitment. */
     var padHelp = el("div", { class: "padhelp" });
+    napkinPanel.appendChild(padHelp);
 
-    if (q.reference_anchors && q.reference_anchors.length) {
-      var chips = el("div", { class: "anchorchips" });
-      chips.hidden = true;
-      q.reference_anchors.forEach(function (a) {
-        var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
-        chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
-        chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
-        chips.appendChild(chip);
-      });
-      var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "Need another number?");
-      hintBtn.addEventListener("click", function () {
-        chips.hidden = !chips.hidden;
-        hintBtn.textContent = chips.hidden ? "Need another number?" : "Hide the hints";
-      });
-      padHelp.appendChild(hintBtn);
-      napkinPanel.appendChild(padHelp);
-      napkinPanel.appendChild(chips);
+    if (opts.challenge) {
+      if (q.reference_anchors && q.reference_anchors.length) {
+        var chips = el("div", { class: "anchorchips" });
+        chips.hidden = true;
+        q.reference_anchors.forEach(function (a) {
+          var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
+          chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
+          chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
+          chips.appendChild(chip);
+        });
+        var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "Need another number?");
+        hintBtn.addEventListener("click", function () {
+          chips.hidden = !chips.hidden;
+          hintBtn.textContent = chips.hidden ? "Need another number?" : "Hide the hints";
+        });
+        padHelp.appendChild(hintBtn);
+        napkinPanel.appendChild(chips);
+      }
+      /* peek — not offered in Challenge's easy mode, where the framework's already laid out */
+      if (!isEasyChallenge) {
+        var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "Show me the framework");
+        var peekNote = el("p", { class: "muted peeknote" }, "Framework peeked — this one counts as assisted.");
+        peekNote.hidden = true;
+        peekBtn.addEventListener("click", function () {
+          if (!window.confirm("Show the framework? You'll see the variable names (not the numbers), and this result gets an assisted mark.")) return;
+          assisted = true;
+          pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label; }).join("\n") + "\n";
+          onPad();
+          pad.focus();
+          peekBtn.remove();
+          peekNote.hidden = false;
+        });
+        padHelp.appendChild(peekBtn);
+        napkinPanel.appendChild(peekNote);
+      }
     } else {
-      napkinPanel.appendChild(padHelp);
-    }
-
-    /* peek — not offered in Challenge's easy mode, where the framework's already laid out */
-    if (!isEasyChallenge) {
-      var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "Show me the framework");
-      var peekNote = el("p", { class: "muted peeknote" }, "Framework peeked — this one counts as assisted.");
-      peekNote.hidden = true;
-      peekBtn.addEventListener("click", function () {
-        if (!window.confirm("Show the framework? You'll see the variable names (not the numbers), and this result gets an assisted mark.")) return;
+      var hasAnchors = !!(q.reference_anchors && q.reference_anchors.length);
+      var stuckChips = null;
+      if (hasAnchors) {
+        stuckChips = el("div", { class: "anchorchips" });
+        stuckChips.hidden = true;
+        q.reference_anchors.forEach(function (a) {
+          var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
+          chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
+          chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
+          stuckChips.appendChild(chip);
+        });
+      }
+      var stuckPeekNote = el("p", { class: "muted peeknote" }, "Framework peeked — this one counts as assisted.");
+      stuckPeekNote.hidden = true;
+      var stuckBtn = el("button", { class: "linkbtn stuckbtn", type: "button" }, "Stuck?");
+      var gaveNumber = false;
+      stuckBtn.addEventListener("click", function () {
+        if (hasAnchors && !gaveNumber) {
+          gaveNumber = true;
+          stuckChips.hidden = false;
+          stuckBtn.textContent = "Still stuck?";
+          return;
+        }
         assisted = true;
         pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label; }).join("\n") + "\n";
         onPad();
         pad.focus();
-        peekBtn.remove();
-        peekNote.hidden = false;
+        stuckBtn.remove();
+        stuckPeekNote.hidden = false;
       });
-      padHelp.appendChild(peekBtn);
-      napkinPanel.appendChild(peekNote);
+      padHelp.appendChild(stuckBtn);
+      if (stuckChips) napkinPanel.appendChild(stuckChips);
+      napkinPanel.appendChild(stuckPeekNote);
     }
 
     /* eyeball escape hatch */

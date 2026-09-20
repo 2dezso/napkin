@@ -190,8 +190,23 @@ body {
 /* Tilted a touch and given an uneven corner radius so the pad reads as a
    napkin someone dropped on the desk, not a form field — the rotation
    lives on the wrapper so pad + its highlight mirror turn as one rigid
-   unit and never drift out of alignment with each other. */
+   unit and never drift out of alignment with each other. A folded corner
+   (padwrap::after, below) stands in for the ruled-notebook look this used
+   to have — no visible lines, no red margin, just a dog-eared corner. */
 .padwrap { position: relative; transform: rotate(-2deg); }
+.padwrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 26px 26px 0;
+  border-color: transparent var(--rule) transparent transparent;
+  filter: drop-shadow(-1.5px 1.5px 1px rgba(44, 42, 36, 0.3));
+  pointer-events: none;
+}
 .pad {
   display: block;
   width: 100%;
@@ -203,7 +218,7 @@ body {
   color: var(--ink);
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.35rem 0.7rem 0.7rem 2.6rem;
+  padding: 0.35rem 0.7rem 0.7rem 0.9rem;
   resize: vertical;
   position: relative;
 }
@@ -211,8 +226,8 @@ body {
 .pad::placeholder { color: var(--rule); }
 
 /* Sits behind the (now-transparent) pad, mirroring its text box exactly so
-   <mark> highlights land right under what you typed. Also carries the
-   ruled-paper background that used to live on .pad itself. */
+   <mark> highlights land right under what you typed. Plain paper now — no
+   ruled lines, no red margin, just the napkin's own cream colour. */
 .pad-highlight {
   position: absolute;
   inset: 0;
@@ -222,20 +237,13 @@ body {
   border-radius: var(--wobble-sm);
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.35rem 0.7rem 0.7rem 2.6rem;
+  padding: 0.35rem 0.7rem 0.7rem 0.9rem;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: hidden;
   color: transparent;
   pointer-events: none;
   background-color: var(--card);
-  background-image:
-    linear-gradient(to right,
-      transparent 2rem, rgba(178, 59, 46, 0.35) 2rem,
-      rgba(178, 59, 46, 0.35) calc(2rem + 1.5px), transparent calc(2rem + 1.5px)),
-    repeating-linear-gradient(var(--card) 0, var(--card) calc(2rem - 1px),
-      rgba(47, 87, 166, 0.16) calc(2rem - 1px), rgba(47, 87, 166, 0.16) 2rem);
-  background-attachment: local;
 }
 .pad-highlight mark.hl {
   background: rgba(74, 77, 82, 0.16);
