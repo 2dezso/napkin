@@ -534,38 +534,17 @@
       return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // The running total as at the end of each line, so the margin can show
-    // the number building up the way you'd actually jot it down. Uses the
-    // same operators and the same skip-the-muted rule as computeTotal, so
-    // the gutter and the total underneath can never disagree.
-    function runningTotalsByLine() {
-      var acc = null, byLine = {}, linesInPlay = 0;
-      activeFactors().forEach(function (f) {
-        var op = flipped[f.sig] || f.op;
-        if (acc == null) acc = f.value;
-        else if (op === "/") acc = acc / f.value;
-        else if (op === "+") acc = acc + f.value;
-        else acc = acc * f.value;
-        if (!(f.line in byLine)) linesInPlay++;
-        byLine[f.line] = acc;
-      });
-      // With only one line carrying numbers, the gutter would just repeat
-      // the total sitting immediately below the pad.
-      return linesInPlay > 1 ? byLine : {};
-    }
-
     // Mirrors pad.value into the layer sitting behind the (transparent) pad,
     // wrapping each recognized number in a <mark> so it's highlighted right
     // where you typed it — not just reflected in the ribbon below. Trims any
     // trailing space the match swallowed, and holds off marking the token
     // you're still actively typing until a space/newline finishes it.
-    // Each line becomes its own box so the running total has something to
-    // hang off; a soft-wrapped line still wraps inside its box exactly as it
-    // does in the textarea, which is what keeps the two layers aligned.
+    // Each line becomes its own box; a soft-wrapped line still wraps inside
+    // its box exactly as it does in the textarea, which is what keeps the
+    // two layers aligned.
     function renderPadHighlight() {
       var text = pad.value;
       var fs = scan();
-      var totals = runningTotalsByLine();
 
       var html = "", pos = 0;
       fs.forEach(function (f) {
@@ -586,11 +565,8 @@
       // escaped plain-text runs, never inside a tag we just emitted.
       var lines = html.split("\n"), out = "";
       for (var i = 0; i < lines.length; i++) {
-        var total = totals[i] != null
-          ? '<span class="linetotal">' + escapeHtml(util.humanize(totals[i])) + "</span>"
-          : "";
         // An empty line still needs to take up a line's height.
-        out += '<div class="padline">' + (lines[i] || "​") + total + "</div>";
+        out += '<div class="padline">' + (lines[i] || "​") + "</div>";
       }
 
       // Once they've written one line but not yet gone to a second, put the

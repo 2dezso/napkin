@@ -185,8 +185,7 @@ body {
   color: var(--ink);
   font-size: 16px;
   line-height: 2rem;
-  /* The wide right padding is the margin the running totals live in. */
-  padding: 0.6rem 4.2rem 0.9rem 1rem;
+  padding: 0.6rem 1rem 0.9rem;
   resize: vertical;
   position: relative;
   z-index: 1;
@@ -210,7 +209,7 @@ body {
   border-radius: 10px;
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.6rem 4.2rem 0.9rem 1rem;
+  padding: 0.6rem 1rem 0.9rem;
   overflow: hidden;
   color: transparent;
   pointer-events: none;
@@ -223,24 +222,8 @@ body {
   background-attachment: local;
   box-shadow: 0 1px 2px rgba(44, 42, 36, 0.04), 0 6px 16px -6px rgba(44, 42, 36, 0.16);
 }
-/* One box per line: wraps exactly as the textarea does, and gives the
-   running total something to hang off. */
+/* One box per line: wraps exactly as the textarea does. */
 .padline { position: relative; white-space: pre-wrap; word-wrap: break-word; }
-
-/* The number as at the end of this line, jotted in the margin. */
-.linetotal {
-  position: absolute;
-  top: 0;
-  left: 100%;
-  width: 3.9rem;
-  padding-left: 0.5rem;
-  text-align: right;
-  font-size: 0.85rem;
-  line-height: 2rem;
-  color: var(--faint);
-  white-space: nowrap;
-  overflow: hidden;
-}
 
 /* Sits on the line you should type next, until you go there yourself. */
 .padline-ghost { color: var(--rule); }
@@ -817,10 +800,6 @@ body {
   .hero-emoji { font-size: 2.8rem; }
   .hero-score { font-size: 1.9rem; }
   .actualnum { font-size: 1.9rem; }
-
-  /* A narrower margin for the running totals — a phone hasn't the width. */
-  .pad, .pad-highlight { padding-right: 3.3rem; }
-  .linetotal { width: 3.1rem; font-size: 0.78rem; padding-left: 0.35rem; }
 
   /* Four tabs led by "Challenge" don't fit a phone at full size. */
   .topbar { padding: 0.7rem 0.75rem; gap: 0.4rem; }
