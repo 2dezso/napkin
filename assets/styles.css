@@ -538,9 +538,24 @@ body {
   border-radius: 10px;
   padding: 1rem;
 }
+.actualnum-wrap { position: relative; display: inline-block; }
 .actualnum { display: block; font-size: 2.6rem; margin: 0.2rem 0 0; }
 .actualnum.pop { animation: numpop 0.45s cubic-bezier(0.2, 1.6, 0.35, 1); }
 @keyframes numpop { 0% { transform: scale(1); } 45% { transform: scale(1.16); } 100% { transform: scale(1); } }
+
+/* A hand-drawn circle scribbles itself around the actual answer once it's
+   landed — the "circle the answer on the napkin" moment. */
+.answer-circle { position: absolute; inset: -0.3em -0.5em -0.25em -0.5em; overflow: visible; pointer-events: none; }
+.answer-circle path {
+  fill: none;
+  stroke: var(--pen);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+}
+.actualnum-wrap.circled .answer-circle path { animation: circledraw 0.7s ease forwards; }
+@keyframes circledraw { to { stroke-dashoffset: 0; } }
 .source { margin: 0; font-style: italic; }
 
 .gbar { padding-top: 0.2rem; }

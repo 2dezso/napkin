@@ -101,6 +101,16 @@
     for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
     return n;
   }
+  function elNS(tag, attrs) {
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      n.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
+    return n;
+  }
   function append(n, kid) {
     if (kid == null || kid === false) return;
     if (Array.isArray(kid)) { kid.forEach(function (k) { append(n, k); }); return; }
@@ -877,6 +887,8 @@
       var num = after.querySelector(".actualnum");
       countUp(num, q.actual_answer);
       if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
+      var circleWrap = after.querySelector(".actualnum-wrap");
+      if (circleWrap) setTimeout(function () { circleWrap.classList.add("circled"); }, 1050);
       // The score popup is a capstone on the reveal that already plays out
       // here (narrative, then hero card, then the actual-answer count-up) —
       // not a race to beat it to the punch. Only fires on a fresh answer,
@@ -963,9 +975,13 @@
     ));
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
+    var actualnumEl = el("div", { class: "hand actualnum" }, "0");
+    var circleSvg = elNS("svg", { class: "answer-circle", viewBox: "0 0 200 100", preserveAspectRatio: "none" },
+      elNS("path", { d: "M14,55 C10,25 45,6 100,5 C158,4 194,22 192,52 C190,82 155,95 98,96 C46,97 14,85 16,58 C17,50 20,48 24,50" })
+    );
     container.appendChild(el("div", { class: "answerbox" },
       el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
-      el("div", { class: "hand actualnum" }, "0")
+      el("div", { class: "actualnum-wrap" }, circleSvg, actualnumEl)
     ));
 
     container.appendChild(guessBar(res.guess, q.actual_answer));
