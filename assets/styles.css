@@ -11,6 +11,11 @@
   --amber: #bd8420;
   --hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* A gentle asymmetric corner radius that reads as hand-drawn rather than
+     machine-rounded — used on rectangular cards/panels, not pill buttons
+     (which just look broken if you unevenly round a capsule). */
+  --wobble-sm: 7px 12px 9px 13px / 12px 8px 14px 9px;
+  --wobble-lg: 12px 18px 13px 19px / 17px 12px 20px 13px;
 }
 
 * { box-sizing: border-box; }
@@ -21,8 +26,12 @@ body {
   font-family: var(--sans);
   color: var(--ink);
   background-color: var(--paper);
-  background-image: radial-gradient(rgba(44, 42, 36, 0.05) 1px, transparent 1px);
-  background-size: 22px 22px;
+  /* Dot grid over a subtle fibre-grain noise, so the page reads as paper
+     rather than a flat colour. */
+  background-image:
+    radial-gradient(rgba(44, 42, 36, 0.05) 1px, transparent 1px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-size: 22px 22px, 140px 140px;
   line-height: 1.5;
 }
 
@@ -178,14 +187,18 @@ body {
   border-top: 1px solid var(--rule);
 }
 
-.padwrap { position: relative; }
+/* Tilted a touch and given an uneven corner radius so the pad reads as a
+   napkin someone dropped on the desk, not a form field — the rotation
+   lives on the wrapper so pad + its highlight mirror turn as one rigid
+   unit and never drift out of alignment with each other. */
+.padwrap { position: relative; transform: rotate(-2deg); }
 .pad {
   display: block;
   width: 100%;
   box-sizing: border-box;
   min-height: 9.5rem;
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: var(--wobble-sm);
   background: transparent;
   color: var(--ink);
   font-size: 16px;
@@ -206,7 +219,7 @@ body {
   margin: 0;
   box-sizing: border-box;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--wobble-sm);
   font-size: 16px;
   line-height: 2rem;
   padding: 0.35rem 0.7rem 0.7rem 2.6rem;
@@ -252,11 +265,12 @@ body {
 .demo-modal {
   background: var(--card);
   border: 2px solid var(--ink);
-  border-radius: 14px;
+  border-radius: var(--wobble-lg);
   padding: 1.5rem 1.6rem;
   max-width: 22rem;
   text-align: center;
   box-shadow: 4px 4px 0 rgba(44, 42, 36, 0.25);
+  transform: rotate(-0.6deg);
 }
 .demo-modal .big { font-size: 1.6rem; margin-bottom: 0.5rem; }
 .demo-modal p { margin: 0 0 1.1rem; }
@@ -453,7 +467,7 @@ body {
   background: var(--ink);
   color: var(--paper);
   padding: 0.55rem 1.2rem;
-  border-radius: 10px;
+  border-radius: var(--wobble-sm);
   cursor: pointer;
   box-shadow: 3px 3px 0 rgba(44, 42, 36, 0.25);
 }
@@ -503,7 +517,7 @@ body {
 
 .hero {
   text-align: center;
-  border-radius: 14px;
+  border-radius: var(--wobble-lg);
   padding: 1.4rem 1rem 1.5rem;
   border: 2px solid var(--faint);
   background: var(--card);
@@ -511,7 +525,7 @@ body {
   transform: scale(0.9);
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 1.3, 0.35, 1);
 }
-.hero.in { opacity: 1; transform: none; }
+.hero.in { opacity: 1; transform: rotate(0.5deg); }
 .hero.nailed { border-color: var(--green); background: #eaf3ea; }
 .hero.solid  { border-color: var(--pen);   background: var(--pen-soft); }
 .hero.close  { border-color: var(--amber); background: #f7efdc; }
@@ -535,7 +549,7 @@ body {
   text-align: center;
   background: var(--card);
   border: 1px dashed var(--rule);
-  border-radius: 10px;
+  border-radius: var(--wobble-sm);
   padding: 1rem;
 }
 .actualnum-wrap { position: relative; display: inline-block; }
@@ -640,7 +654,7 @@ body {
 .sharecard {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 12px;
+  border-radius: var(--wobble-sm);
   padding: 1rem;
   text-align: center;
   transform: rotate(0.4deg);
@@ -662,7 +676,7 @@ body {
   margin: 1.2rem 0;
   padding: 0.9rem 1rem;
   border: 1px solid var(--rule);
-  border-radius: 12px;
+  border-radius: var(--wobble-sm);
   background: var(--card);
 }
 .rulebox-title {
@@ -753,7 +767,7 @@ body {
   gap: 0.2rem 0.7rem;
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: var(--wobble-sm);
   padding: 0.7rem 0.9rem;
   cursor: pointer;
 }
@@ -772,7 +786,7 @@ body {
 .stat {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: var(--wobble-sm);
   padding: 0.9rem;
   text-align: center;
 }
