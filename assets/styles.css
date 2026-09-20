@@ -12,11 +12,10 @@
   --amber: #bd8420;
   --hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* A gentle asymmetric corner radius that reads as hand-drawn rather than
-     machine-rounded — used on rectangular cards/panels, not pill buttons
-     (which just look broken if you unevenly round a capsule). */
-  --wobble-sm: 7px 12px 9px 13px / 12px 8px 14px 9px;
-  --wobble-lg: 12px 18px 13px 19px / 17px 12px 20px 13px;
+  /* Card/panel corners. These were asymmetric "hand-drawn" radii; stacked
+     across every surface they read as untidy rather than handmade. */
+  --radius-sm: 10px;
+  --radius-lg: 14px;
 }
 
 * { box-sizing: border-box; }
@@ -186,7 +185,8 @@ body {
   color: var(--ink);
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.6rem 1rem 0.9rem;
+  /* The wide right padding is the margin the running totals live in. */
+  padding: 0.6rem 4.2rem 0.9rem 1rem;
   resize: vertical;
   position: relative;
   z-index: 1;
@@ -210,9 +210,7 @@ body {
   border-radius: 10px;
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.6rem 1rem 0.9rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  padding: 0.6rem 4.2rem 0.9rem 1rem;
   overflow: hidden;
   color: transparent;
   pointer-events: none;
@@ -225,6 +223,28 @@ body {
   background-attachment: local;
   box-shadow: 0 1px 2px rgba(44, 42, 36, 0.04), 0 6px 16px -6px rgba(44, 42, 36, 0.16);
 }
+/* One box per line: wraps exactly as the textarea does, and gives the
+   running total something to hang off. */
+.padline { position: relative; white-space: pre-wrap; word-wrap: break-word; }
+
+/* The number as at the end of this line, jotted in the margin. */
+.linetotal {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: 3.9rem;
+  padding-left: 0.5rem;
+  text-align: right;
+  font-size: 0.85rem;
+  line-height: 2rem;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Sits on the line you should type next, until you go there yourself. */
+.padline-ghost { color: var(--rule); }
+
 /* A straight pencil underline — reads as "underlined this while working it
    out" rather than a text-selection highlight. */
 .pad-highlight mark.hl {
@@ -237,6 +257,8 @@ body {
   background: transparent;
   box-shadow: inset 0 -2px 0 var(--rule);
 }
+/* Hovering a pill lights up the number it came from. */
+.pad-highlight mark.hl.hl-linked { background: rgba(74, 77, 82, 0.18); }
 
 .demo-note { margin: 0 0 0.5rem; font-style: italic; }
 .pad.demo-typing { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
@@ -255,12 +277,11 @@ body {
 .demo-modal {
   background: var(--card);
   border: 2px solid var(--ink);
-  border-radius: var(--wobble-lg);
+  border-radius: var(--radius-lg);
   padding: 1.5rem 1.6rem;
   max-width: 22rem;
   text-align: center;
   box-shadow: 4px 4px 0 rgba(44, 42, 36, 0.25);
-  transform: rotate(-0.6deg);
 }
 .demo-modal .big { font-size: 1.6rem; margin-bottom: 0.5rem; }
 .demo-modal p { margin: 0 0 1.1rem; }
@@ -270,11 +291,6 @@ body {
 .info-modal { text-align: left; max-height: 80vh; overflow-y: auto; }
 .info-modal .big { text-align: center; }
 .modal-close { display: block; margin: 1rem auto 0; }
-
-.score-modal-emoji { font-size: 2.6rem; line-height: 1; margin-bottom: 0.3rem; }
-.score-modal-line { font-family: var(--hand); font-size: 1.3rem; color: var(--pen); margin-bottom: 0.7rem; }
-.score-modal-nums { margin-bottom: 0.5rem; }
-.score-modal-streak { margin-bottom: 1rem; }
 
 .stamp {
   position: absolute;
@@ -457,7 +473,7 @@ body {
   background: var(--ink);
   color: var(--paper);
   padding: 0.55rem 1.2rem;
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   box-shadow: 3px 3px 0 rgba(44, 42, 36, 0.25);
 }
@@ -507,7 +523,7 @@ body {
 
 .hero {
   text-align: center;
-  border-radius: var(--wobble-lg);
+  border-radius: var(--radius-lg);
   padding: 1.4rem 1rem 1.5rem;
   border: 2px solid var(--faint);
   background: var(--card);
@@ -515,7 +531,7 @@ body {
   transform: scale(0.9);
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 1.3, 0.35, 1);
 }
-.hero.in { opacity: 1; transform: rotate(0.5deg); }
+.hero.in { opacity: 1; transform: none; }
 .hero.nailed { border-color: var(--green); background: #eaf3ea; }
 .hero.solid  { border-color: var(--pen);   background: var(--pen-soft); }
 .hero.close  { border-color: var(--amber); background: #f7efdc; }
@@ -539,7 +555,7 @@ body {
   text-align: center;
   background: var(--card);
   border: 1px dashed var(--rule);
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   padding: 1rem;
 }
 .actualnum-wrap { position: relative; display: inline-block; }
@@ -644,10 +660,9 @@ body {
 .sharecard {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   padding: 1rem;
   text-align: center;
-  transform: rotate(0.4deg);
 }
 .sharetext {
   font-family: var(--hand);
@@ -666,7 +681,7 @@ body {
   margin: 1.2rem 0;
   padding: 0.9rem 1rem;
   border: 1px solid var(--rule);
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   background: var(--card);
 }
 .rulebox-title {
@@ -757,7 +772,7 @@ body {
   gap: 0.2rem 0.7rem;
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   padding: 0.7rem 0.9rem;
   cursor: pointer;
 }
@@ -776,7 +791,7 @@ body {
 .stat {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: var(--wobble-sm);
+  border-radius: var(--radius-sm);
   padding: 0.9rem;
   text-align: center;
 }
@@ -802,6 +817,10 @@ body {
   .hero-emoji { font-size: 2.8rem; }
   .hero-score { font-size: 1.9rem; }
   .actualnum { font-size: 1.9rem; }
+
+  /* A narrower margin for the running totals — a phone hasn't the width. */
+  .pad, .pad-highlight { padding-right: 3.3rem; }
+  .linetotal { width: 3.1rem; font-size: 0.78rem; padding-left: 0.35rem; }
 
   /* Four tabs led by "Challenge" don't fit a phone at full size. */
   .topbar { padding: 0.7rem 0.75rem; gap: 0.4rem; }

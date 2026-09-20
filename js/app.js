@@ -12,8 +12,7 @@
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
   var PAD_HINT =
-    "Write out your thinking — numbers get picked up.\n\n" +
-    "For example:\n" +
+    "One thought per line — numbers get picked up as you write.\n\n" +
     "3 million people\n" +
     "1 in 4 of them\n" +
     "÷ 7 days";
@@ -248,6 +247,17 @@
     pad.addEventListener("keydown", function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); doLock(); }
     });
+    // Double-click a number to cycle it (mute / flip / add) without going
+    // down to its pill and back. Single click still just places the caret,
+    // so ordinary editing is untouched.
+    pad.addEventListener("dblclick", function (e) {
+      var pos = pad.selectionStart;
+      var hit = scan().filter(function (f) { return pos >= f.start && pos <= f.end; })[0];
+      if (!hit) return;
+      e.preventDefault();
+      pad.setSelectionRange(pos, pos);
+      cycleFactor(hit);
+    });
     pad.addEventListener("scroll", function () {
       padHighlight.scrollTop = pad.scrollTop;
       padHighlight.scrollLeft = pad.scrollLeft;
@@ -464,7 +474,7 @@
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
           var full = storage.recordResult(rec);
-          mount(revealScreen(q, full, { practice: false, justAnswered: true }));
+          mount(revealScreen(q, full, { practice: false }));
         }
       }
 
@@ -523,14 +533,40 @@
     function escapeHtml(s) {
       return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
+
+    // The running total as at the end of each line, so the margin can show
+    // the number building up the way you'd actually jot it down. Uses the
+    // same operators and the same skip-the-muted rule as computeTotal, so
+    // the gutter and the total underneath can never disagree.
+    function runningTotalsByLine() {
+      var acc = null, byLine = {}, linesInPlay = 0;
+      activeFactors().forEach(function (f) {
+        var op = flipped[f.sig] || f.op;
+        if (acc == null) acc = f.value;
+        else if (op === "/") acc = acc / f.value;
+        else if (op === "+") acc = acc + f.value;
+        else acc = acc * f.value;
+        if (!(f.line in byLine)) linesInPlay++;
+        byLine[f.line] = acc;
+      });
+      // With only one line carrying numbers, the gutter would just repeat
+      // the total sitting immediately below the pad.
+      return linesInPlay > 1 ? byLine : {};
+    }
+
     // Mirrors pad.value into the layer sitting behind the (transparent) pad,
     // wrapping each recognized number in a <mark> so it's highlighted right
     // where you typed it — not just reflected in the ribbon below. Trims any
     // trailing space the match swallowed, and holds off marking the token
     // you're still actively typing until a space/newline finishes it.
+    // Each line becomes its own box so the running total has something to
+    // hang off; a soft-wrapped line still wraps inside its box exactly as it
+    // does in the textarea, which is what keeps the two layers aligned.
     function renderPadHighlight() {
       var text = pad.value;
       var fs = scan();
+      var totals = runningTotalsByLine();
+
       var html = "", pos = 0;
       fs.forEach(function (f) {
         if (f.start < pos) return;
@@ -539,14 +575,58 @@
         var finished = end < text.length && /[ \n\t]/.test(text.charAt(end));
         if (!finished) return;
         html += escapeHtml(text.slice(pos, f.start));
-        html += '<mark class="hl' + (muted[f.sig] ? " hl-muted" : "") + '">' +
+        html += '<mark class="hl' + (muted[f.sig] ? " hl-muted" : "") +
+          '" data-sig="' + escapeHtml(f.sig) + '">' +
           escapeHtml(text.slice(f.start, end)) + "</mark>";
         pos = end;
       });
       html += escapeHtml(text.slice(pos));
-      // pre-wrap collapses a bare trailing newline's blank line; a trailing
-      // zero-width space keeps it the same height as the real textarea.
-      padHighlight.innerHTML = html + (text.slice(-1) === "\n" ? "​" : "");
+
+      // Safe to split on newlines now: they only ever survive inside the
+      // escaped plain-text runs, never inside a tag we just emitted.
+      var lines = html.split("\n"), out = "";
+      for (var i = 0; i < lines.length; i++) {
+        var total = totals[i] != null
+          ? '<span class="linetotal">' + escapeHtml(util.humanize(totals[i])) + "</span>"
+          : "";
+        // An empty line still needs to take up a line's height.
+        out += '<div class="padline">' + (lines[i] || "​") + total + "</div>";
+      }
+
+      // Once they've written one line but not yet gone to a second, put the
+      // nudge on the line they should type next — inside the sheet, so it
+      // costs no layout and disappears the moment they press Enter.
+      if (text.trim() !== "" && text.indexOf("\n") === -1) {
+        out += '<div class="padline padline-ghost">↵ next step on a new line</div>';
+      }
+      padHighlight.innerHTML = out;
+    }
+
+    // Mute → the other of × / ÷ → forced + → back to the detected operator.
+    // Shared by the ribbon pills and by double-clicking the number itself.
+    function cycleFactor(f) {
+      if (!muted[f.sig] && !flipped[f.sig]) {
+        muted[f.sig] = true;
+      } else if (muted[f.sig]) {
+        delete muted[f.sig];
+        flipped[f.sig] = f.op === "/" ? "x" : "/";
+      } else if (flipped[f.sig] === "x" || flipped[f.sig] === "/") {
+        flipped[f.sig] = "+";
+      } else {
+        delete flipped[f.sig];
+      }
+      renderRibbon();
+      refreshTotal();
+      renderPadHighlight();
+    }
+
+    // Lights up the number in the pad that a given pill belongs to, so the
+    // link between what you wrote and what we read is visible.
+    function linkPadMark(sig) {
+      var marks = padHighlight.querySelectorAll("mark.hl");
+      for (var i = 0; i < marks.length; i++) {
+        marks[i].classList.toggle("hl-linked", sig != null && marks[i].getAttribute("data-sig") === sig);
+      }
     }
 
     // Generic dismissable popup: a titled card over a dark backdrop, closed by
@@ -607,22 +687,9 @@
           el("span", { class: "pill-op" }, (idx === 0 && !isFlip && !isMuted) ? "" : (op === "/" ? "÷" : op === "+" ? "+" : "×")),
           el("span", {}, util.humanize(f.value))
         );
-        pill.addEventListener("click", function () {
-          // Cycle: detected op -> muted -> the other of ×/÷ -> forced + -> back to detected.
-          if (!muted[f.sig] && !flipped[f.sig]) {
-            muted[f.sig] = true;
-          } else if (muted[f.sig]) {
-            delete muted[f.sig];
-            flipped[f.sig] = f.op === "/" ? "x" : "/";
-          } else if (flipped[f.sig] === "x" || flipped[f.sig] === "/") {
-            flipped[f.sig] = "+";
-          } else {
-            delete flipped[f.sig];
-          }
-          renderRibbon();
-          refreshTotal();
-          renderPadHighlight();
-        });
+        pill.addEventListener("click", function () { cycleFactor(f); });
+        pill.addEventListener("mouseenter", function () { linkPadMark(f.sig); });
+        pill.addEventListener("mouseleave", function () { linkPadMark(null); });
         ribbon.appendChild(pill);
       });
       var t = computeTotal();
@@ -871,13 +938,6 @@
       if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
       var circleWrap = after.querySelector(".actualnum-wrap");
       if (circleWrap) setTimeout(function () { circleWrap.classList.add("circled"); }, 1050);
-      // The score popup is a capstone on the reveal that already plays out
-      // here (narrative, then hero card, then the actual-answer count-up) —
-      // not a race to beat it to the punch. Only fires on a fresh answer,
-      // never when just reopening an already-answered day.
-      if (opts.justAnswered) {
-        setTimeout(function () { showScoreModal(wrap, q, res, scoring.score(res.guess, q)); }, 1300);
-      }
     }
     return wrap;
   }
@@ -910,37 +970,6 @@
   function shareResult(text, btn) {
     if (navigator.share) { navigator.share({ text: text }).catch(function () {}); }
     else { copyText(text, btn); }
-  }
-
-  // A focused popup once the daily's answered — the full breakdown below
-  // still has all the detail, but the score itself deserves a moment rather
-  // than being just another line in a long scroll. Appended inside the
-  // reveal screen's own container (not document.body) so navigating away
-  // to another tab tears it down along with everything else, instead of
-  // leaving it stuck floating over whatever screen comes next.
-  function showScoreModal(container, q, res, sc) {
-    var streak = storage.streak();
-    var shareTxt = resultShareText(q, res, sc);
-    var shareBtn = el("button", { class: "btn", type: "button" }, "Share result");
-    var closeBtn = el("button", { class: "linkbtn modal-close", type: "button" }, "See the full breakdown ▾");
-    var emojiEl = el("div", { class: "score-modal-emoji" }, sc.band.emoji);
-    var card = el("div", { class: "demo-modal score-modal" },
-      circleWrap(emojiEl),
-      el("div", { class: "hand big" }, sc.band.label),
-      el("div", { class: "score-modal-line" }, scoreLine(sc)),
-      el("div", { class: "muted score-modal-nums" },
-        "You answered " + util.humanize(res.guess) + " · actual " + util.humanize(q.actual_answer)),
-      streak > 1 ? el("div", { class: "score-modal-streak" }, "🔥 " + streak + "-day streak") : null,
-      shareBtn,
-      closeBtn
-    );
-    var overlay = el("div", { class: "demo-overlay" }, card);
-    function close() { if (overlay.parentNode) overlay.remove(); }
-    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
-    closeBtn.addEventListener("click", close);
-    shareBtn.addEventListener("click", function () { shareResult(shareTxt, shareBtn); });
-    container.appendChild(overlay);
-    setTimeout(function () { emojiEl.parentNode.classList.add("circled"); }, 350);
   }
 
   function buildAfter(container, q, res, opts) {
