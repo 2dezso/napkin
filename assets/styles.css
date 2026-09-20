@@ -4,6 +4,7 @@
   --ink: #2c2a24;
   --faint: #7c766a;
   --rule: #d9d1bd;
+  --edge: #e8e1cf;   /* softer than --rule, for the pad's own edge */
   --pen: #4a4d52;
   --pen-soft: #eaeae6;
   --red: #b23b2e;
@@ -132,7 +133,6 @@ body {
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 2px 3px 0 rgba(44, 42, 36, 0.06);
-  transform: rotate(-0.25deg);
   margin-bottom: 1rem;
 }
 
@@ -170,61 +170,60 @@ body {
   border-top: 1px solid var(--rule);
 }
 
-/* Tilted a touch and clipped into a gentle trapezoid — narrower across the
-   top than the bottom, like a napkin unfolding open — so the pad reads as
-   an actual napkin rather than a form field. The rotation lives on the
-   wrapper so pad + its highlight mirror turn as one rigid unit and never
-   drift out of alignment with each other; the same clip-path shape is
-   applied to both for the same reason. */
-.padwrap { position: relative; transform: rotate(-2deg); }
+/* A clean sheet that sits above the card on a real shadow, rather than a
+   rectangle distorted into looking handmade. No tilt, no clipping: depth
+   and the writing lines do the work. Padding here MUST stay identical to
+   .pad-highlight's, since that layer mirrors this one pixel for pixel. */
+.padwrap { position: relative; }
 .pad {
   display: block;
   width: 100%;
   box-sizing: border-box;
   min-height: 9.5rem;
-  border: 1px solid var(--rule);
-  clip-path: polygon(5% 0%, 95% 0%, 100% 8%, 100% 100%, 0% 100%, 0% 8%);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
   background: transparent;
   color: var(--ink);
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.35rem 0.7rem 0.7rem 0.9rem;
+  padding: 0.6rem 1rem 0.9rem;
   resize: vertical;
   position: relative;
+  z-index: 1;
 }
 .pad:focus { outline: 0; border-color: var(--pen); }
 .pad::placeholder { color: var(--rule); }
 
 /* Sits behind the (now-transparent) pad, mirroring its text box exactly so
-   <mark> highlights land right under what you typed. Plain paper now — no
-   ruled lines, no red margin, just the napkin's own cream colour. */
+   <mark> highlights land right under what you typed — and carrying the
+   paper itself: the sheet's fill, its shadow, and the writing lines.
+   Warm grey at this weight guides the eye without the old blue-and-red
+   exercise-book shout. `local` keeps the lines pinned to the text when the
+   pad scrolls; the 0.6rem offset is the pad's own top padding, so text
+   sits on a line rather than between two. */
 .pad-highlight {
   position: absolute;
   inset: 0;
   margin: 0;
   box-sizing: border-box;
-  border: 1px solid transparent;
-  clip-path: polygon(5% 0%, 95% 0%, 100% 8%, 100% 100%, 0% 100%, 0% 8%);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
   font-size: 16px;
   line-height: 2rem;
-  padding: 0.35rem 0.7rem 0.7rem 0.9rem;
+  padding: 0.6rem 1rem 0.9rem;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: hidden;
   color: transparent;
   pointer-events: none;
   background-color: var(--card);
-  /* Two faint fold creases (shadow + highlight pair, like light catching an
-     actual fold), one near the top and one near the bottom — no ruled
-     lines, just the paper looking like it's been folded and opened out. */
-  background-image: linear-gradient(178deg,
-    transparent 0%, transparent 14%,
-    rgba(44, 42, 36, 0.08) 16%, rgba(44, 42, 36, 0.08) 16.6%,
-    rgba(255, 255, 255, 0.8) 17.2%, rgba(255, 255, 255, 0.8) 17.8%,
-    transparent 20%, transparent 80%,
-    rgba(44, 42, 36, 0.08) 82%, rgba(44, 42, 36, 0.08) 82.6%,
-    rgba(255, 255, 255, 0.8) 83.2%, rgba(255, 255, 255, 0.8) 83.8%,
-    transparent 86%, transparent 100%);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent calc(2rem - 1px),
+    rgba(44, 42, 36, 0.07) calc(2rem - 1px), rgba(44, 42, 36, 0.07) 2rem);
+  background-position: 0 0.6rem;
+  background-attachment: local;
+  box-shadow: 0 1px 2px rgba(44, 42, 36, 0.04), 0 6px 16px -6px rgba(44, 42, 36, 0.16);
 }
 /* A straight pencil underline — reads as "underlined this while working it
    out" rather than a text-selection highlight. */
