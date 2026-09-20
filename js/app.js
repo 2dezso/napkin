@@ -222,11 +222,6 @@
 
     var napkinPanel = el("div", { class: "panel" });
 
-    // Caret-aware: sitting on a plain number shows scale buttons that rewrite
-    // it in place; anywhere else shows a couple of typing shortcuts instead.
-    var toolbar = el("div", { class: "toolbar" });
-    napkinPanel.appendChild(toolbar);
-
     var padWrap = el("div", { class: "padwrap" });
     // Sits behind the real textarea (which is made transparent) and mirrors
     // its text so recognized numbers can get a highlight *in place* — proof,
@@ -253,17 +248,13 @@
     pad.addEventListener("keydown", function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); doLock(); }
     });
-    pad.addEventListener("click", renderToolbar);
-    pad.addEventListener("keyup", renderToolbar);
-    pad.addEventListener("focus", renderToolbar);
     pad.addEventListener("scroll", function () {
       padHighlight.scrollTop = pad.scrollTop;
       padHighlight.scrollLeft = pad.scrollLeft;
     });
 
-    // Back-pocket numbers and gut check — sit right under the pad, not the
-    // toolbar, since neither is about the caret/current line. Gut check is
-    // only enabled once there's an actual guess to react to.
+    // Back-pocket numbers and gut check — sit right under the pad. Gut check
+    // is only enabled once there's an actual guess to react to.
     var padActions = el("div", { class: "padactions" },
       el("span", { class: "helper-label muted" }, "Tools")
     );
@@ -525,7 +516,6 @@
       Object.keys(muted).forEach(function (s) { if (!live[s]) delete muted[s]; });
       Object.keys(flipped).forEach(function (s) { if (!live[s]) delete flipped[s]; });
       renderRibbon();
-      renderToolbar();
       refreshTotal();
       renderPadHighlight();
     }
@@ -557,63 +547,6 @@
       // pre-wrap collapses a bare trailing newline's blank line; a trailing
       // zero-width space keeps it the same height as the real textarea.
       padHighlight.innerHTML = html + (text.slice(-1) === "\n" ? "​" : "");
-    }
-
-    // The number the caret is currently sitting inside/right after, if any.
-    function factorAtCaret() {
-      if (pad.selectionStart !== pad.selectionEnd) return null;
-      var pos = pad.selectionStart;
-      var fs = scan();
-      for (var i = 0; i < fs.length; i++) {
-        if (pos >= fs[i].start && pos <= fs[i].end) return fs[i];
-      }
-      return null;
-    }
-
-    // Rewrite a "plain" factor's raw text scaled by mult. Uses the already-
-    // parsed value as the source of truth (so "3 million" rescales correctly
-    // too, not just "3M"), keeping k/m/b/t shorthand if that's how it was
-    // written, otherwise falling back to a comma-formatted plain number.
-    var LETTER_MULT = { k: 1e3, m: 1e6, b: 1e9, t: 1e12 };
-    function rescaledText(f, mult) {
-      var next = f.value * mult;
-      var short = f.raw.match(/(k|m|b|t)\b/i);
-      if (short && LETTER_MULT[short[1].toLowerCase()]) {
-        var mantissa = Math.round((next / LETTER_MULT[short[1].toLowerCase()]) * 100) / 100;
-        return String(mantissa) + short[1];
-      }
-      if (Math.abs(next - Math.round(next)) < 1e-9) return util.withCommas(Math.round(next));
-      return String(Math.round(next * 100) / 100);
-    }
-
-    function applyRescale(mult) {
-      var f = factorAtCaret();
-      if (!f || f.kind !== "plain") return;
-      var text = rescaledText(f, mult);
-      if (text == null) return;
-      var v = pad.value;
-      pad.value = v.slice(0, f.start) + text + v.slice(f.end);
-      var caret = f.start + text.length;
-      pad.focus();
-      pad.setSelectionRange(caret, caret);
-      onPad();
-    }
-
-    // Caret-aware only: shows scale buttons when sitting on a plain number,
-    // otherwise stays empty (back-pocket numbers / gut check live below the
-    // pad now, in padActions — see above).
-    function renderToolbar() {
-      var f = factorAtCaret();
-      toolbar.innerHTML = "";
-      if (f && f.kind === "plain") {
-        [["÷10", 0.1], ["÷2", 0.5], ["×2", 2], ["×10", 10]].forEach(function (b) {
-          var t = el("button", { class: "tbtn tbtn-scale", type: "button" }, b[0]);
-          t.addEventListener("mousedown", function (e) { e.preventDefault(); });
-          t.addEventListener("click", function () { applyRescale(b[1]); });
-          toolbar.appendChild(t);
-        });
-        toolbar.appendChild(el("span", { class: "toolbar-hint muted" }, "scaling " + util.humanize(f.value)));
-      }
     }
 
     // Generic dismissable popup: a titled card over a dark backdrop, closed by

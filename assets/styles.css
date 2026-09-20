@@ -9,7 +9,7 @@
   --red: #b23b2e;
   --green: #4a8a4a;
   --amber: #bd8420;
-  --hand: "Caveat", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
+  --hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   /* A gentle asymmetric corner radius that reads as hand-drawn rather than
      machine-rounded — used on rectangular cards/panels, not pill buttons
@@ -35,7 +35,7 @@ body {
   line-height: 1.5;
 }
 
-.hand { font-family: var(--hand); font-weight: 500; }
+.hand { font-family: var(--hand); }
 .muted { color: var(--faint); font-size: 0.9rem; }
 .big { font-size: 2rem; line-height: 1.1; }
 
@@ -137,10 +137,6 @@ body {
 }
 
 /* ---------- the scribble pad (C) ---------- */
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem; min-height: 2.1rem; }
-/* No caret on a number = no scale buttons; don't reserve a dead gap for them. */
-.toolbar:empty { min-height: 0; margin-bottom: 0; }
-
 /* Tool chip: the one secondary-action style. Quiet until you reach for it. */
 .tbtn {
   font: inherit;
@@ -156,19 +152,6 @@ body {
 .tbtn:hover:not(:disabled) { border-color: var(--pen); color: var(--pen); }
 .tbtn:active:not(:disabled) { background: var(--pen-soft); }
 .tbtn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-/* Math operators stay in the handwriting — they're arithmetic, not chrome. */
-.tbtn-scale {
-  font-family: var(--hand);
-  font-size: 1rem;
-  min-width: 2.4rem;
-  padding: 0.28rem 0.6rem;
-  border-radius: 8px;
-  border-color: var(--pen);
-  color: var(--pen);
-  font-weight: 700;
-}
-.toolbar-hint { font-size: 0.78rem; margin-left: 0.2rem; }
 
 .padactions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0; }
 
@@ -187,33 +170,20 @@ body {
   border-top: 1px solid var(--rule);
 }
 
-/* Tilted a touch and given an uneven corner radius so the pad reads as a
-   napkin someone dropped on the desk, not a form field — the rotation
-   lives on the wrapper so pad + its highlight mirror turn as one rigid
-   unit and never drift out of alignment with each other. A folded corner
-   (padwrap::after, below) stands in for the ruled-notebook look this used
-   to have — no visible lines, no red margin, just a dog-eared corner. */
+/* Tilted a touch and clipped into a gentle trapezoid — narrower across the
+   top than the bottom, like a napkin unfolding open — so the pad reads as
+   an actual napkin rather than a form field. The rotation lives on the
+   wrapper so pad + its highlight mirror turn as one rigid unit and never
+   drift out of alignment with each other; the same clip-path shape is
+   applied to both for the same reason. */
 .padwrap { position: relative; transform: rotate(-2deg); }
-.padwrap::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 26px 26px 0;
-  border-color: transparent var(--rule) transparent transparent;
-  filter: drop-shadow(-1.5px 1.5px 1px rgba(44, 42, 36, 0.3));
-  pointer-events: none;
-}
 .pad {
   display: block;
   width: 100%;
   box-sizing: border-box;
   min-height: 9.5rem;
   border: 1px solid var(--rule);
-  border-radius: var(--wobble-sm);
+  clip-path: polygon(5% 0%, 95% 0%, 100% 8%, 100% 100%, 0% 100%, 0% 8%);
   background: transparent;
   color: var(--ink);
   font-size: 16px;
@@ -234,7 +204,7 @@ body {
   margin: 0;
   box-sizing: border-box;
   border: 1px solid transparent;
-  border-radius: var(--wobble-sm);
+  clip-path: polygon(5% 0%, 95% 0%, 100% 8%, 100% 100%, 0% 100%, 0% 8%);
   font-size: 16px;
   line-height: 2rem;
   padding: 0.35rem 0.7rem 0.7rem 0.9rem;
@@ -245,21 +215,17 @@ body {
   pointer-events: none;
   background-color: var(--card);
 }
-/* A wavy pencil underline instead of a flat highlight box — reads as
-   "underlined this while working it out" rather than a text selection. */
+/* A straight pencil underline — reads as "underlined this while working it
+   out" rather than a text-selection highlight. */
 .pad-highlight mark.hl {
-  background-color: rgba(74, 77, 82, 0.07);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='7'%3E%3Cpath d='M0 4.5 Q 2.25 1 4.5 4.5 T9 4.5' stroke='%234a4d52' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: repeat-x;
-  background-position: 0 100%;
-  background-size: 9px 7px;
+  background: rgba(74, 77, 82, 0.07);
+  box-shadow: inset 0 -2px 0 var(--pen);
   border-radius: 2px;
   color: transparent;
-  padding-bottom: 2px;
 }
 .pad-highlight mark.hl.hl-muted {
-  background-color: transparent;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='7'%3E%3Cpath d='M0 4.5 Q 2.25 1 4.5 4.5 T9 4.5' stroke='%23d9d1bd' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background: transparent;
+  box-shadow: inset 0 -2px 0 var(--rule);
 }
 
 .demo-note { margin: 0 0 0.5rem; font-style: italic; }
