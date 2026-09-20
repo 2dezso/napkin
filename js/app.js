@@ -111,6 +111,16 @@
     for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
     return n;
   }
+  // Wraps any element in the "circle it on the napkin" scribble effect —
+  // add .circled to the wrapper (returned as wrap.firstChild's parent) once
+  // it should draw itself in. Shared by the actual-answer reveal and the
+  // score popup's band.
+  function circleWrap(child) {
+    var svg = elNS("svg", { class: "answer-circle", viewBox: "0 0 200 100", preserveAspectRatio: "none" },
+      elNS("path", { d: "M14,55 C10,25 45,6 100,5 C158,4 194,22 192,52 C190,82 155,95 98,96 C46,97 14,85 16,58 C17,50 20,48 24,50" })
+    );
+    return el("div", { class: "actualnum-wrap" }, svg, child);
+  }
   function append(n, kid) {
     if (kid == null || kid === false) return;
     if (Array.isArray(kid)) { kid.forEach(function (k) { append(n, k); }); return; }
@@ -941,8 +951,9 @@
     var shareTxt = resultShareText(q, res, sc);
     var shareBtn = el("button", { class: "btn", type: "button" }, "Share result");
     var closeBtn = el("button", { class: "linkbtn modal-close", type: "button" }, "See the full breakdown ▾");
+    var emojiEl = el("div", { class: "score-modal-emoji" }, sc.band.emoji);
     var card = el("div", { class: "demo-modal score-modal" },
-      el("div", { class: "score-modal-emoji" }, sc.band.emoji),
+      circleWrap(emojiEl),
       el("div", { class: "hand big" }, sc.band.label),
       el("div", { class: "score-modal-line" }, scoreLine(sc)),
       el("div", { class: "muted score-modal-nums" },
@@ -957,6 +968,7 @@
     closeBtn.addEventListener("click", close);
     shareBtn.addEventListener("click", function () { shareResult(shareTxt, shareBtn); });
     container.appendChild(overlay);
+    setTimeout(function () { emojiEl.parentNode.classList.add("circled"); }, 350);
   }
 
   function buildAfter(container, q, res, opts) {
@@ -976,12 +988,9 @@
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
     var actualnumEl = el("div", { class: "hand actualnum" }, "0");
-    var circleSvg = elNS("svg", { class: "answer-circle", viewBox: "0 0 200 100", preserveAspectRatio: "none" },
-      elNS("path", { d: "M14,55 C10,25 45,6 100,5 C158,4 194,22 192,52 C190,82 155,95 98,96 C46,97 14,85 16,58 C17,50 20,48 24,50" })
-    );
     container.appendChild(el("div", { class: "answerbox" },
       el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
-      el("div", { class: "actualnum-wrap" }, circleSvg, actualnumEl)
+      circleWrap(actualnumEl)
     ));
 
     container.appendChild(guessBar(res.guess, q.actual_answer));
