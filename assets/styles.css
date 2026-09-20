@@ -472,27 +472,27 @@ body {
 }
 .guessnum { min-width: 2ch; display: inline-block; }
 .guessnum.pop { animation: numpop 0.45s cubic-bezier(0.2, 1.6, 0.35, 1); }
-.narrative { display: flex; flex-direction: column; gap: 0.7rem; min-height: 3rem; counter-reset: beatnum; }
+.narrative { display: flex; flex-direction: column; gap: 0.7rem; min-height: 3rem; }
 .beat {
   position: relative;
   margin: 0;
-  padding-left: 1.6rem;
+  padding-left: 1.5rem;
   font-size: 1.15rem;
   opacity: 0;
   transform: translateY(10px);
   animation: beatin 0.55s ease forwards;
 }
-/* A handwritten step number per line — marks where a new beat starts as
-   they land one by one, so the build-up reads as steps, not a wall of text. */
+/* A quick pencil scribble marks where each line starts as it lands, rather
+   than a formal numbered list — reads as jotted notes, not a step sheet. */
 .beat::before {
-  counter-increment: beatnum;
-  content: counter(beatnum) ".";
+  content: "";
   position: absolute;
   left: 0;
-  top: 0.05em;
-  font-family: var(--hand);
-  font-size: 1.1rem;
-  color: var(--pen);
+  top: 0.55em;
+  width: 1.05rem;
+  height: 0.5rem;
+  transform: rotate(-6deg);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 6 Q4 1 7 6 T13 6 T19 6 T23 6' stroke='%234a4d52' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 @keyframes beatin { to { opacity: 1; transform: none; } }
 .narrative.done .beat { animation: none; opacity: 1; transform: none; }
