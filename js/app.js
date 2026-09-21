@@ -1323,6 +1323,11 @@
   }
 
   /* ---------- practice list ---------- */
+  // A handful of free questions spanning different categories — Greggs and
+  // the coastline are the two that best show off the game, plus one each
+  // from sport, transport, everyday-life and the product-flavoured set.
+  var PRACTICE_FREE_IDS = ["q0006", "q0001", "q0005", "q0007", "q0009", "q0003"];
+
   function viewPracticeList() {
     var wrap = el("section", { class: "screen practice" });
     wrap.appendChild(el("h2", { class: "hand" }, "Practice — any question, any time"));
@@ -1334,8 +1339,13 @@
     var order = (window.NAPKIN.dailyOrder || []).map(byId).filter(Boolean);
     QUESTIONS.forEach(function (q) { if (order.indexOf(q) === -1) order.push(q); });
 
+    var free = PRACTICE_FREE_IDS.map(byId).filter(Boolean);
+    var freeIds = {};
+    free.forEach(function (q) { freeIds[q.id] = 1; });
+    var locked = order.filter(function (q) { return !freeIds[q.id]; });
+
     var list = el("div", { class: "qlist" });
-    order.forEach(function (q, i) {
+    function addCard(q, i) {
       var item = el("button", { class: "qcard" },
         el("span", { class: "qnum" }, "#" + (i + 1)),
         el("span", { class: "qtext" }, q.question),
@@ -1343,7 +1353,26 @@
       );
       item.addEventListener("click", function () { STATE.practiceQ = q; renderApp(); });
       list.appendChild(item);
-    });
+    }
+    free.forEach(function (q, i) { addCard(q, i); });
+
+    if (locked.length) {
+      // No real paywall yet — this is a placeholder for the idea. Clicking
+      // it just reveals the rest of the list in place.
+      var unlockBtn = el("button", { class: "btn" }, "Unlock");
+      var paywall = el("div", { class: "paywall" },
+        el("div", { class: "paywall-lock" }, "🔒"),
+        el("div", { class: "hand paywall-title" }, locked.length + " more questions"),
+        el("p", { class: "muted" }, "Unlock the full practice library."),
+        unlockBtn
+      );
+      unlockBtn.addEventListener("click", function () {
+        paywall.remove();
+        locked.forEach(function (q, i) { addCard(q, free.length + i); });
+      });
+      list.appendChild(paywall);
+    }
+
     wrap.appendChild(list);
     return wrap;
   }

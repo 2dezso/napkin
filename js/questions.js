@@ -1552,43 +1552,6 @@ window.NAPKIN.questions = [
     sanity_check: "1.7 million orders a day is roughly the population of Birmingham deciding, independently, not to cook tonight."
   },
   {
-    id: "q0041",
-    category: "history-scale",
-    difficulty: "hard",
-    question: "How many people have ever lived on Earth?",
-    clarifications: [
-      "Everyone ever born, from the earliest humans to today, not just those alive now.",
-      "Homo sapiens only."
-    ],
-    reference_anchors: [
-      { label: "estimated births from 50,000 BCE to 1 CE", value: 46000000000 },
-      { label: "current world population", value: 8000000000 }
-    ],
-    framework: [
-      { label: "Estimated births from 50,000 BCE to 1 CE", op: "x", model_value: 46000000000, unit: "births", plausible_range: [40000000000, 50000000000] },
-      { label: "Estimated births from 1 CE to 1950", op: "+", model_value: 55000000000, unit: "births", plausible_range: [50000000000, 60000000000] },
-      { label: "Estimated births from 1950 to today", op: "+", model_value: 16000000000, unit: "births", plausible_range: [14000000000, 18000000000] }
-    ],
-    framework_notes: [
-      "Most of human history saw very high birth rates but a tiny population, so the earliest era still contributes a huge share of total births.",
-      "The long, slower-growth middle period from antiquity through to the mid-20th century adds the largest single chunk.",
-      "Population growth exploded after 1950, but modern lifespans mean this era contributes fewer births relative to how many people are alive today."
-    ],
-    narrative: [
-      "From the first Homo sapiens through to the start of the Common Era, roughly 46 billion people were born.",
-      "From year 1 through to 1950, add another 55 billion or so.",
-      "And from 1950 to today, add around 16 billion more.",
-      "46 billion + 55 billion + 16 billion comes out to about 117 billion.",
-      "That matches the Population Reference Bureau's own long-standing estimate almost exactly."
-    ],
-    estimate_range: [60000000000, 200000000000],
-    actual_answer: 117000000000,
-    answer_type: "consensus-estimate",
-    as_of: 2023,
-    source: "Population Reference Bureau, 'How Many People Have Ever Lived on Earth?'",
-    sanity_check: "117 billion people who've ever lived means today's 8 billion are only about 7% of everyone who's ever existed."
-  },
-  {
     id: "q0042",
     category: "sport",
     difficulty: "easy",
@@ -2603,7 +2566,6 @@ window.NAPKIN.dailyOrder = [
   "q0034", // raindrops falling on London during a downpour
   "q0052", // parkrun finishers across the UK each Saturday
   "q0018", // contactless payments made in the UK per day
-  "q0041", // people who have ever lived on Earth
   "q0026", // pigeons in London
   "q0063", // ATM cash withdrawals in the UK per day
   "q0011", // cups of coffee drunk in the UK per day
@@ -2613,8 +2575,8 @@ window.NAPKIN.dailyOrder = [
   "q0042", // hours of live football on UK TV per week
   "q0025", // private gardens in the UK
   "q0058", // video-call meeting-minutes logged globally per day
-  "q0006", // Greggs sausage rolls per day
   "q0067", // money UK households spend on Christmas presents per year
+  "q0006", // Greggs sausage rolls per day
   "q0037", // pet dogs owned in the UK
   "q0013", // grains of sand on Blackpool beach
   "q0049", // books read by UK adults per year

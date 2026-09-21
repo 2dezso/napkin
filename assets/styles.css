@@ -820,6 +820,17 @@ body {
 .qtext { font-weight: 600; }
 .qmeta { font-size: 0.8rem; }
 
+.paywall {
+  text-align: center;
+  background: var(--card);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius-sm);
+  padding: 1.4rem 1rem;
+}
+.paywall-lock { font-size: 1.8rem; line-height: 1; }
+.paywall-title { font-size: 1.2rem; margin: 0.4rem 0 0.1rem; }
+.paywall p { margin: 0 0 0.8rem; }
+
 /* ---------- stats ---------- */
 .statgrid {
   display: grid;
