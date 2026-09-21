@@ -1402,7 +1402,7 @@
   /* ---------- feedback ---------- */
   // Web3Forms: a free access key (from web3forms.com, no account needed)
   // lets a static site POST straight to an inbox with no backend of our own.
-  var FEEDBACK_ACCESS_KEY = "PASTE_WEB3FORMS_ACCESS_KEY_HERE";
+  var FEEDBACK_ACCESS_KEY = "a44abe06-e067-4547-b258-1e2fad68ac42";
   var FEEDBACK_REACTIONS = [
     { key: "spoton", label: "🎯 Spot on" },
     { key: "confusing", label: "🤔 Confusing" },
