@@ -1378,6 +1378,31 @@
   }
 
   /* ---------- stats ---------- */
+  // Your own band distribution, reusing the same chart the daily reveal
+  // uses for "today's players" — here it's your whole history instead,
+  // computed locally with no network call.
+  function buildPersonalDistribution(bandCounts) {
+    var total = 0;
+    scoring.BANDS.forEach(function (b) { total += bandCounts[b.key] || 0; });
+    var box = el("div", { class: "distbox" });
+    if (!total) {
+      box.appendChild(el("div", { class: "muted" }, "No games yet — go do today's."));
+      return box;
+    }
+    box.appendChild(el("div", { class: "muted" }, "Your results — " + total + (total === 1 ? " game" : " games")));
+    scoring.BANDS.forEach(function (b) {
+      var count = bandCounts[b.key] || 0;
+      var pct = Math.round((count / total) * 100);
+      box.appendChild(el("div", { class: "distrow " + b.key },
+        el("span", { class: "dist-emoji" }, b.emoji),
+        el("span", { class: "dist-label" }, b.label),
+        el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "width:" + pct + "%" })),
+        el("span", { class: "dist-pct" }, pct + "%")
+      ));
+    });
+    return box;
+  }
+
   function viewStats() {
     var s = storage.stats();
     var wrap = el("section", { class: "screen stats" });
@@ -1385,17 +1410,17 @@
 
     var grid = el("div", { class: "statgrid" });
     grid.appendChild(stat("Streak", s.streak + (s.streak === 1 ? " day" : " days")));
-    grid.appendChild(stat("Played", String(s.played)));
-    grid.appendChild(stat("Avg miss", s.avgRatio ? util.roundFactor(s.avgRatio) + "×" : "—"));
-    grid.appendChild(stat("Best", s.bestRatio ? util.roundFactor(s.bestRatio) + "×" : "—"));
+    grid.appendChild(stat("Longest streak", s.longestStreak + (s.longestStreak === 1 ? " day" : " days")));
     wrap.appendChild(grid);
+    wrap.appendChild(el("p", { class: "muted playedline" }, s.played + (s.played === 1 ? " day played" : " days played")));
+
+    wrap.appendChild(buildPersonalDistribution(s.bandCounts));
 
     if (s.series.length) wrap.appendChild(sparkline(s.series));
-    else wrap.appendChild(el("p", { class: "muted" }, "No games yet — go do today's."));
 
     var backup = el("div", { class: "backup" });
     backup.appendChild(el("h3", { class: "hand" }, "Backup"));
-    backup.appendChild(el("p", { class: "muted" }, "History lives in this browser only. Export a copy so a cache clear can't wipe your streak."));
+    backup.appendChild(el("p", { class: "muted" }, "History backs up quietly to the cloud on this device, but export a copy too — it's the only thing that moves your streak to another device."));
     var exp = el("button", { class: "btn" }, "Export history (.json)");
     exp.addEventListener("click", downloadHistory);
     var imp = el("button", { class: "btn ghost" }, "Import history");
@@ -1607,5 +1632,10 @@
     var feedbackBtn = document.getElementById("feedbackBtn");
     if (feedbackBtn) feedbackBtn.addEventListener("click", openFeedbackModal);
     renderApp();
+
+    // Best-effort cloud backup: re-render only if it actually pulled in
+    // history this device didn't already have (e.g. first load after a
+    // cleared cache), so a normal visit never has to wait on it.
+    if (storage.initCloudSync) storage.initCloudSync(function () { renderApp(); });
   });
 })();

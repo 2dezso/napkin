@@ -54,6 +54,7 @@ window.NAPKIN.storage = (function () {
 
   function save(state) {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full / blocked */ }
+    pushToCloud(state);
   }
   function load() {
     try {
@@ -65,6 +66,60 @@ window.NAPKIN.storage = (function () {
     } catch (e) {
       return blank();
     }
+  }
+
+  /* ---- cloud backup (Firebase Anonymous Auth + Firestore) ----------------
+   * Invisible, no-signup safety net: every visitor gets a stable anonymous
+   * uid (persisted by the Firebase SDK itself, so it survives reloads on
+   * the same browser) and their history mirrors to users/{uid}. This is
+   * NOT cross-device sync on its own — that needs the uid to be linked to
+   * a real credential later — it just means a cleared cache or a browser
+   * reinstall on the SAME device doesn't wipe a streak, since Firebase's
+   * auth persistence and localStorage are separate stores. Every step is
+   * best-effort: if Firebase isn't configured, offline, or the write is
+   * rejected, this silently no-ops and the app carries on local-only. */
+  var cloudUid = null;
+
+  function pushToCloud(state) {
+    if (!cloudUid || !window.firebase) return;
+    firebase.firestore().collection("users").doc(cloudUid).set({
+      results: state.results,
+      challengeBest: state.challengeBest || 0,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function () { /* offline / rules not set up yet */ });
+  }
+
+  // Union of local + remote results by date (local wins on same-date
+  // conflicts, since it's the freshest thing this device just did), plus
+  // the higher of either challengeBest.
+  function mergeState(local, remote) {
+    var byDate = {};
+    (remote.results || []).forEach(function (r) { byDate[r.date] = r; });
+    (local.results || []).forEach(function (r) { byDate[r.date] = r; });
+    var results = Object.keys(byDate).sort().map(function (d) { return byDate[d]; });
+    return { version: 1, results: results, challengeBest: Math.max(local.challengeBest || 0, remote.challengeBest || 0) };
+  }
+
+  // Call once at boot. onMerged fires at most once, only if the cloud copy
+  // actually had something new to add to this device's local copy — the
+  // caller can use it to re-render whatever's currently on screen.
+  function initCloudSync(onMerged) {
+    var cfg = window.NAPKIN.firebaseConfig;
+    if (!window.firebase || !cfg || !cfg.apiKey || cfg.apiKey.indexOf("PASTE_") === 0) return;
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return;
+      cloudUid = user.uid;
+      var before = load();
+      firebase.firestore().collection("users").doc(cloudUid).get().then(function (doc) {
+        var remote = doc.exists ? doc.data() : blank();
+        var merged = mergeState(before, remote);
+        var changed = merged.results.length !== before.results.length || merged.challengeBest !== before.challengeBest;
+        save(merged);
+        if (changed && onMerged) onMerged();
+      }).catch(function () { /* offline / rules not set up yet — stay local-only */ });
+    });
+    firebase.auth().signInAnonymously().catch(function () { /* auth not enabled yet */ });
   }
 
   // Challenge mode's high score: longest streak survived in a single run.
@@ -118,16 +173,34 @@ window.NAPKIN.storage = (function () {
     return n;
   }
 
+  // The longest run of consecutive calendar days ever played, as opposed to
+  // streak() which only cares about the current unbroken run.
+  function longestStreak() {
+    var s = load();
+    var dates = Object.keys(s.results.reduce(function (acc, r) { acc[r.date] = 1; return acc; }, {})).sort();
+    if (!dates.length) return 0;
+    var best = 1, run = 1;
+    for (var i = 1; i < dates.length; i++) {
+      run = (dates[i] === isoOffset(1, dates[i - 1])) ? run + 1 : 1;
+      best = Math.max(best, run);
+    }
+    return best;
+  }
+
   function stats() {
     var s = load();
     var ratios = s.results.map(function (r) { return r.ratio; }).filter(function (x) { return isFinite(x); });
     var avg = ratios.length ? ratios.reduce(function (a, b) { return a + b; }, 0) / ratios.length : null;
     var best = ratios.length ? Math.min.apply(null, ratios) : null;
+    var bandCounts = {};
+    s.results.forEach(function (r) { if (r.band) bandCounts[r.band] = (bandCounts[r.band] || 0) + 1; });
     return {
       played: s.results.length,
       streak: streak(),
+      longestStreak: longestStreak(),
       avgRatio: avg,
       bestRatio: best,
+      bandCounts: bandCounts,
       caughtUp: false,
       series: s.results.map(function (r) { return { n: r.napkinNumber, ratio: r.ratio, band: r.band }; })
     };
@@ -150,9 +223,10 @@ window.NAPKIN.storage = (function () {
     currentQuestion: currentQuestion,
     resultForDate: resultForDate, playedToday: playedToday,
     recordResult: recordResult,
-    streak: streak, stats: stats,
+    streak: streak, longestStreak: longestStreak, stats: stats,
     challengeBest: challengeBest, recordChallengeBest: recordChallengeBest,
     hasSeenPadDemo: hasSeenPadDemo, markPadDemoSeen: markPadDemoSeen,
-    exportJSON: exportJSON, importJSON: importJSON, reset: reset
+    exportJSON: exportJSON, importJSON: importJSON, reset: reset,
+    initCloudSync: initCloudSync
   };
 })();
