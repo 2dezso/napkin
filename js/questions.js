@@ -24,7 +24,7 @@ window.NAPKIN.questions = [
   {
     id: "q0001",
     category: "sport",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many people attend Premier League matches on a normal weekend?",
     clarifications: [
       "A full round of matches, not just a single game.",
@@ -109,7 +109,7 @@ window.NAPKIN.questions = [
   {
     id: "q0003",
     category: "everyday-life",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many cups of tea are drunk in the UK per day?",
     clarifications: [
       "The whole UK, all ages included.",
@@ -354,43 +354,6 @@ window.NAPKIN.questions = [
   },
 
   {
-    id: "q0009",
-    category: "product",
-    difficulty: "easy",
-    question: "How many messages are sent inside Slack globally on a normal working day?",
-    clarifications: [
-      "Messages posted inside Slack workspaces worldwide, not other chat apps.",
-      "A normal weekday, since usage drops off at weekends."
-    ],
-    reference_anchors: [
-      { label: "Slack daily active users", value: 30000000 },
-      { label: "average channels an active user posts in per day", value: 3 }
-    ],
-    framework: [
-      { label: "Slack daily active users", op: "x", model_value: 30000000, unit: "users", plausible_range: [20000000, 40000000] },
-      { label: "Average channels or DMs a user posts into per day", op: "x", model_value: 3, unit: "channels/user", plausible_range: [1, 5] },
-      { label: "Average messages sent per channel visit", op: "x", model_value: 5, unit: "messages/channel", plausible_range: [2, 10] }
-    ],
-    framework_notes: [
-      "Slack has reported over 30 million daily active users.",
-      "A typical active user posts into a handful of channels or DMs across a working day.",
-      "Each of those visits usually produces a short burst of messages, not just one."
-    ],
-    narrative: [
-      "Slack has more than 30 million daily active users.",
-      "A typical user posts into around 3 channels or DMs a day.",
-      "And each of those exchanges runs to about 5 messages.",
-      "30,000,000 × 3 × 5 comes out around 450 million.",
-      "Nobody publishes an exact figure, but that lines up with how workplace messaging apps behave at this scale — a message sent somewhere in the world roughly every fifth of a second."
-    ],
-    estimate_range: [150000000, 1200000000],
-    actual_answer: 450000000,
-    answer_type: "consensus-estimate",
-    as_of: 2023,
-    source: "Reasoned from Slack's reported 30M+ daily active users and typical workplace-messaging activity rates.",
-    sanity_check: "450 million messages a day is one sent somewhere on Earth roughly every fifth of a second."
-  },
-  {
     id: "q0010",
     category: "sport",
     difficulty: "medium",
@@ -430,7 +393,7 @@ window.NAPKIN.questions = [
   {
     id: "q0011",
     category: "everyday-life",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many cups of coffee are drunk in the UK per day?",
     clarifications: [
       "Coffee drunk anywhere — home, office, café — not just bought from shops.",
@@ -467,7 +430,7 @@ window.NAPKIN.questions = [
   {
     id: "q0012",
     category: "operations",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many portions of fish and chips are sold in the UK per day?",
     clarifications: [
       "Sold by dedicated fish and chip shops (chippies), not supermarkets or pubs.",
@@ -544,7 +507,7 @@ window.NAPKIN.questions = [
   {
     id: "q0014",
     category: "transport",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many licensed black cabs operate in London?",
     clarifications: [
       "Licensed hackney carriages (black cabs), not minicabs or private hire vehicles.",
@@ -621,7 +584,7 @@ window.NAPKIN.questions = [
   {
     id: "q0016",
     category: "animals",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many sheep are there in the UK?",
     clarifications: [
       "All sheep and lambs on UK farms, not just breeding ewes.",
@@ -695,7 +658,7 @@ window.NAPKIN.questions = [
   {
     id: "q0018",
     category: "money",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many contactless payments are made in the UK per day?",
     clarifications: [
       "Card and phone taps combined, in person.",
@@ -769,7 +732,7 @@ window.NAPKIN.questions = [
   {
     id: "q0020",
     category: "sport",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many tennis balls are used at Wimbledon each year?",
     clarifications: [
       "The whole Championships fortnight, all courts, qualifying included.",
@@ -1028,7 +991,7 @@ window.NAPKIN.questions = [
   {
     id: "q0027",
     category: "entertainment",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many cinema tickets are sold in the UK per year?",
     clarifications: [
       "Tickets sold at UK cinemas, all films combined.",
@@ -1065,7 +1028,7 @@ window.NAPKIN.questions = [
   {
     id: "q0028",
     category: "money",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How much is spent on the National Lottery in the UK per week?",
     clarifications: [
       "All National Lottery games combined — draws, scratchcards, instant win.",
@@ -1098,43 +1061,6 @@ window.NAPKIN.questions = [
     as_of: 2022,
     source: "Camelot / Allwyn annual National Lottery sales figures.",
     sanity_check: "£150 million a week is enough to fund a fair few good causes — which, to be fair, is the entire point."
-  },
-  {
-    id: "q0029",
-    category: "product",
-    difficulty: "hard",
-    question: "How many commits get pushed to GitHub worldwide per day?",
-    clarifications: [
-      "Code commits specifically, not issues, pull request comments or stars.",
-      "Public and private repositories combined."
-    ],
-    reference_anchors: [
-      { label: "active GitHub developer accounts", value: 100000000 },
-      { label: "fraction actively committing on a given day", value: 0.15 }
-    ],
-    framework: [
-      { label: "Active GitHub developer accounts", op: "x", model_value: 100000000, unit: "developers", plausible_range: [80000000, 120000000] },
-      { label: "Fraction who commit code on a given day", op: "x", model_value: 0.15, unit: "fraction", plausible_range: [0.05, 0.25] },
-      { label: "Average commits per active-that-day developer", op: "x", model_value: 2.5, unit: "commits/developer", plausible_range: [1, 5] }
-    ],
-    framework_notes: [
-      "GitHub has reported over 100 million developer accounts.",
-      "Only a fraction of any user base is actively coding on a given day, given hobby accounts, students and lapsed users.",
-      "An active developer typically pushes a handful of small commits rather than one big one."
-    ],
-    narrative: [
-      "GitHub has over 100 million developer accounts.",
-      "On a given day, maybe 15% are actively committing code.",
-      "And each of those pushes about 2.5 commits on average.",
-      "100,000,000 × 0.15 × 2.5 comes out around 37.5 million.",
-      "GitHub's own Octoverse reports describe billions of contributions a year across the platform, which sits comfortably around this daily rate."
-    ],
-    estimate_range: [10000000, 120000000],
-    actual_answer: 37500000,
-    answer_type: "consensus-estimate",
-    as_of: 2023,
-    source: "Reasoned from GitHub's reported 100M+ developer accounts (GitHub Octoverse) and typical daily commit activity.",
-    sanity_check: "37.5 million commits a day is roughly 26,000 every minute — somewhere, someone is always fixing a typo."
   },
   {
     id: "q0030",
@@ -1252,7 +1178,7 @@ window.NAPKIN.questions = [
   {
     id: "q0033",
     category: "operations",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many pints of milk are delivered by milkmen in the UK each morning?",
     clarifications: [
       "Traditional doorstep milk delivery, not supermarket click-and-collect.",
@@ -1331,7 +1257,7 @@ window.NAPKIN.questions = [
   {
     id: "q0035",
     category: "transport",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many flights depart from Heathrow per day?",
     clarifications: [
       "Departures only, not arrivals.",
@@ -1514,7 +1440,7 @@ window.NAPKIN.questions = [
   {
     id: "q0040",
     category: "product",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many food delivery orders (Deliveroo, Just Eat and similar) are placed in the UK per day?",
     clarifications: [
       "All major UK food delivery platforms combined.",
@@ -1554,7 +1480,7 @@ window.NAPKIN.questions = [
   {
     id: "q0042",
     category: "sport",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many hours of live football are broadcast on UK TV in a typical week during the season?",
     clarifications: [
       "Premier League, EFL, Scottish and European football combined, across all UK broadcasters.",
@@ -1591,7 +1517,7 @@ window.NAPKIN.questions = [
   {
     id: "q0043",
     category: "everyday-life",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many loads of laundry are washed in UK homes per day?",
     clarifications: [
       "Domestic washing machine loads, not commercial laundrettes.",
@@ -1995,7 +1921,7 @@ window.NAPKIN.questions = [
   {
     id: "q0054",
     category: "operations",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many pizzas are ordered in the UK on a Friday night?",
     clarifications: [
       "Delivery and collection orders combined, chains and independents.",
@@ -2110,7 +2036,7 @@ window.NAPKIN.questions = [
   {
     id: "q0057",
     category: "geography",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many traditional red telephone boxes remain in the UK?",
     clarifications: [
       "The classic red K2/K6 kiosks, not modern glass phone booths.",
@@ -2145,46 +2071,9 @@ window.NAPKIN.questions = [
     sanity_check: "8,000 boxes left out of 92,000 means over 90% have vanished — most of what remains now holds a defibrillator, not a phone."
   },
   {
-    id: "q0058",
-    category: "product",
-    difficulty: "medium",
-    question: "How many meeting-minutes are logged on video-conferencing platforms globally per day?",
-    clarifications: [
-      "Zoom, Microsoft Teams, Google Meet combined.",
-      "Total minutes summed across every participant, not per meeting."
-    ],
-    reference_anchors: [
-      { label: "daily active users across major video conferencing platforms", value: 300000000 },
-      { label: "average meeting minutes per joining user", value: 45 }
-    ],
-    framework: [
-      { label: "Daily active users across major video conferencing platforms", op: "x", model_value: 300000000, unit: "users", plausible_range: [200000000, 400000000] },
-      { label: "Fraction of those users who join at least one meeting that day", op: "x", model_value: 0.85, unit: "fraction", plausible_range: [0.6, 0.95] },
-      { label: "Average meeting minutes attended per joining user", op: "x", model_value: 45, unit: "minutes/user", plausible_range: [30, 70] }
-    ],
-    framework_notes: [
-      "Between Zoom, Teams and Meet, several hundred million people are active daily users worldwide.",
-      "Most of those log in specifically to join a meeting, rather than just checking chat.",
-      "A working day typically includes somewhere around three-quarters of an hour of actual meeting time per person."
-    ],
-    narrative: [
-      "Around 300 million people are daily active users across the major video-conferencing platforms.",
-      "About 85% of them join at least one meeting that day.",
-      "And each spends roughly 45 minutes in meetings on average.",
-      "300,000,000 × 0.85 × 45 comes out around 11.5 billion minutes.",
-      "That's consistent with the scale Microsoft and Zoom have each described independently for their own platforms — this is just the combined picture."
-    ],
-    estimate_range: [4000000000, 30000000000],
-    actual_answer: 11500000000,
-    answer_type: "consensus-estimate",
-    as_of: 2023,
-    source: "Reasoned from Microsoft Teams and Zoom reported daily active user figures.",
-    sanity_check: "11.5 billion meeting-minutes a day works out to about 22,000 years of meetings happening simultaneously, right now."
-  },
-  {
     id: "q0059",
     category: "animals",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many urban foxes live in London?",
     clarifications: [
       "Foxes living within Greater London's built-up area, not the wider countryside.",
@@ -2290,43 +2179,6 @@ window.NAPKIN.questions = [
     sanity_check: "5.9 million records a year is enough vinyl to give every household in Cardiff a stack of forty."
   },
   {
-    id: "q0062",
-    category: "product",
-    difficulty: "medium",
-    question: "How many LinkedIn posts are published worldwide per day?",
-    clarifications: [
-      "Original posts and articles, not comments or reactions.",
-      "All languages and industries combined."
-    ],
-    reference_anchors: [
-      { label: "LinkedIn daily active users", value: 130000000 },
-      { label: "fraction who post or share content on a given day", value: 0.02 }
-    ],
-    framework: [
-      { label: "LinkedIn daily active users", op: "x", model_value: 130000000, unit: "users", plausible_range: [100000000, 150000000] },
-      { label: "Fraction who post or share content on a given day", op: "x", model_value: 0.02, unit: "fraction", plausible_range: [0.01, 0.04] },
-      { label: "Average posts per posting user", op: "x", model_value: 1.3, unit: "posts/user", plausible_range: [1, 2] }
-    ],
-    framework_notes: [
-      "LinkedIn has reported well over 100 million daily active users.",
-      "Posting is a minority activity even on a content-heavy platform — most users scroll rather than publish.",
-      "Active posters occasionally put up more than one update in a day."
-    ],
-    narrative: [
-      "LinkedIn has around 130 million daily active users.",
-      "Only about 2% of them post or share something on a given day.",
-      "And posters put up about 1.3 posts on average.",
-      "130,000,000 × 0.02 × 1.3 comes out around 3.4 million.",
-      "There's no official public figure, but that's consistent with how LinkedIn describes itself as a platform mostly read, occasionally written to."
-    ],
-    estimate_range: [1000000, 10000000],
-    actual_answer: 3400000,
-    answer_type: "consensus-estimate",
-    as_of: 2023,
-    source: "Reasoned from LinkedIn's reported daily active user figures and typical content-platform posting rates.",
-    sanity_check: "3.4 million posts a day is a lot of humble brags about 'thrilled to announce' — most of them never read past the first line."
-  },
-  {
     id: "q0063",
     category: "money",
     difficulty: "medium",
@@ -2406,7 +2258,7 @@ window.NAPKIN.questions = [
   {
     id: "q0065",
     category: "health",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many NHS hospital beds are occupied on an average night in England?",
     clarifications: [
       "General and acute beds, not day-case or outpatient capacity.",
@@ -2440,7 +2292,7 @@ window.NAPKIN.questions = [
   {
     id: "q0066",
     category: "product",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How many 1-star App Store reviews are submitted worldwide per day?",
     clarifications: [
       "Across all apps on major app stores, not one specific app.",
@@ -2477,7 +2329,7 @@ window.NAPKIN.questions = [
   {
     id: "q0067",
     category: "money",
-    difficulty: "easy",
+    difficulty: "medium",
     question: "How much do UK households spend on Christmas presents per year?",
     clarifications: [
       "Gifts only, not food, decorations or travel.",
@@ -2507,43 +2359,6 @@ window.NAPKIN.questions = [
     as_of: 2023,
     source: "UK retail sector surveys on average household Christmas gift spending.",
     sanity_check: "£16 billion on presents is enough to buy every person in the UK a fairly decent jumper, whether they wanted one or not."
-  },
-  {
-    id: "q0068",
-    category: "product",
-    difficulty: "hard",
-    question: "How many sign-ups can a UK SaaS startup expect on a really good launch day?",
-    clarifications: [
-      "A strong Product Hunt or press-driven launch day, not an average Tuesday.",
-      "New account sign-ups, not just website visits."
-    ],
-    reference_anchors: [
-      { label: "Product Hunt daily active visitors", value: 500000 },
-      { label: "fraction who click through to a trending new launch", value: 0.04 }
-    ],
-    framework: [
-      { label: "Product Hunt daily active visitors", op: "x", model_value: 500000, unit: "visitors", plausible_range: [300000, 700000] },
-      { label: "Fraction who click through to a trending new SaaS launch", op: "x", model_value: 0.04, unit: "fraction", plausible_range: [0.01, 0.08] },
-      { label: "Conversion rate from click-through to sign-up", op: "x", model_value: 0.15, unit: "fraction", plausible_range: [0.05, 0.3] }
-    ],
-    framework_notes: [
-      "Product Hunt draws around half a million active visitors on a busy day.",
-      "A well-positioned, trending launch catches the attention of a small but meaningful slice of that traffic.",
-      "Of the people who click through, only a fraction actually create an account rather than just browsing."
-    ],
-    narrative: [
-      "Product Hunt sees around 500,000 active visitors on a busy day.",
-      "A trending new launch might catch about 4% of that traffic.",
-      "And roughly 15% of those click-throughs convert into an actual sign-up.",
-      "500,000 × 0.04 × 0.15 comes out around 3,000.",
-      "That's a genuinely great launch day for a small UK SaaS startup — the kind founders screenshot and put straight into the pitch deck."
-    ],
-    estimate_range: [800, 10000],
-    actual_answer: 3000,
-    answer_type: "consensus-estimate",
-    as_of: 2024,
-    source: "Reasoned from typical Product Hunt traffic figures and startup launch-day conversion benchmarks.",
-    sanity_check: "3,000 sign-ups in a day is a launch good enough to make the founders forget they haven't slept in a week."
   }
 ];
 
@@ -2562,7 +2377,6 @@ window.NAPKIN.dailyOrder = [
   "q0002", // matchday pies across English football
   "q0016", // sheep in the UK
   "q0008", // blades of grass on a football pitch
-  "q0009", // Slack messages sent globally per day
   "q0034", // raindrops falling on London during a downpour
   "q0052", // parkrun finishers across the UK each Saturday
   "q0018", // contactless payments made in the UK per day
@@ -2574,11 +2388,10 @@ window.NAPKIN.dailyOrder = [
   "q0019", // app downloads worldwide per day
   "q0042", // hours of live football on UK TV per week
   "q0025", // private gardens in the UK
-  "q0058", // video-call meeting-minutes logged globally per day
   "q0067", // money UK households spend on Christmas presents per year
-  "q0006", // Greggs sausage rolls per day
-  "q0037", // pet dogs owned in the UK
   "q0013", // grains of sand on Blackpool beach
+  "q0037", // pet dogs owned in the UK
+  "q0006", // Greggs sausage rolls per day
   "q0049", // books read by UK adults per year
   "q0022", // Amazon parcels delivered in the UK per day
   "q0060", // Jira/Linear tickets closed per day at a large tech company
@@ -2591,14 +2404,11 @@ window.NAPKIN.dailyOrder = [
   "q0010", // London Marathon finishers per year
   "q0044", // coffees sold by a big UK coffee chain per day
   "q0059", // urban foxes living in London
-  "q0068", // sign-ups a UK SaaS startup gets on a good launch day
   "q0021", // umbrellas bought in the UK per year
-  "q0029", // GitHub commits pushed globally per day
   "q0055", // golf balls to fill Wembley's pitch to knee height
   "q0017", // Eurovision final viewers worldwide
   "q0033", // pints of milk delivered by milkmen each morning
   "q0047", // islands around the UK
-  "q0062", // LinkedIn posts published worldwide per day
   "q0020", // tennis balls used at Wimbledon per year
   "q0039", // cash in circulation in the UK
   "q0012", // fish and chip portions sold in the UK per day

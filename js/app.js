@@ -1326,7 +1326,7 @@
   // A handful of free questions spanning different categories — Greggs and
   // the coastline are the two that best show off the game, plus one each
   // from sport, transport, everyday-life and the product-flavoured set.
-  var PRACTICE_FREE_IDS = ["q0006", "q0001", "q0005", "q0007", "q0009", "q0003"];
+  var PRACTICE_FREE_IDS = ["q0006", "q0001", "q0005", "q0007", "q0019", "q0003"];
 
   function viewPracticeList() {
     var wrap = el("section", { class: "screen practice" });
@@ -1359,7 +1359,7 @@
     if (locked.length) {
       // No real paywall yet — this is a placeholder for the idea. Clicking
       // it just reveals the rest of the list in place.
-      var unlockBtn = el("button", { class: "btn" }, "Unlock");
+      var unlockBtn = el("button", { class: "btn" }, "Unlock — £1.99");
       var paywall = el("div", { class: "paywall" },
         el("div", { class: "paywall-lock" }, "🔒"),
         el("div", { class: "hand paywall-title" }, locked.length + " more questions"),
