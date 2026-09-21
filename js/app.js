@@ -973,16 +973,18 @@
 
     container.appendChild(guessBar(res.guess, q.actual_answer));
     container.appendChild(el("p", { class: "source muted" }, q.source));
-    container.appendChild(buildComparison(q, res));
 
     if (opts.challenge) {
+      container.appendChild(buildComparison(q, res));
       container.appendChild(buildChallengeOutcome());
     } else if (opts.practice) {
+      container.appendChild(buildComparison(q, res));
       var again = el("button", { class: "btn" }, "Try another question");
       again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
     } else {
       container.appendChild(buildCommunityStats(res));
+      container.appendChild(buildComparison(q, res));
       container.appendChild(buildShareCard(q, res));
       container.appendChild(el("p", { class: "muted comeback" },
         "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
@@ -1050,8 +1052,8 @@
 
   function buildComparison(q, res) {
     var cmp = scoring.compareRows(res.rows, q.framework);
-    var box = el("div", { class: "compare" });
-    box.appendChild(el("h3", { class: "hand" }, "Your napkin vs. one good way"));
+    var box = el("details", { class: "compare" });
+    box.appendChild(el("summary", { class: "hand" }, "Your napkin vs. one good way"));
 
     if (res.pad && res.pad.trim()) {
       box.appendChild(el("div", { class: "youwrote hand" }, res.pad.trim()));

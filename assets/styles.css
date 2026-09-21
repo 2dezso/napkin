@@ -9,6 +9,7 @@
   --pen-soft: #eaeae6;
   --red: #b23b2e;
   --green: #4a8a4a;
+  --teal: #3c8a82;
   --amber: #bd8420;
   --hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -129,6 +130,7 @@ body {
 .distbar-track { flex: 1; height: 0.55rem; background: var(--pen-soft); border-radius: 999px; overflow: hidden; }
 .distbar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
 .distrow.nailed .distbar-fill { background: var(--green); }
+.distrow.sharp  .distbar-fill { background: var(--teal); }
 .distrow.solid  .distbar-fill { background: var(--pen); }
 .distrow.close  .distbar-fill { background: var(--amber); }
 .distrow.miss   .distbar-fill { background: var(--red); }
@@ -567,12 +569,14 @@ body {
 }
 .hero.in { opacity: 1; transform: none; }
 .hero.nailed { border-color: var(--green); background: #eaf3ea; }
+.hero.sharp  { border-color: var(--teal);  background: #e8f2f1; }
 .hero.solid  { border-color: var(--pen);   background: var(--pen-soft); }
 .hero.close  { border-color: var(--amber); background: #f7efdc; }
 .hero.miss   { border-color: var(--red);   background: #f6e6e3; }
 .hero-emoji { font-size: 3.4rem; line-height: 1; }
 .hero-score { font-size: 2.4rem; line-height: 1.1; margin: 0.3rem 0 0.1rem; }
 .hero.nailed .hero-score { color: var(--green); }
+.hero.sharp  .hero-score { color: var(--teal); }
 .hero.solid  .hero-score { color: var(--pen); }
 .hero.close  .hero-score { color: var(--amber); }
 .hero.miss   .hero-score { color: var(--red); }
@@ -650,7 +654,8 @@ body {
   border-radius: 12px;
   padding: 1rem;
 }
-.compare h3 { margin: 0 0 0.7rem; font-size: 1.2rem; }
+.compare summary { margin: 0; font-size: 1.2rem; cursor: pointer; }
+.compare[open] summary { margin-bottom: 0.7rem; }
 .youwrote {
   white-space: pre-wrap;
   font-size: 1.05rem;

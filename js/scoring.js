@@ -186,6 +186,17 @@ window.NAPKIN.scoring = (function () {
       ]
     },
     {
+      key: "sharp", max: 2, label: "Good shout", emoji: "👌",
+      blurb: "Very close — a confident, near-miss guess.",
+      quips: [
+        "Very nearly there.",
+        "The interviewer's still nodding along.",
+        "A whisker off, nothing more.",
+        "Close enough that nobody's double-checking.",
+        "You'd win the argument down the pub."
+      ]
+    },
+    {
       key: "solid", max: 3, label: "Solid ballpark", emoji: "👍",
       blurb: "Right order of magnitude, comfortably.",
       quips: [

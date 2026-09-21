@@ -7,7 +7,7 @@
  * the app. */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.results = (function () {
-  var BANDS_ORDER = ["miss", "close", "solid", "nailed"]; // worst -> best, for percentile ranking
+  var BANDS_ORDER = ["miss", "close", "solid", "sharp", "nailed"]; // worst -> best, for percentile ranking
 
   var db = null;
   function ensureDb() {
