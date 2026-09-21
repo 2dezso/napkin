@@ -356,15 +356,15 @@ window.NAPKIN.questions = [
 
 // The shared daily rotation: the same question for everyone on a given calendar
 // day, keyed to the date (see storage.dayNumber / storage.EPOCH). Cycles when it
-// runs out. Day 0 — launch day — is the Greggs one.
+// runs out. Swapped so today (2026-09-21, day 22, slot 6) lands on Greggs.
 window.NAPKIN.dailyOrder = [
-  "q0006", // Greggs sausage rolls per day
+  "q0005", // coastline of mainland Britain
   "q0003", // cups of tea in the UK per day
   "q0001", // Premier League matchday attendance
   "q0004", // pints pulled on a Friday night
   "q0007", // TfL journeys per weekday
   "q0002", // matchday pies across English football
-  "q0005", // coastline of mainland Britain
+  "q0006", // Greggs sausage rolls per day
   "q0008"  // blades of grass on a football pitch
 ];
 
