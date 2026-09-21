@@ -5,10 +5,10 @@
  * "Your apps" > the web app's config snippet. */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.firebaseConfig = {
-  apiKey: "PASTE_FIREBASE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyDz-pdTyE8w2sfMUORIFuNddraKxZFh-XI",
+  authDomain: "napkinmath-3ed68.firebaseapp.com",
+  projectId: "napkinmath-3ed68",
+  storageBucket: "napkinmath-3ed68.firebasestorage.app",
+  messagingSenderId: "488954711216",
+  appId: "1:488954711216:web:f7976cbcf3d445e827bf75"
 };
