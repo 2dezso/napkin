@@ -119,6 +119,23 @@ body {
 .feedback-text:focus { outline: 0; border-color: var(--pen); }
 .feedback-status { min-height: 1.2rem; margin-top: 0.4rem; }
 
+/* ---------- community results distribution ---------- */
+.distbox { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 0.9rem 1rem; margin-top: 0.9rem; }
+.distbox .muted { margin: 0 0 0.6rem; }
+.distrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0; font-size: 0.9rem; }
+.dist-emoji { width: 1.4rem; text-align: center; flex: none; }
+.dist-label { width: 8.5rem; flex: none; color: var(--faint); }
+.distrow.you .dist-label { color: var(--ink); font-weight: 700; }
+.distbar-track { flex: 1; height: 0.55rem; background: var(--pen-soft); border-radius: 999px; overflow: hidden; }
+.distbar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.distrow.nailed .distbar-fill { background: var(--green); }
+.distrow.solid  .distbar-fill { background: var(--pen); }
+.distrow.close  .distbar-fill { background: var(--amber); }
+.distrow.miss   .distbar-fill { background: var(--red); }
+.distrow.you .distbar-track { box-shadow: 0 0 0 2px var(--ink) inset; }
+.dist-pct { width: 2.6rem; text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
+.dist-percentile { margin-top: 0.6rem; font-size: 1.05rem; text-align: center; }
+
 /* ---------- chips / headings ---------- */
 .daychip, .reveal-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
 .chip {

@@ -474,6 +474,7 @@
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
           var full = storage.recordResult(rec);
+          if (window.NAPKIN.results) window.NAPKIN.results.submit(full.date, full.band).catch(function () {});
           mount(revealScreen(q, full, { practice: false }));
         }
       }
@@ -981,6 +982,7 @@
       again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
     } else {
+      container.appendChild(buildCommunityStats(res));
       container.appendChild(buildShareCard(q, res));
       container.appendChild(el("p", { class: "muted comeback" },
         "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
@@ -1096,6 +1098,45 @@
     box.appendChild(notes);
 
     box.appendChild(el("p", { class: "muted sanity" }, "Gut check: " + q.sanity_check));
+    return box;
+  }
+
+  // "How did I do vs. today's players" — a Wordle-style band distribution,
+  // your own bar picked out, plus a percentile line derived from the same
+  // counts. Read-only and best-effort: if the backend isn't configured or
+  // the request fails, this quietly says so instead of breaking the reveal.
+  function buildCommunityStats(res) {
+    var box = el("div", { class: "distbox" }, el("div", { class: "muted" }, "Loading today's results…"));
+    var resultsApi = window.NAPKIN.results;
+    if (!resultsApi) { box.firstChild.textContent = "Community stats aren't set up yet."; return box; }
+
+    resultsApi.distribution(res.date).then(function (d) {
+      box.innerHTML = "";
+      if (!d.total) {
+        box.appendChild(el("div", { class: "muted" }, "You're the first to scribble one down today."));
+        return;
+      }
+      box.appendChild(el("div", { class: "muted" },
+        "Today so far — " + util.withCommas(d.total) + (d.total === 1 ? " player" : " players")));
+      scoring.BANDS.forEach(function (b) {
+        var count = d.counts[b.key] || 0;
+        var pct = Math.round((count / d.total) * 100);
+        box.appendChild(el("div", { class: "distrow " + b.key + (res.band === b.key ? " you" : "") },
+          el("span", { class: "dist-emoji" }, b.emoji),
+          el("span", { class: "dist-label" }, b.label),
+          el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "width:" + pct + "%" })),
+          el("span", { class: "dist-pct" }, pct + "%")
+        ));
+      });
+      var pctile = resultsApi.percentile(d.counts, d.total, res.band);
+      if (pctile != null) {
+        box.appendChild(el("div", { class: "dist-percentile hand" }, "Better than " + pctile + "% of today's players."));
+      }
+    }).catch(function () {
+      box.innerHTML = "";
+      box.appendChild(el("div", { class: "muted" }, "Couldn't load today's community stats."));
+    });
+
     return box;
   }
 
