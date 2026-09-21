@@ -84,6 +84,40 @@ body {
   font-size: 0.85rem;
   text-align: center;
 }
+.feedback-trigger { display: block; margin: 0.5rem auto 0; }
+
+/* ---------- feedback modal ---------- */
+.feedback-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin-bottom: 0.9rem; }
+.feedback-chip {
+  font: inherit;
+  font-family: var(--hand);
+  font-size: 0.95rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.feedback-chip:hover { border-color: var(--pen); }
+.feedback-chip.selected { border-color: var(--pen); background: var(--pen-soft); color: var(--pen); }
+
+.feedback-textwrap { margin-bottom: 0.8rem; }
+.feedback-text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 4.5rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  padding: 0.5rem 0.7rem;
+  resize: vertical;
+}
+.feedback-text:focus { outline: 0; border-color: var(--pen); }
+.feedback-status { min-height: 1.2rem; margin-top: 0.4rem; }
 
 /* ---------- chips / headings ---------- */
 .daychip, .reveal-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }

@@ -1399,6 +1399,91 @@
     reader.readAsText(file);
   }
 
+  /* ---------- feedback ---------- */
+  // Web3Forms: a free access key (from web3forms.com, no account needed)
+  // lets a static site POST straight to an inbox with no backend of our own.
+  var FEEDBACK_ACCESS_KEY = "PASTE_WEB3FORMS_ACCESS_KEY_HERE";
+  var FEEDBACK_REACTIONS = [
+    { key: "spoton", label: "🎯 Spot on" },
+    { key: "confusing", label: "🤔 Confusing" },
+    { key: "idea", label: "💡 Idea" },
+    { key: "broken", label: "🐛 Something broke" }
+  ];
+  function openFeedbackModal() {
+    var picked = null;
+
+    var chips = FEEDBACK_REACTIONS.map(function (r) {
+      var chip = el("button", { class: "feedback-chip", type: "button" }, r.label);
+      chip.addEventListener("click", function () {
+        picked = r.key;
+        chips.forEach(function (c) { c.classList.remove("selected"); });
+        chip.classList.add("selected");
+        textWrap.hidden = false;
+        submitBtn.disabled = false;
+      });
+      return chip;
+    });
+    var chipRow = el("div", { class: "feedback-chips" }, chips);
+
+    var textarea = el("textarea", { class: "feedback-text", rows: 3, placeholder: "Anything to add? (optional)" });
+    var textWrap = el("div", { class: "feedback-textwrap", hidden: true }, textarea);
+
+    var status = el("div", { class: "muted feedback-status" });
+    var submitBtn = el("button", { class: "btn submit", type: "button", disabled: true }, "Send");
+    var cancelBtn = el("button", { class: "linkbtn", type: "button" }, "Never mind");
+
+    submitBtn.addEventListener("click", function () {
+      if (!picked) return;
+      var reaction = FEEDBACK_REACTIONS.filter(function (r) { return r.key === picked; })[0];
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending…";
+      status.textContent = "";
+      fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: FEEDBACK_ACCESS_KEY,
+          subject: "Napkin feedback: " + reaction.label,
+          reaction: reaction.label,
+          message: textarea.value.trim() || "(no extra note)",
+          view: STATE.view,
+          date: storage.todayISO()
+        })
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data && data.success) {
+          card.innerHTML = "";
+          var doneBtn = el("button", { class: "linkbtn modal-close", type: "button" }, "Close");
+          doneBtn.addEventListener("click", close);
+          card.appendChild(el("div", { class: "hand big" }, "Noted."));
+          card.appendChild(el("p", {}, "Thanks for scribbling that down."));
+          card.appendChild(doneBtn);
+          setTimeout(close, 1800);
+        } else {
+          throw new Error("send failed");
+        }
+      }).catch(function () {
+        status.textContent = "Couldn't send that — try again in a bit.";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send";
+      });
+    });
+
+    var card = el("div", { class: "demo-modal feedback-modal" },
+      el("div", { class: "hand big" }, "Scribble us a note"),
+      el("p", { class: "muted" }, "What's this about?"),
+      chipRow,
+      textWrap,
+      submitBtn,
+      status,
+      cancelBtn
+    );
+    var overlay = el("div", { class: "demo-overlay" }, card);
+    function close() { if (overlay.parentNode) overlay.remove(); }
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    cancelBtn.addEventListener("click", close);
+    document.body.appendChild(overlay);
+  }
+
   /* ---------- misc ---------- */
   function countUp(node, target) {
     if (!node) return;
@@ -1447,6 +1532,8 @@
         renderApp();
       });
     }
+    var feedbackBtn = document.getElementById("feedbackBtn");
+    if (feedbackBtn) feedbackBtn.addEventListener("click", openFeedbackModal);
     renderApp();
   });
 })();
