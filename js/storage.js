@@ -29,6 +29,23 @@ window.NAPKIN.storage = (function () {
     try { localStorage.setItem(DEMO_KEY, "1"); } catch (e) { /* full / blocked */ }
   }
 
+  // A friend's score carried in on a ?vs= link: { n: napkin #, p: points, name }.
+  // And the name you'd like friends to see on the links you send. Both are
+  // kept apart from the results log so they never end up in a backup.
+  var VS_KEY = "napkin.vs", NAME_KEY = "napkin.name";
+  function friendChallenge() {
+    try { return JSON.parse(localStorage.getItem(VS_KEY) || "null"); } catch (e) { return null; }
+  }
+  function saveFriendChallenge(v) {
+    try { localStorage.setItem(VS_KEY, JSON.stringify(v)); } catch (e) { /* full / blocked */ }
+  }
+  function playerName() {
+    try { return localStorage.getItem(NAME_KEY) || ""; } catch (e) { return ""; }
+  }
+  function setPlayerName(name) {
+    try { localStorage.setItem(NAME_KEY, name); } catch (e) { /* full / blocked */ }
+  }
+
   // Launch day = day 0. dayNumber() counts calendar days from here.
   var EPOCH = "2026-08-30";
 
@@ -232,6 +249,8 @@ window.NAPKIN.storage = (function () {
     streak: streak, longestStreak: longestStreak, stats: stats,
     challengeBest: challengeBest, recordChallengeBest: recordChallengeBest,
     hasSeenPadDemo: hasSeenPadDemo, markPadDemoSeen: markPadDemoSeen,
+    friendChallenge: friendChallenge, saveFriendChallenge: saveFriendChallenge,
+    playerName: playerName, setPlayerName: setPlayerName,
     exportJSON: exportJSON, importJSON: importJSON, reset: reset,
     initCloudSync: initCloudSync
   };

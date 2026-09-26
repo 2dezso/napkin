@@ -162,6 +162,73 @@
     return QUESTIONS.filter(function (q) { return q.id === id; })[0] || null;
   }
 
+  /* ---------- challenge a friend ----------
+   * Your share link carries your score for today's Napkin (and your name if
+   * you gave one): napkinmath.co.uk/?vs=28-82-Lewis. No server involved —
+   * a friend opening it sees your score over their pad, and the head-to-head
+   * once they've played. Trivially fakeable, which is fine between friends. */
+  var SITE_URL = "https://napkinmath.co.uk/";
+
+  function cleanName(s) {
+    return String(s || "").replace(/[^\p{L}\p{N} '’.\-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 20);
+  }
+  function challengeLink(napkinNumber, points, name) {
+    var n = cleanName(name);
+    return SITE_URL + "?vs=" + napkinNumber + "-" + points + (n ? "-" + encodeURIComponent(n) : "");
+  }
+  function friendLabel(vs) { return vs.name || "Your friend"; }
+
+  // Called once at boot: move a ?vs= link into storage and tidy the URL, so
+  // a refresh or a re-share doesn't carry someone else's challenge along.
+  function takeChallengeFromUrl() {
+    var raw = null;
+    try { raw = new URLSearchParams(window.location.search).get("vs"); } catch (e) { return; }
+    if (raw == null) return;
+    try { history.replaceState(null, "", window.location.pathname + window.location.hash); } catch (e) { /* file:// */ }
+    var m = String(raw).match(/^(\d{1,5})-(\d{1,3})(?:-(.*))?$/);
+    if (!m) return;
+    var vs = { n: +m[1], p: Math.min(100, +m[2]), name: cleanName(m[3]) };
+    storage.saveFriendChallenge(vs);
+    if (vs.n !== storage.dayNumber() + 1) STATE.staleChallenge = vs;
+  }
+
+  // The friend's score for today's Napkin, if there is one.
+  function todaysChallenge() {
+    var vs = storage.friendChallenge();
+    return vs && vs.n === storage.dayNumber() + 1 ? vs : null;
+  }
+
+  function challengeBanner() {
+    var vs = todaysChallenge();
+    if (vs) {
+      return el("div", { class: "vs-note" },
+        el("span", { class: "vs-note-icon" }, "✉️"),
+        el("span", {}, el("strong", {}, friendLabel(vs)), " scored ",
+          el("strong", { class: "hand vs-note-score" }, vs.p + "/100"), " on this one. Your move."));
+    }
+    var stale = STATE.staleChallenge;
+    if (stale) {
+      return el("div", { class: "vs-note stale" },
+        el("span", { class: "vs-note-icon" }, "✉️"),
+        el("span", {}, friendLabel(stale) + "'s challenge was for Napkin #" + stale.n +
+          ", not today's. Play this one and send them yours."));
+    }
+    return null;
+  }
+
+  function versusRow(vs, mine) {
+    var diff = mine - vs.p;
+    var verdict = diff > 0 ? "You win by " + diff + " 🎉"
+      : diff < 0 ? friendLabel(vs) + " wins by " + (-diff)
+      : "Dead heat 🤝";
+    return el("div", { class: "vs-row" + (diff > 0 ? " won" : diff < 0 ? " lost" : "") },
+      el("div", { class: "vs-side" }, el("span", { class: "vs-who" }, "You"), el("span", { class: "hand vs-pts" }, String(mine))),
+      el("div", { class: "vs-mid hand" }, "vs"),
+      el("div", { class: "vs-side" }, el("span", { class: "vs-who" }, friendLabel(vs)), el("span", { class: "hand vs-pts" }, String(vs.p))),
+      el("div", { class: "vs-verdict" }, verdict)
+    );
+  }
+
   /* ---------- the napkin screen ---------- */
   function napkinScreen(q, opts) {
     opts = opts || {};
@@ -192,6 +259,8 @@
         el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
         el("span", { class: "muted" }, storage.todayISO())
       ));
+      var banner = challengeBanner();
+      if (banner) wrap.appendChild(banner);
     }
 
     wrap.appendChild(el("h1", { class: "question hand" }, q.question));
@@ -916,7 +985,8 @@
         setTimeout(function () { countUp(pts, target); }, 250);
         setTimeout(function () {
           hero.classList.add("scored");
-          if (target >= 77) burstConfetti(hero.querySelector(".confetti"), target >= 86 ? 34 : 18);
+          var beatFriend = !!hero.querySelector(".vs-row.won");
+          if (target >= 77 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 86 || beatFriend ? 34 : 18);
         }, 1150);
       }
       var num = after.querySelector(".actualnum");
@@ -939,19 +1009,27 @@
     return util.roundFactor(sc.ratio) + "× off";
   }
 
-  function resultShareText(q, res, sc) {
+  // The share text minus its link, which the card shows as a preview; the
+  // link goes on the end when it's actually sent.
+  function resultShareLines(q, res, sc) {
     var streak = storage.streak();
     var rowsBit = res.assisted
       ? "👀 assisted"
       : res.mode === "eyeball"
         ? "eyeballed"
         : (res.rows && res.rows.length ? res.rows.length + (res.rows.length === 1 ? " number" : " numbers") : "hand-called");
-    return [
+    var lines = [
       "Napkin #" + res.napkinNumber + " " + sc.band.emoji,
       scoreBar(sc) + " " + sc.points + "/100",
-      scoreLine(sc) + " · " + rowsBit + " · " + streak + "-day streak",
-      "napkinmath.co.uk"
-    ].join("\n");
+      scoreLine(sc) + " · " + rowsBit + " · " + streak + "-day streak"
+    ];
+    // Replying to someone's challenge: say how it went.
+    var vs = todaysChallenge();
+    if (vs && vs.n === res.napkinNumber) {
+      var d = sc.points - vs.p, who = friendLabel(vs);
+      lines.push(d > 0 ? "Beat " + who + " by " + d + " 😎" : d < 0 ? who + " beat me by " + (-d) + " 😤" : "Dead heat with " + who + " 🤝");
+    }
+    return lines;
   }
 
   // Ten squares filled by score, coloured by tier — readable at a glance in
@@ -990,6 +1068,9 @@
       ));
     });
 
+    var vs = (!opts.practice && !opts.challenge) ? todaysChallenge() : null;
+    if (vs && vs.n !== res.napkinNumber) vs = null;
+
     container.appendChild(el("div", { class: "hero " + band.key },
       el("div", { class: "hero-kicker" }, "Your score"),
       el("div", { class: "hero-points-row hand" },
@@ -1000,6 +1081,7 @@
       el("div", { class: "hero-ratio" }, ratioLine),
       el("div", { class: "hero-quip" }, roast),
       ladder,
+      vs ? versusRow(vs, sc.points) : null,
       highlight ? el("div", { class: "hero-highlight" }, highlight) : null,
       el("div", { class: "confetti", "aria-hidden": "true" })
     ));
@@ -1192,13 +1274,28 @@
 
   function buildShareCard(q, res) {
     var sc = scoring.score(res.guess, q);
-    var text = resultShareText(q, res, sc);
+    var lines = resultShareLines(q, res, sc);
 
     var card = el("div", { class: "sharecard" });
-    card.appendChild(el("pre", { class: "sharetext" }, text));
-    var btn = el("button", { class: "btn" }, "Share result");
-    btn.addEventListener("click", function () { shareResult(text, btn); });
+    card.appendChild(el("div", { class: "hand sharecard-title" }, "Challenge a friend"));
+    card.appendChild(el("pre", { class: "sharetext" }, lines.join("\n")));
+
+    var nameInput = el("input", {
+      type: "text", class: "vs-name", maxlength: "20", autocomplete: "nickname",
+      placeholder: "Your name (optional)", "aria-label": "Your name, so they know who to beat"
+    });
+    nameInput.value = storage.playerName();
+    nameInput.addEventListener("input", function () { storage.setPlayerName(cleanName(nameInput.value)); });
+    card.appendChild(nameInput);
+
+    var btn = el("button", { class: "btn" }, "Send the challenge");
+    btn.addEventListener("click", function () {
+      var link = challengeLink(res.napkinNumber, sc.points, nameInput.value);
+      shareResult(lines.concat("Beat me: " + link).join("\n"), btn);
+    });
     card.appendChild(btn);
+    card.appendChild(el("p", { class: "muted sharecard-note" },
+      "Their link shows them your " + sc.points + " before they start, and the head-to-head when they finish."));
     return card;
   }
 
@@ -1698,6 +1795,7 @@
     }
     var feedbackBtn = document.getElementById("feedbackBtn");
     if (feedbackBtn) feedbackBtn.addEventListener("click", openFeedbackModal);
+    takeChallengeFromUrl();
     renderApp();
 
     // Best-effort cloud backup: re-render only if it actually pulled in
