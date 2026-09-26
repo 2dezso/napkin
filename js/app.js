@@ -154,7 +154,7 @@
     var todays = storage.resultForDate(storage.todayISO());
     if (todays) {
       var q = byId(todays.questionId) || storage.currentQuestion(QUESTIONS);
-      return revealScreen(q, todays, { practice: false });
+      return revealScreen(q, todays, { practice: false, instant: true });
     }
     return napkinScreen(storage.currentQuestion(QUESTIONS), { practice: false });
   }
@@ -965,16 +965,30 @@
     buildAfter(after, q, res, opts);
     wrap.appendChild(after);
 
-    var totalMs = q.narrative.length * 1150 + 500;
-    var timer = setTimeout(reveal, totalMs);
-    skip.addEventListener("click", function () {
-      clearTimeout(timer);
-      narr.classList.add("done");
+    // Revisiting a finished Napkin: no replay, straight to the result.
+    if (opts.instant) {
       reveal();
-    });
+    } else {
+      var timer = setTimeout(reveal, q.narrative.length * 1150 + 1300);
+      skip.addEventListener("click", function () { clearTimeout(timer); reveal(); });
+    }
+
+    // Once the score is in, the working folds away under one line, so the
+    // scorecard isn't five screens down on a phone.
+    function foldWorkings() {
+      narr.classList.add("done");
+      var workings = el("details", { class: "workings" }, el("summary", {}, "How it's worked out"));
+      wrap.insertBefore(workings, narr);
+      workings.appendChild(narr);
+    }
+
     function reveal() {
       if (skip.parentNode) skip.remove();
+      foldWorkings();
       after.hidden = false;
+      if (!opts.instant) {
+        try { after.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { after.scrollIntoView(); }
+      }
       var hero = after.querySelector(".hero");
       if (hero) {
         requestAnimationFrame(function () {
@@ -1068,7 +1082,8 @@
       ));
     });
 
-    var vs = (!opts.practice && !opts.challenge) ? todaysChallenge() : null;
+    var isDaily = !opts.practice && !opts.challenge;
+    var vs = isDaily ? todaysChallenge() : null;
     if (vs && vs.n !== res.napkinNumber) vs = null;
 
     container.appendChild(el("div", { class: "hero " + band.key },
@@ -1082,7 +1097,9 @@
       el("div", { class: "hero-quip" }, roast),
       ladder,
       vs ? versusRow(vs, sc.points) : null,
+      isDaily ? buildCrowdLine(res) : null,
       highlight ? el("div", { class: "hero-highlight" }, highlight) : null,
+      isDaily ? buildChallengeBlock(q, res, sc) : null,
       el("div", { class: "confetti", "aria-hidden": "true" })
     ));
 
@@ -1104,9 +1121,7 @@
       again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
     } else {
-      container.appendChild(buildCommunityStats(res));
       container.appendChild(buildComparison(q, res));
-      container.appendChild(buildShareCard(q, res));
       container.appendChild(el("p", { class: "muted comeback" },
         "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
     }
@@ -1233,52 +1248,29 @@
     return box;
   }
 
-  // "How did I do vs. today's players" — a Wordle-style band distribution,
-  // your own bar picked out, plus a percentile line derived from the same
-  // counts. Read-only and best-effort: if the backend isn't configured or
-  // the request fails, this quietly says so instead of breaking the reveal.
-  function buildCommunityStats(res) {
-    var box = el("div", { class: "distbox" }, el("div", { class: "muted" }, "Loading today's results…"));
-    var resultsApi = window.NAPKIN.results;
-    if (!resultsApi) { box.firstChild.textContent = "Community stats aren't set up yet."; return box; }
-
-    resultsApi.distribution(res.date).then(function (d) {
-      box.innerHTML = "";
-      if (!d.total) {
-        box.appendChild(el("div", { class: "muted" }, "You're the first to scribble one down today."));
-        return;
-      }
-      box.appendChild(el("div", { class: "muted" },
-        "Today so far — " + util.withCommas(d.total) + (d.total === 1 ? " player" : " players")));
-      scoring.BANDS.forEach(function (b) {
-        var count = d.counts[b.key] || 0;
-        var pct = Math.round((count / d.total) * 100);
-        box.appendChild(el("div", { class: "distrow " + b.key + (res.band === b.key ? " you" : "") },
-          el("span", { class: "dist-emoji" }, b.emoji),
-          el("span", { class: "dist-label" }, b.label),
-          el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "width:" + pct + "%" })),
-          el("span", { class: "dist-pct" }, pct + "%")
-        ));
-      });
-      var pctile = resultsApi.percentile(d.counts, d.total, res.band);
-      box.appendChild(el("div", { class: "dist-percentile hand" }, pctile != null
-        ? "Better than " + pctile + "% of today's players."
-        : "You're first in today — check back later to see how you stack up."));
-    }).catch(function () {
-      box.innerHTML = "";
-      box.appendChild(el("div", { class: "muted" }, "Couldn't load today's community stats."));
-    });
-
-    return box;
+  // "How did I do vs. everyone else today", as one line on the scorecard.
+  // Best-effort: if the backend is unreachable the line just disappears.
+  function buildCrowdLine(res) {
+    var line = el("div", { class: "hero-crowd" }, "Checking how everyone else did…");
+    var api = window.NAPKIN.results;
+    if (!api) { line.hidden = true; return line; }
+    api.distribution(res.date).then(function (d) {
+      var others = d.total - 1;
+      var p = api.percentile(d.counts, d.total, res.band);
+      line.textContent = p == null
+        ? "You're first in today — check back later to see how you stack up."
+        : "Better than " + p + "% of the " + util.withCommas(others) + (others === 1 ? " other player" : " other players") + " today.";
+    }).catch(function () { line.hidden = true; });
+    return line;
   }
 
-  function buildShareCard(q, res) {
-    var sc = scoring.score(res.guess, q);
+  // The foot of the scorecard: your result as a friend will see it, and the
+  // button that sends it as a challenge.
+  function buildChallengeBlock(q, res, sc) {
     var lines = resultShareLines(q, res, sc);
 
-    var card = el("div", { class: "sharecard" });
-    card.appendChild(el("div", { class: "hand sharecard-title" }, "Challenge a friend"));
-    card.appendChild(el("pre", { class: "sharetext" }, lines.join("\n")));
+    var card = el("div", { class: "hero-share" });
+    card.appendChild(el("div", { class: "hand hero-share-bar", "aria-hidden": "true" }, scoreBar(sc)));
 
     var nameInput = el("input", {
       type: "text", class: "vs-name", maxlength: "20", autocomplete: "nickname",
@@ -1288,14 +1280,14 @@
     nameInput.addEventListener("input", function () { storage.setPlayerName(cleanName(nameInput.value)); });
     card.appendChild(nameInput);
 
-    var btn = el("button", { class: "btn" }, "Send the challenge");
+    var btn = el("button", { class: "btn" }, "Challenge a friend");
     btn.addEventListener("click", function () {
       var link = challengeLink(res.napkinNumber, sc.points, nameInput.value);
       shareResult(lines.concat("Beat me: " + link).join("\n"), btn);
     });
     card.appendChild(btn);
-    card.appendChild(el("p", { class: "muted sharecard-note" },
-      "Their link shows them your " + sc.points + " before they start, and the head-to-head when they finish."));
+    card.appendChild(el("p", { class: "muted hero-share-note" },
+      "They'll see your " + sc.points + " before they start, and who won when they finish."));
     return card;
   }
 

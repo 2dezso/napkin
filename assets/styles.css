@@ -49,7 +49,7 @@ body {
 /* ---------- the napkin ----------
    One shared surface for every card. The dotted outline, pulled 7px inside
    the edge, is the embossed border a diner napkin has. */
-.panel, .hero, .answerbox, .compare, .distbox, .sharecard, .stat, .paywall,
+.panel, .hero, .answerbox, .compare, .distbox, .stat, .paywall,
 .sparkbox, .qcard, .rulebox, .demo-modal, .challenge-summary {
   background-color: var(--card);
   background-image: var(--tissue);
@@ -162,7 +162,6 @@ body {
 .distrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0; font-size: 0.9rem; }
 .dist-emoji { width: 1.4rem; text-align: center; flex: none; }
 .dist-label { width: 8.5rem; flex: none; color: var(--faint); }
-.distrow.you .dist-label { color: var(--ink); font-weight: 700; }
 .distbar-track { flex: 1; height: 0.55rem; background: var(--pen-soft); border-radius: 999px; overflow: hidden; }
 .distbar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
 .distrow.nailed .distbar-fill { background: var(--green); }
@@ -170,9 +169,7 @@ body {
 .distrow.solid  .distbar-fill { background: var(--pen); }
 .distrow.close  .distbar-fill { background: var(--amber); }
 .distrow.miss   .distbar-fill { background: var(--red); }
-.distrow.you .distbar-track { box-shadow: 0 0 0 2px var(--ink) inset; }
 .dist-pct { width: 2.6rem; text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
-.dist-percentile { margin-top: 0.6rem; font-size: 1.05rem; text-align: center; }
 
 /* ---------- chips / headings ---------- */
 .daychip, .reveal-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
@@ -824,16 +821,23 @@ body {
 .sanity { margin: 0.6rem 0 0; }
 .extras { margin: 0.7rem 0 0; }
 
-/* ---------- share card ---------- */
-.sharecard { padding: 1.3rem; text-align: center; }
-.sharetext {
-  font-family: var(--hand);
-  font-size: 1.1rem;
-  margin: 0 0 0.9rem;
-  white-space: pre-wrap;
-  line-height: 1.4;
+/* ---------- the scorecard's footer: crowd line + challenge ---------- */
+.hero-crowd { margin-top: 0.9rem; font-size: 0.9rem; color: var(--faint); }
+.hero-share {
+  position: relative;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px dotted var(--emboss);
 }
-.sharecard-title { font-size: 1.3rem; margin-bottom: 0.5rem; }
+.hero-share-bar { font-size: 1.15rem; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+.hero-share-note { margin: 0.6rem 0 0; font-size: 0.8rem; }
+
+/* "How it's worked out": the narrative, folded away once the score is in. */
+.workings { margin: 0.2rem 0 0.2rem; }
+.workings summary { cursor: pointer; color: var(--pen); font-size: 0.95rem; }
+.workings[open] summary { margin-bottom: 0.8rem; }
+.after { scroll-margin-top: 0.75rem; }
+
 .vs-name {
   display: block;
   width: 100%;
@@ -849,7 +853,6 @@ body {
   border-bottom: 2px dotted var(--emboss);
 }
 .vs-name:focus { outline: 0; border-bottom-color: var(--pen); }
-.sharecard-note { margin: 0.7rem 0 0; font-size: 0.8rem; }
 .comeback { text-align: center; }
 
 /* A friend's challenge: a sticky note left on the table by your napkin. */
