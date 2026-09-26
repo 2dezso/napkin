@@ -340,61 +340,98 @@ window.NAPKIN.util = (function () {
 window.NAPKIN.scoring = (function () {
   var util = window.NAPKIN.util;
 
+  // Six tiers, best first, by score out of 100. Each has a bank of lines;
+  // a line tagged "high" or "low" only shows when the guess went that way,
+  // and {n} becomes the miss factor ("7.1×").
   var BANDS = [
     {
-      key: "nailed", max: 1.5, label: "Bang on", short: "Bang on", emoji: "🎯",
-      blurb: "Dead on. That's interview gold.",
+      key: "bangon", min: 95, label: "Bang on", short: "Bang on", emoji: "🎯",
       quips: [
-        "Frame that one.",
-        "Are you secretly a quantity surveyor?",
-        "Genuinely — that's a gold-star answer.",
-        "Suspiciously good. Did you peek?",
-        "The interviewer just offered you the job."
+        ["Frame that napkin."],
+        ["Somebody get this person a pint."],
+        ["Did you peek? Be honest."],
+        ["That's not an estimate, that's witchcraft."],
+        ["The whole pub's gone quiet. Genuine respect."],
+        ["Consultants charge £2,000 a day for worse."],
+        ["Stop it. You're making the rest of us look bad."],
+        ["Put that on your CV."],
+        ["Napkin of the year contender."],
+        ["Absolute scenes."]
       ]
     },
     {
-      key: "sharp", max: 2, label: "Good shout", short: "Good shout", emoji: "👌",
-      blurb: "Very close — a confident, near-miss guess.",
+      key: "soclose", min: 86, label: "So close", short: "So close", emoji: "😮",
       quips: [
-        "Very nearly there.",
-        "The interviewer's still nodding along.",
-        "A whisker off, nothing more.",
-        "Close enough that nobody's double-checking.",
-        "You'd win the argument down the pub."
+        ["Just a touch keen. Barely.", "high"],
+        ["A smidge shy. So nearly.", "low"],
+        ["Agonising. One more sip and you'd have had it."],
+        ["Close enough to argue about. Too far to win."],
+        ["Hit the post."],
+        ["So close you can taste it."],
+        ["A photo finish, and you lost by a nose."],
+        ["Rattled the crossbar."],
+        ["The napkin salutes you. Mostly."],
+        ["One decimal place from glory."]
       ]
     },
     {
-      key: "solid", max: 3, label: "Solid ballpark", short: "Solid", emoji: "👍",
-      blurb: "Right order of magnitude, comfortably.",
+      key: "goodshout", min: 77, label: "Good shout", short: "Good shout", emoji: "👌",
       quips: [
-        "You'd survive the interview.",
-        "Tidy. A confident nod from across the table.",
-        "Not perfect, but nobody's quibbling.",
-        "Right ballpark — pint's on them.",
-        "That'll do nicely."
+        ["You'd win that argument down the pub."],
+        ["Solid. Nobody's heckling."],
+        ["Respectable. Your mum would be proud."],
+        ["Right street, wrong house number."],
+        ["Bit generous, but we'll take it.", "high"],
+        ["Bit stingy, but we'll take it.", "low"],
+        ["The interviewer nodded. Once."],
+        ["Decent. Not frame-worthy, but decent."],
+        ["Keep that up and you'll be dangerous."],
+        ["A good shout, and a loud one."]
       ]
     },
     {
-      key: "close", max: 10, label: "Right idea, wrong number", short: "Close-ish", emoji: "🤏",
-      blurb: "The reasoning was in the zone, the number wandered off.",
+      key: "ballpark", min: 63, label: "Ballpark-ish", short: "Ballpark-ish", emoji: "🤷",
       quips: [
-        "Right postcode, wrong street.",
-        "In the right stadium, wrong stand.",
-        "The interviewer's eyebrow is now raised.",
-        "You'd talk your way out of that one. Just.",
-        "Close-ish. We'll allow it, grudgingly."
+        ["Squint and it's right."],
+        ["In the ballpark. Well, the car park."],
+        ["Somebody's feeling optimistic.", "high"],
+        ["Aim higher. Literally.", "low"],
+        ["The general direction was correct."],
+        ["Half a pint of credit."],
+        ["Fine for a napkin. Not for an interview."],
+        ["You'd get away with it in a meeting."],
+        ["Right idea, sloppy numbers."],
+        ["The maths went a bit Friday afternoon."]
       ]
     },
     {
-      key: "miss", max: Infinity, label: "Off by a mile", short: "Way off", emoji: "🙈",
-      blurb: "Order-of-magnitude miss — check which number went walkabout.",
+      key: "notclose", min: 23, label: "Not even close", short: "Not even close", emoji: "🙈",
       quips: [
-        "{n}× out. Were you guessing in a different currency?",
-        "Bold. Wrong, but bold.",
-        "{n}× off — that's Sunday league vs Wembley.",
-        "Did you panic? It rather looks like you panicked.",
-        "That is… a number you have chosen.",
-        "Off by {n}×. The napkin has questions for you."
+        ["Put the pen down and get a round in."],
+        ["{n} off. The napkin is embarrassed for you."],
+        ["{n} too high. Steady on.", "high"],
+        ["{n} too low. Think bigger.", "low"],
+        ["Right country, wrong county."],
+        ["Bold. Wrong, but bold."],
+        ["The interviewer is checking their watch."],
+        ["Did you do this one on the bus?"],
+        ["We've all been there. Not this far, but there."],
+        ["Your working needs a working lunch."]
+      ]
+    },
+    {
+      key: "binit", min: 0, label: "Bin it", short: "Bin it", emoji: "🗑️",
+      quips: [
+        ["Napkin's going straight in the bin."],
+        ["{n} off. Were you guessing in yen?"],
+        ["{n} too high. Have a lie down.", "high"],
+        ["{n} too low. Were you counting in dozens?", "low"],
+        ["That's not a guess, that's a cry for help."],
+        ["Sunday league vs Wembley."],
+        ["The napkin has filed a complaint."],
+        ["Somewhere, a statistician just fainted."],
+        ["Security will see you out."],
+        ["Wrong by a margin normally reserved for weather forecasts."]
       ]
     }
   ];
@@ -404,27 +441,60 @@ window.NAPKIN.scoring = (function () {
     return Math.max(guess, actual) / Math.min(guess, actual);
   }
 
-  // 0-100. Exact is 100 and every doubling of the miss costs the same, so the
-  // band edges land on 86 / 77 / 63 / 23 (1.5x / 2x / 3x / 10x off) and 20x
-  // or worse is 0. Landing in a question's sensible range is always worth at
-  // least a Bang on.
+  // Many answers are themselves estimates, so landing inside a question's
+  // sensible range is never marked below a Good shout. The top two tiers
+  // still have to be earned by actually being close.
+  var RANGE_FLOOR = 77;
+
+  // 0-100. Exact is 100 and every doubling of the miss costs the same, so
+  // the tier edges land on 95 / 86 / 77 / 63 / 23 (within ~16%, then 1.5x,
+  // 2x, 3x and 10x off) and 20x or worse is 0.
   function points(r, inRange) {
     var p = isFinite(r) && r >= 1 ? Math.round(100 * Math.max(0, 1 - Math.log(r) / Math.log(20))) : 0;
-    return inRange ? Math.max(p, 86) : p;
+    return inRange ? Math.max(p, RANGE_FLOOR) : p;
+  }
+
+  function bandFor(p) {
+    return BANDS.filter(function (b) { return p >= b.min; })[0] || BANDS[BANDS.length - 1];
   }
 
   function score(guess, q) {
     var r = ratio(guess, q.actual_answer);
     var inRange = !!q.estimate_range && guess >= q.estimate_range[0] && guess <= q.estimate_range[1];
-    var band = inRange ? BANDS[0] : BANDS.filter(function (b) { return r <= b.max; })[0];
-    return { ratio: r, inRange: inRange, band: band, points: points(r, inRange) };
+    var p = points(r, inRange);
+    return {
+      ratio: r,
+      inRange: inRange,
+      floored: inRange && p > points(r, false),
+      dir: guess > q.actual_answer ? "high" : "low",
+      band: bandFor(p),
+      points: p
+    };
   }
 
-  // A random roast/credit line for the result, with {n} -> the miss factor.
-  function quip(band, r) {
-    var list = band.quips || [""];
-    var pick = list[Math.floor(Math.random() * list.length)];
-    return pick.replace(/\{n\}/g, util.roundFactor(r));
+  // A line for the result that you won't see again until you've been through
+  // the rest of that tier's bank: a shuffled queue per tier and direction,
+  // kept in this browser.
+  var BAG_KEY = "napkin.lines";
+  function quip(band, r, dir) {
+    var fits = [];
+    band.quips.forEach(function (q, i) { if (!q[1] || q[1] === dir) fits.push(i); });
+    if (!fits.length) return "";
+    var bags = {};
+    try { bags = JSON.parse(localStorage.getItem(BAG_KEY) || "{}") || {}; } catch (e) { bags = {}; }
+    var id = band.key + ":" + (dir || "");
+    var bag = (bags[id] || []).filter(function (i) { return fits.indexOf(i) !== -1; });
+    if (!bag.length) {
+      bag = fits.slice();
+      for (var i = bag.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+      }
+    }
+    var pick = bag.pop();
+    bags[id] = bag;
+    try { localStorage.setItem(BAG_KEY, JSON.stringify(bags)); } catch (e) { /* private mode */ }
+    return band.quips[pick][0].replace(/\{n\}/g, util.roundFactor(r) + "×");
   }
 
   // ---- fuzzy row alignment for the "your napkin vs the model's" comparison ----
@@ -476,5 +546,5 @@ window.NAPKIN.scoring = (function () {
     return { pairs: pairs, extras: extras };
   }
 
-  return { ratio: ratio, score: score, points: points, quip: quip, compareRows: compareRows, BANDS: BANDS };
+  return { ratio: ratio, score: score, points: points, bandFor: bandFor, quip: quip, compareRows: compareRows, BANDS: BANDS };
 })();

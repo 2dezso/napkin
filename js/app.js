@@ -1018,7 +1018,7 @@
         setTimeout(function () {
           hero.classList.add("scored");
           var beatFriend = !!hero.querySelector(".vs-row.won");
-          if (target >= 77 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 86 || beatFriend ? 34 : 18);
+          if (target >= 86 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 95 || beatFriend ? 34 : 18);
         }, 1150);
       }
       var num = after.querySelector(".actualnum");
@@ -1031,7 +1031,7 @@
   }
 
   // A narrative line with each number wrapped, so it gets underlined in
-  // biro just after the line lands.
+  // pencil just after the line lands.
   function underlineNumbers(line, delayMs) {
     var out = [], pos = 0;
     util.scanFactors(line).forEach(function (t) {
@@ -1149,13 +1149,14 @@
 
   // Close misses read better as a percentage ("14% away") than a multiplier;
   // order-of-magnitude misses read better the other way round ("40× off").
-  // Shared by the full breakdown, the share text, and the score popup so the
-  // framing is consistent everywhere it shows up.
+  // Shared by the scorecard and the share text so the framing is the same
+  // everywhere. When the sensible-range floor lifted the score, say so.
   function scoreLine(sc) {
-    if (sc.inRange) return "inside the sensible range";
-    if (sc.ratio < 1.1) return "spot on";
-    if (sc.ratio <= 2) return Math.round((sc.ratio - 1) * 100) + "% away";
-    return util.roundFactor(sc.ratio) + "× off";
+    var way = sc.dir === "high" ? "too high" : "too low";
+    var miss = sc.ratio < 1.02 ? "spot on"
+      : sc.ratio <= 2 ? Math.round((sc.ratio - 1) * 100) + "% " + way
+      : util.roundFactor(sc.ratio) + "× " + way;
+    return sc.floored ? miss + ", but inside the sensible range" : miss;
   }
 
   // The share text minus its link, which the card shows as a preview; the
@@ -1183,7 +1184,7 @@
 
   // Ten squares filled by score, coloured by tier — readable at a glance in
   // a group chat, the way a Wordle grid is.
-  var BAR_FILL = { nailed: "🟩", sharp: "🟩", solid: "🟨", close: "🟧", miss: "🟥" };
+  var BAR_FILL = { bangon: "🟩", soclose: "🟩", goodshout: "🟨", ballpark: "🟨", notclose: "🟧", binit: "🟥" };
   function scoreBar(sc) {
     var filled = Math.max(sc.points > 0 ? 1 : 0, Math.round(sc.points / 10));
     var out = "";
@@ -1199,12 +1200,12 @@
   function buildAfter(container, q, res, opts) {
     var sc = scoring.score(res.guess, q);
     var band = sc.band;
-    var roast = scoring.quip(band, sc.ratio);
+    var roast = scoring.quip(band, sc.ratio, sc.dir);
     var ratioLine = scoreLine(sc);
 
     var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
 
-    // Every tier, worst to best, with yours circled in biro once the score lands.
+    // Every tier, worst to best, with yours circled in red pencil once the score lands.
     var ladder = el("div", { class: "tier-ladder" });
     scoring.BANDS.slice().reverse().forEach(function (b) {
       var here = b.key === band.key;
@@ -1480,7 +1481,7 @@
   }
   function applyChallengeResult(sc) {
     var c = STATE.challenge;
-    var lifeLost = sc.band.key === "miss";
+    var lifeLost = sc.band.key === "binit";
     c.lastLifeLost = lifeLost;
     if (lifeLost) {
       c.lives -= 1;
@@ -1725,11 +1726,11 @@
     var pts = series.map(function (d, i) { return xs(i) + "," + ys(d.points); }).join(" ");
     var parts = [
       '<line x1="8" y1="' + ys(0) + '" x2="' + (W - 8) + '" y2="' + ys(0) + '" class="spark-base"/>',
-      '<line x1="8" y1="' + ys(86) + '" x2="' + (W - 8) + '" y2="' + ys(86) + '" class="spark-base spark-top"/>'
+      '<line x1="8" y1="' + ys(95) + '" x2="' + (W - 8) + '" y2="' + ys(95) + '" class="spark-base spark-top"/>'
     ];
     if (n > 1) parts.push('<polyline points="' + pts + '" class="spark-line"/>');
     series.forEach(function (d, i) {
-      parts.push('<circle cx="' + xs(i) + '" cy="' + ys(d.points) + '" r="5" class="dot dot-' + (d.band || "miss") + '"/>');
+      parts.push('<circle cx="' + xs(i) + '" cy="' + ys(d.points) + '" r="5" class="dot dot-' + (d.band || "binit") + '"/>');
     });
 
     var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1738,7 +1739,7 @@
     svg.innerHTML = parts.join("");
 
     var box = el("div", { class: "sparkbox" });
-    box.appendChild(el("div", { class: "muted" }, "Score over time — the dashed line is Bang on (86)"));
+    box.appendChild(el("div", { class: "muted" }, "Score over time — the dashed line is Bang on (95)"));
     box.appendChild(svg);
     return box;
   }
@@ -1855,7 +1856,7 @@
 
   /* ---------- misc ---------- */
   // Scraps of ink and paper flung out from the score for a top-tier result.
-  var CONFETTI_COLORS = ["#2b43a0", "#b23b2e", "#4a8a4a", "#bd8420", "#8a5a2b", "#3c8a82"];
+  var CONFETTI_COLORS = ["#3a3b40", "#b23b2e", "#4a8a4a", "#bd8420", "#8a5a2b", "#3c8a82"];
   function burstConfetti(host, n) {
     if (!host) return;
     try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) { /* old browser */ }

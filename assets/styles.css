@@ -1,7 +1,7 @@
-/* The look: a paper napkin on a café table, written on in blue biro.
+/* The look: a paper napkin on a café table, written on in pencil.
    The page is the table; every card is a napkin (near-square corners, an
    embossed dotted edge, a faint tissue grain, lying flat on a soft shadow);
-   the accent colour is ballpoint blue rather than pencil grey. */
+   you write in graphite and get marked in red pencil, like homework. */
 :root {
   --table: #e7dcc6;
   --paper: #fbf7ee;
@@ -11,9 +11,9 @@
   --rule: #d9d1bd;
   --edge: #e8e1cf;
   --emboss: rgba(146, 120, 80, 0.34);  /* the napkin's pressed border */
-  --pen: #2b43a0;     /* blue biro */
-  --pen-soft: #e8ecf8;
-  --red: #b23b2e;
+  --pen: #3a3b40;     /* graphite: everything you write */
+  --pen-soft: #ecebe6;
+  --red: #c2463a;     /* red marking pencil: everything the app marks you with */
   --green: #4a8a4a;
   --teal: #3c8a82;
   --amber: #bd8420;
@@ -43,6 +43,13 @@ body {
 }
 
 .hand { font-family: var(--hand); }
+
+/* Pencil grain on the big handwritten marks. Kept off the textarea (where
+   you type) and the small print, which should stay crisp. */
+.question, .guessnum, .hero-points, .band-stamp, .actualnum, .answer-circle,
+.tier-circle, .tally-formula, .tally-total, .stat-val, .gbar-x {
+  filter: url(#graphite);
+}
 .muted { color: var(--faint); font-size: 0.9rem; }
 .big { font-size: 2rem; line-height: 1.1; }
 
@@ -164,11 +171,12 @@ body {
 .dist-label { width: 8.5rem; flex: none; color: var(--faint); }
 .distbar-track { flex: 1; height: 0.55rem; background: var(--pen-soft); border-radius: 999px; overflow: hidden; }
 .distbar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
-.distrow.nailed .distbar-fill { background: var(--green); }
-.distrow.sharp  .distbar-fill { background: var(--teal); }
-.distrow.solid  .distbar-fill { background: var(--pen); }
-.distrow.close  .distbar-fill { background: var(--amber); }
-.distrow.miss   .distbar-fill { background: var(--red); }
+.distrow.bangon    .distbar-fill { background: var(--green); }
+.distrow.soclose   .distbar-fill { background: #79a86f; }
+.distrow.goodshout .distbar-fill { background: var(--amber); }
+.distrow.ballpark  .distbar-fill { background: #cfa860; }
+.distrow.notclose  .distbar-fill { background: #d9774a; }
+.distrow.binit     .distbar-fill { background: var(--red); }
 .dist-pct { width: 2.6rem; text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
 
 /* ---------- chips / headings ---------- */
@@ -314,7 +322,7 @@ body {
 /* A straight pencil underline — reads as "underlined this while working it
    out" rather than a text-selection highlight. */
 .pad-highlight mark.hl {
-  background: rgba(43, 67, 160, 0.07);
+  background: rgba(58, 59, 64, 0.07);
   box-shadow: inset 0 -2px 0 var(--pen);
   border-radius: 2px;
   color: transparent;
@@ -324,7 +332,7 @@ body {
   box-shadow: inset 0 -2px 0 var(--rule);
 }
 /* Hovering a pill lights up the number it came from. */
-.pad-highlight mark.hl.hl-linked { background: rgba(43, 67, 160, 0.16); }
+.pad-highlight mark.hl.hl-linked { background: rgba(58, 59, 64, 0.15); }
 
 .demo-note { margin: 0 0 0.5rem; font-style: italic; }
 .pad.demo-typing { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
@@ -575,14 +583,14 @@ body {
   width: 1.05rem;
   height: 0.5rem;
   transform: rotate(-6deg);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 6 Q4 1 7 6 T13 6 T19 6 T23 6' stroke='%232b43a0' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 6 Q4 1 7 6 T13 6 T19 6 T23 6' stroke='%233a3b40' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 @keyframes beatin { to { opacity: 1; transform: none; } }
 .narrative.done .beat { animation: none; opacity: 1; transform: none; }
 .answerbeat { font-weight: 700; }
 .skip { display: inline-block; margin-top: 0.8rem; }
 
-/* Each number in the working gets underlined in biro just after its line lands. */
+/* Each number in the working gets underlined in pencil just after its line lands. */
 .beat-num {
   background-image: linear-gradient(var(--pen), var(--pen));
   background-repeat: no-repeat;
@@ -642,10 +650,11 @@ body {
 
 .after { margin-top: 1.4rem; display: flex; flex-direction: column; gap: 1.1rem; }
 
-/* The scorecard: a napkin with the score scrawled big in biro, the verdict
-   rubber-stamped under it, and every tier listed with yours circled. */
+/* The scorecard: a napkin with the score marked big in red pencil, the verdict
+   ringed under it, and every tier listed with yours circled. Every mark on
+   it is the same red pencil, whatever the tier. */
 .hero {
-  --band: var(--pen);
+  --band: var(--red);
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -655,11 +664,6 @@ body {
   transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 1.3, 0.35, 1);
 }
 .hero.in { opacity: 1; transform: none; }
-.hero.nailed { --band: var(--green); }
-.hero.sharp  { --band: var(--teal); }
-.hero.solid  { --band: var(--pen); }
-.hero.close  { --band: var(--amber); }
-.hero.miss   { --band: var(--red); }
 /* A coffee ring someone left on the napkin. */
 .hero::after {
   content: "";
@@ -680,21 +684,21 @@ body {
   margin: 0.35rem 0 0.7rem;
   padding: 0.15rem 0.9rem 0.1rem;
   font-family: var(--hand);
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--band);
-  border: 3px solid var(--band);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 3.5px var(--band);
+  border: 2.5px solid var(--band);
+  border-radius: 50% / 60%;
   opacity: 0;
-  transform: rotate(-6deg) scale(1.9);
+  transform: rotate(-5deg) scale(1.9);
 }
 .hero.scored .band-stamp { animation: bandstamp 0.42s cubic-bezier(0.2, 1.4, 0.3, 1) forwards; }
 @keyframes bandstamp {
   60% { opacity: 1; }
-  to { opacity: 0.9; transform: rotate(-6deg) scale(1); }
+  to { opacity: 0.95; transform: rotate(-5deg) scale(1); }
 }
 .hero-ratio { font-size: 1.05rem; font-weight: 700; }
 .hero-quip { margin-top: 0.35rem; font-style: italic; color: var(--faint); }
@@ -706,7 +710,7 @@ body {
   font-size: 0.92rem;
 }
 
-.tier-ladder { position: relative; display: flex; justify-content: center; gap: 0.2rem; margin: 1.1rem auto 0; max-width: 25rem; }
+.tier-ladder { position: relative; display: flex; justify-content: center; gap: 0.1rem; margin: 1.1rem auto 0; max-width: 28rem; }
 .tier {
   position: relative;
   flex: 1;
@@ -714,8 +718,10 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.1rem;
-  padding: 0.4rem 0.1rem;
-  font-size: 0.7rem;
+  padding: 0.4rem 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.66rem;
   line-height: 1.2;
   color: var(--faint);
   opacity: 0.45;
@@ -725,7 +731,7 @@ body {
 .tier-circle { position: absolute; left: -2%; top: -6%; width: 104%; height: 112%; overflow: visible; pointer-events: none; }
 .tier-circle path {
   fill: none;
-  stroke: var(--pen);
+  stroke: var(--red);
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-dasharray: 400;
@@ -771,7 +777,7 @@ body {
 }
 .answer-circle path {
   fill: none;
-  stroke: var(--pen);
+  stroke: var(--red);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-dasharray: 700;
@@ -781,7 +787,7 @@ body {
 @keyframes circledraw { to { stroke-dashoffset: 0; } }
 .source { margin: 0.4rem 0 0; font-style: italic; font-size: 0.82rem; }
 
-/* The number line: a biro rule with a tick per power of ten. */
+/* The number line: a pencil rule with a tick per power of ten. */
 .gbar { margin: 0.4rem 0.6rem 0; }
 .gline { position: relative; height: 4.4rem; }
 .gline::before {
@@ -1072,10 +1078,12 @@ body {
 .spark-base { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
 .spark-line { fill: none; stroke: var(--pen); stroke-width: 1.5; }
 .dot { stroke: #fff; stroke-width: 1; }
-.dot-nailed { fill: var(--green); }
-.dot-solid { fill: var(--pen); }
-.dot-close { fill: var(--amber); }
-.dot-miss { fill: var(--red); }
+.dot-bangon { fill: var(--green); }
+.dot-soclose { fill: #79a86f; }
+.dot-goodshout { fill: var(--amber); }
+.dot-ballpark { fill: #cfa860; }
+.dot-notclose { fill: #d9774a; }
+.dot-binit { fill: var(--red); }
 
 .backup { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px dashed var(--rule); }
 .backup h3 { margin: 0 0 0.3rem; }
@@ -1084,7 +1092,7 @@ body {
   .question { font-size: 1.35rem; }
   .statgrid { grid-template-columns: 1fr 1fr; }
   .hero-points { font-size: 4.4rem; }
-  .tier-name { font-size: 0.62rem; }
+  .tier-name { font-size: 0.56rem; }
   .actualnum { font-size: 1.9rem; }
 
   /* Four tabs led by "Challenge" don't fit a phone at full size. */

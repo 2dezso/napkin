@@ -209,11 +209,13 @@ window.NAPKIN.storage = (function () {
     var ratios = s.results.map(function (r) { return r.ratio; }).filter(function (x) { return isFinite(x); });
     var avg = ratios.length ? ratios.reduce(function (a, b) { return a + b; }, 0) / ratios.length : null;
     var best = ratios.length ? Math.min.apply(null, ratios) : null;
+    // Scores and tiers are derived rather than read back, so results saved
+    // under an older scoring scheme are re-marked on the current one.
+    var scoring = window.NAPKIN.scoring;
+    var pts = s.results.map(function (r) { return scoring ? scoring.points(r.ratio, r.inRange) : 0; });
+    var tiers = pts.map(function (p) { return scoring ? scoring.bandFor(p).key : null; });
     var bandCounts = {};
-    s.results.forEach(function (r) { if (r.band) bandCounts[r.band] = (bandCounts[r.band] || 0) + 1; });
-    // Scores are derived, not stored, so old results pick up the 0-100 scale too.
-    var toPoints = window.NAPKIN.scoring ? window.NAPKIN.scoring.points : function () { return 0; };
-    var pts = s.results.map(function (r) { return toPoints(r.ratio, r.inRange); });
+    tiers.forEach(function (k) { if (k) bandCounts[k] = (bandCounts[k] || 0) + 1; });
     var avgPoints = pts.length ? Math.round(pts.reduce(function (a, b) { return a + b; }, 0) / pts.length) : null;
     return {
       played: s.results.length,
@@ -225,7 +227,7 @@ window.NAPKIN.storage = (function () {
       bestPoints: pts.length ? Math.max.apply(null, pts) : null,
       bandCounts: bandCounts,
       caughtUp: false,
-      series: s.results.map(function (r, i) { return { n: r.napkinNumber, ratio: r.ratio, points: pts[i], band: r.band }; })
+      series: s.results.map(function (r, i) { return { n: r.napkinNumber, ratio: r.ratio, points: pts[i], band: tiers[i] }; })
     };
   }
 

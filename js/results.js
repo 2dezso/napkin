@@ -7,7 +7,7 @@
  * the app. */
 window.NAPKIN = window.NAPKIN || {};
 window.NAPKIN.results = (function () {
-  var BANDS_ORDER = ["miss", "close", "solid", "sharp", "nailed"]; // worst -> best, for percentile ranking
+  var BANDS_ORDER = ["binit", "notclose", "ballpark", "goodshout", "soclose", "bangon"]; // worst -> best, for percentile ranking
 
   var db = null;
   function ensureDb() {
@@ -36,12 +36,13 @@ window.NAPKIN.results = (function () {
       .limit(3000)
       .get()
       .then(function (snap) {
-        var counts = { nailed: 0, solid: 0, close: 0, miss: 0 };
+        // Entries saved under older tier names are left out rather than miscounted.
+        var counts = {}, total = 0;
+        BANDS_ORDER.forEach(function (k) { counts[k] = 0; });
         snap.forEach(function (doc) {
           var b = doc.data().band;
-          if (counts.hasOwnProperty(b)) counts[b]++;
+          if (counts.hasOwnProperty(b)) { counts[b]++; total++; }
         });
-        var total = counts.nailed + counts.solid + counts.close + counts.miss;
         return { counts: counts, total: total };
       });
   }
