@@ -948,14 +948,24 @@
       requestAnimationFrame(function () { guessNumEl.classList.add("pop"); });
     });
 
+    var BEAT = 1150;
     var narr = el("div", { class: "narrative" });
     q.narrative.forEach(function (line, i) {
       var last = i === q.narrative.length - 1;
-      var p = el("p", { class: "beat" + (last ? " answerbeat" : "") }, line);
-      p.style.animationDelay = (i * 1.15).toFixed(2) + "s";
+      var p = el("p", { class: "beat" + (last ? " answerbeat" : "") }, underlineNumbers(line, i * BEAT + 400));
+      p.style.animationDelay = (i * BEAT / 1000).toFixed(2) + "s";
       narr.appendChild(p);
     });
     wrap.appendChild(narr);
+
+    // The model's running total, stuck to the bottom of the screen while the
+    // working plays out, sliding towards (or past) your number.
+    var tally = buildTally(q, res.guess);
+    wrap.appendChild(tally.node);
+
+    var drumroll = el("p", { class: "drumroll hand" }, "And the real answer is", el("span", { class: "dots" }, "…"));
+    drumroll.hidden = true;
+    wrap.appendChild(drumroll);
 
     var skip = el("button", { class: "linkbtn skip" }, "Skip to the score ▸");
     wrap.appendChild(skip);
@@ -965,26 +975,34 @@
     buildAfter(after, q, res, opts);
     wrap.appendChild(after);
 
-    // Revisiting a finished Napkin: no replay, straight to the result.
+    var timers = [];
+    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+
     if (opts.instant) {
+      // Revisiting a finished Napkin: everything already written out.
+      narr.classList.add("done");
+      tally.finish(false);
       reveal();
     } else {
-      var timer = setTimeout(reveal, q.narrative.length * 1150 + 1300);
-      skip.addEventListener("click", function () { clearTimeout(timer); reveal(); });
-    }
-
-    // Once the score is in, the working folds away under one line, so the
-    // scorecard isn't five screens down on a phone.
-    function foldWorkings() {
-      narr.classList.add("done");
-      var workings = el("details", { class: "workings" }, el("summary", {}, "How it's worked out"));
-      wrap.insertBefore(workings, narr);
-      workings.appendChild(narr);
+      tally.steps.forEach(function (s, k) {
+        later(function () { tally.show(k, true); }, k * BEAT + 450);
+      });
+      later(function () { tally.finish(true); }, tally.steps.length * BEAT + 450);
+      var beatsDone = q.narrative.length * BEAT;
+      later(function () { if (skip.parentNode) drumroll.hidden = false; }, beatsDone + 200);
+      later(reveal, beatsDone + 1900);
+      skip.addEventListener("click", function () {
+        timers.forEach(clearTimeout);
+        narr.classList.add("done");
+        tally.finish(false);
+        reveal();
+      });
     }
 
     function reveal() {
       if (skip.parentNode) skip.remove();
-      foldWorkings();
+      drumroll.hidden = true;
+      tally.node.classList.add("settled");
       after.hidden = false;
       if (!opts.instant) {
         try { after.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { after.scrollIntoView(); }
@@ -1010,6 +1028,123 @@
       if (circleWrap) setTimeout(function () { circleWrap.classList.add("circled"); }, 1050);
     }
     return wrap;
+  }
+
+  // A narrative line with each number wrapped, so it gets underlined in
+  // biro just after the line lands.
+  function underlineNumbers(line, delayMs) {
+    var out = [], pos = 0;
+    util.scanFactors(line).forEach(function (t) {
+      if (t.start < pos) return;
+      out.push(line.slice(pos, t.start));
+      var s = el("span", { class: "beat-num" }, line.slice(t.start, t.end));
+      s.style.animationDelay = (delayMs / 1000).toFixed(2) + "s";
+      out.push(s);
+      pos = t.end;
+    });
+    out.push(line.slice(pos));
+    return out;
+  }
+
+  // Slides a number between two values on a log scale, so 3M -> 60M reads
+  // as steady growth rather than a jump at the end.
+  function tweenNumber(node, from, to, ms) {
+    var id = (node._tween || 0) + 1;
+    node._tween = id;
+    if (!(from > 0) || !(to > 0)) { node.textContent = util.humanize(to); return; }
+    var start = performance.now(), a = Math.log(from), b = Math.log(to);
+    function step(now) {
+      if (node._tween !== id) return;
+      var p = Math.min(1, (now - start) / ms);
+      node.textContent = util.humanize(Math.exp(a + (b - a) * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // The running total napkin: the model's framework multiplied out one row
+  // at a time, with a number line showing that total closing in on (or
+  // sailing past) your own guess — so the reveal builds to something.
+  function buildTally(q, guess) {
+    var steps = [], acc = null;
+    q.framework.forEach(function (r, i) {
+      var v = r.model_value;
+      if (acc == null) acc = r.op === "/" ? 1 / v : v;
+      else if (r.op === "/") acc /= v;
+      else if (r.op === "+") acc += v;
+      else acc *= v;
+      // Non-breaking spaces: each term is an inline-block, which would eat plain ones.
+      var sym = i === 0 ? "" : (r.op === "/" ? " ÷ " : r.op === "+" ? " + " : " × ");
+      steps.push({ value: acc, term: sym + util.humanize(v) });
+    });
+
+    var vals = steps.map(function (s) { return s.value; }).concat(guess).filter(function (v) { return v > 0; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var minE = Math.floor(Math.log10(lo)), maxE = Math.ceil(Math.log10(hi));
+    if (maxE - minE < 2) { minE -= 1; maxE += 1; }
+    var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
+    function pct(v) {
+      v = Math.max(min, Math.min(max, v));
+      return (Math.log(v / min) / Math.log(max / min)) * 100;
+    }
+
+    var line = el("div", { class: "gline tally-line" });
+    var every = Math.ceil((maxE - minE + 1) / 6);
+    for (var e = minE; e <= maxE; e++) {
+      var labelled = (e - minE) % every === 0;
+      var tick = el("div", { class: "gtick" + (labelled ? "" : " minor") },
+        labelled ? el("span", { class: "gtick-label" }, util.humanize(Math.pow(10, e))) : null);
+      tick.style.left = pct(Math.pow(10, e)) + "%";
+      line.appendChild(tick);
+    }
+    var you = el("div", { class: "gbar-mark you" }, el("span", { class: "gbar-x" }, "✗"), el("span", { class: "gbar-tag" }, "you"));
+    you.style.left = pct(guess) + "%";
+    var dot = el("div", { class: "gbar-mark working" });
+    dot.hidden = true;
+    line.appendChild(you);
+    line.appendChild(dot);
+
+    var formula = el("div", { class: "tally-formula hand" });
+    var num = el("span", { class: "tally-num" }, "…");
+    var gap = el("div", { class: "tally-gap" });
+    var node = el("div", { class: "tally" },
+      el("div", { class: "tally-head" }, el("span", {}, "Working it out"), el("span", {}, "✗ you said " + util.humanize(guess))),
+      formula,
+      el("div", { class: "tally-total hand" }, "≈ ", num),
+      line,
+      gap
+    );
+    if (!steps.length) node.hidden = true;
+
+    var shown = -1, current = null;
+    function gapText(v) {
+      var r = v / guess;
+      if (r > 0.87 && r < 1.15) return "Right on top of yours 👀";
+      var f = util.roundFactor(r >= 1 ? r : 1 / r) + "×";
+      return f + (r < 1 ? " below yours so far" : " above yours so far");
+    }
+    function show(k, animate) {
+      for (var i = shown + 1; i <= k; i++) {
+        formula.appendChild(el("span", { class: "tally-term" + (animate ? " fresh" : "") }, steps[i].term));
+      }
+      shown = k;
+      var v = steps[k].value;
+      if (animate && current != null) tweenNumber(num, current, v, 550);
+      else { num._tween = (num._tween || 0) + 1; num.textContent = util.humanize(v); }
+      current = v;
+      dot.hidden = false;
+      dot.style.left = pct(v) + "%";
+      gap.textContent = gapText(v);
+      if (animate) sfxTick();
+    }
+    function finish(animate) {
+      if (!steps.length) return;
+      if (shown < steps.length - 1) show(steps.length - 1, false);
+      node.classList.add("landed");
+      gap.textContent = gapText(current).replace(" so far", "");
+      if (animate) sfxDing();
+    }
+    return { node: node, steps: steps, show: show, finish: finish };
   }
 
   // Close misses read better as a percentage ("14% away") than a multiplier;

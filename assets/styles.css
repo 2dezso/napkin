@@ -49,7 +49,7 @@ body {
 /* ---------- the napkin ----------
    One shared surface for every card. The dotted outline, pulled 7px inside
    the edge, is the embossed border a diner napkin has. */
-.panel, .hero, .answerbox, .compare, .distbox, .stat, .paywall,
+.panel, .hero, .answerbox, .compare, .distbox, .stat, .paywall, .tally,
 .sparkbox, .qcard, .rulebox, .demo-modal, .challenge-summary {
   background-color: var(--card);
   background-image: var(--tissue);
@@ -582,6 +582,64 @@ body {
 .answerbeat { font-weight: 700; }
 .skip { display: inline-block; margin-top: 0.8rem; }
 
+/* Each number in the working gets underlined in biro just after its line lands. */
+.beat-num {
+  background-image: linear-gradient(var(--pen), var(--pen));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  animation: numline 0.45s ease forwards;
+}
+@keyframes numline { to { background-size: 100% 2px; } }
+.narrative.done .beat-num { animation: none; background-size: 100% 2px; }
+
+/* The running total: pinned to the bottom of the screen while the working
+   plays, then settles into the page once the score is in. */
+.tally {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 5;
+  margin: 1.2rem 0 0.2rem;
+  padding: 0.95rem 1.2rem 0.55rem;
+  box-shadow: 0 1px 1px rgba(80, 58, 24, 0.07), 0 18px 34px -14px rgba(80, 58, 24, 0.55);
+}
+.tally.settled { position: static; box-shadow: var(--napkin-shadow); }
+.tally-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+.tally-formula { min-height: 1.6em; margin-top: 0.25rem; font-size: 1.05rem; color: var(--pen); overflow-wrap: anywhere; }
+.tally-term.fresh { display: inline-block; animation: termin 0.35s cubic-bezier(0.2, 1.4, 0.35, 1); }
+@keyframes termin { from { opacity: 0; transform: translateY(-6px) scale(1.3); } }
+.tally-total { font-size: 2rem; line-height: 1.1; color: var(--pen); }
+.tally-num { display: inline-block; font-variant-numeric: tabular-nums; }
+.tally.landed .tally-num { animation: numpop 0.45s cubic-bezier(0.2, 1.6, 0.35, 1); }
+.tally-line { height: 3.8rem; margin: 0 0.4rem; }
+.gbar-mark.working {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pen);
+  box-shadow: 0 0 0 3px var(--card);
+  transition: left 0.55s cubic-bezier(0.3, 1.2, 0.4, 1);
+}
+.tally-gap { text-align: center; font-size: 0.88rem; color: var(--faint); margin-top: -0.3rem; min-height: 1.3em; }
+.tally.landed .tally-gap { color: var(--ink); font-weight: 700; }
+
+.drumroll {
+  margin: 1.1rem 0 0;
+  text-align: center;
+  font-size: 1.35rem;
+  color: var(--pen);
+  animation: drumpulse 0.8s ease-in-out infinite;
+}
+@keyframes drumpulse { 50% { opacity: 0.35; transform: scale(0.98); } }
+
 .after { margin-top: 1.4rem; display: flex; flex-direction: column; gap: 1.1rem; }
 
 /* The scorecard: a napkin with the score scrawled big in biro, the verdict
@@ -832,10 +890,6 @@ body {
 .hero-share-bar { font-size: 1.15rem; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
 .hero-share-note { margin: 0.6rem 0 0; font-size: 0.8rem; }
 
-/* "How it's worked out": the narrative, folded away once the score is in. */
-.workings { margin: 0.2rem 0 0.2rem; }
-.workings summary { cursor: pointer; color: var(--pen); font-size: 0.95rem; }
-.workings[open] summary { margin-bottom: 0.8rem; }
 .after { scroll-margin-top: 0.75rem; }
 
 .vs-name {
