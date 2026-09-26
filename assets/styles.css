@@ -1,22 +1,29 @@
+/* The look: a paper napkin on a café table, written on in blue biro.
+   The page is the table; every card is a napkin (near-square corners, an
+   embossed dotted edge, a faint tissue grain, lying flat on a soft shadow);
+   the accent colour is ballpoint blue rather than pencil grey. */
 :root {
-  --paper: #f6f2e7;
-  --card: #fffdf6;
+  --table: #e7dcc6;
+  --paper: #fbf7ee;
+  --card: #fffdf8;    /* napkin white */
   --ink: #2c2a24;
   --faint: #7c766a;
   --rule: #d9d1bd;
-  --edge: #e8e1cf;   /* softer than --rule, for the pad's own edge */
-  --pen: #4a4d52;
-  --pen-soft: #eaeae6;
+  --edge: #e8e1cf;
+  --emboss: rgba(146, 120, 80, 0.34);  /* the napkin's pressed border */
+  --pen: #2b43a0;     /* blue biro */
+  --pen-soft: #e8ecf8;
   --red: #b23b2e;
   --green: #4a8a4a;
   --teal: #3c8a82;
   --amber: #bd8420;
+  --coffee: #8a5a2b;
   --hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Comic Sans", cursive;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Card/panel corners. These were asymmetric "hand-drawn" radii; stacked
-     across every surface they read as untidy rather than handmade. */
-  --radius-sm: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-lg: 4px;
+  --tissue: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)' opacity='0.045'/%3E%3C/svg%3E");
+  --napkin-shadow: 0 1px 1px rgba(80, 58, 24, 0.07), 0 12px 24px -14px rgba(80, 58, 24, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -26,13 +33,12 @@ body {
   margin: 0;
   font-family: var(--sans);
   color: var(--ink);
-  background-color: var(--paper);
-  /* Dot grid over a subtle fibre-grain noise, so the page reads as paper
-     rather than a flat colour. */
+  background-color: var(--table);
+  /* A warm tabletop: a soft pool of light from above over a fine grain. */
   background-image:
-    radial-gradient(rgba(44, 42, 36, 0.05) 1px, transparent 1px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-  background-size: 22px 22px, 140px 140px;
+    radial-gradient(ellipse 80% 55% at 50% 0%, rgba(255, 250, 238, 0.55), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+  background-attachment: fixed, scroll;
   line-height: 1.5;
 }
 
@@ -40,16 +46,46 @@ body {
 .muted { color: var(--faint); font-size: 0.9rem; }
 .big { font-size: 2rem; line-height: 1.1; }
 
+/* ---------- the napkin ----------
+   One shared surface for every card. The dotted outline, pulled 7px inside
+   the edge, is the embossed border a diner napkin has. */
+.panel, .hero, .answerbox, .compare, .distbox, .sharecard, .stat, .paywall,
+.sparkbox, .qcard, .rulebox, .demo-modal, .challenge-summary {
+  background-color: var(--card);
+  background-image: var(--tissue);
+  border: 0;
+  border-radius: 4px;
+  outline: 2px dotted var(--emboss);
+  outline-offset: -7px;
+  box-shadow: var(--napkin-shadow);
+}
+
 /* ---------- top bar ---------- */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.8rem 1.1rem;
-  border-bottom: 1px dashed var(--rule);
-  background: rgba(255, 253, 246, 0.7);
+  border-bottom: 2px dotted var(--emboss);
+  background: rgba(255, 253, 248, 0.88);
+  background-image: var(--tissue);
 }
 .brand { font-family: var(--hand); font-size: 1.5rem; font-weight: 700; }
+/* A tiny napkin, dotted edge and all, as the logo mark. */
+.brand::before {
+  content: "";
+  display: inline-block;
+  vertical-align: -0.12em;
+  margin-right: 0.45rem;
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 2px;
+  background: var(--card);
+  outline: 1.5px dotted var(--emboss);
+  outline-offset: -3px;
+  box-shadow: 0 2px 5px -1px rgba(80, 58, 24, 0.4);
+  transform: rotate(-9deg);
+}
 .brand-dot { color: var(--pen); }
 .tabs { display: flex; gap: 0.3rem; }
 .tab {
@@ -121,7 +157,7 @@ body {
 .feedback-status { min-height: 1.2rem; margin-top: 0.4rem; }
 
 /* ---------- community results distribution ---------- */
-.distbox { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 0.9rem 1rem; margin-top: 0.9rem; }
+.distbox { padding: 1.1rem 1.2rem; margin-top: 0.9rem; }
 .distbox .muted { margin: 0 0 0.6rem; }
 .distrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0; font-size: 0.9rem; }
 .dist-emoji { width: 1.4rem; text-align: center; flex: none; }
@@ -180,11 +216,7 @@ body {
 
 /* ---------- panels ---------- */
 .panel {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 2px 3px 0 rgba(44, 42, 36, 0.06);
+  padding: 1.25rem;
   margin-bottom: 1rem;
 }
 
@@ -232,10 +264,10 @@ body {
   width: 100%;
   box-sizing: border-box;
   min-height: 9.5rem;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
+  border: 1px solid rgba(146, 120, 80, 0.22);
+  border-radius: 3px;
   background: transparent;
-  color: var(--ink);
+  color: var(--pen);
   font-size: 16px;
   line-height: 2rem;
   padding: 0.6rem 1rem 0.9rem;
@@ -258,22 +290,23 @@ body {
   inset: 0;
   margin: 0;
   box-sizing: border-box;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
+  border: 1px solid rgba(146, 120, 80, 0.22);
+  border-radius: 3px;
   font-size: 16px;
   line-height: 2rem;
   padding: 0.6rem 1rem 0.9rem;
   overflow: hidden;
   color: transparent;
   pointer-events: none;
-  background-color: var(--card);
+  /* Written straight onto the napkin: its own tissue shows through, with
+     faint guide lines and no separate sheet or shadow. */
+  background-color: transparent;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0, transparent calc(2rem - 1px),
-    rgba(44, 42, 36, 0.07) calc(2rem - 1px), rgba(44, 42, 36, 0.07) 2rem);
+    rgba(146, 120, 80, 0.16) calc(2rem - 1px), rgba(146, 120, 80, 0.16) 2rem);
   background-position: 0 0.6rem;
   background-attachment: local;
-  box-shadow: 0 1px 2px rgba(44, 42, 36, 0.04), 0 6px 16px -6px rgba(44, 42, 36, 0.16);
 }
 /* One box per line: wraps exactly as the textarea does. */
 .padline { position: relative; white-space: pre-wrap; word-wrap: break-word; }
@@ -284,7 +317,7 @@ body {
 /* A straight pencil underline — reads as "underlined this while working it
    out" rather than a text-selection highlight. */
 .pad-highlight mark.hl {
-  background: rgba(74, 77, 82, 0.07);
+  background: rgba(43, 67, 160, 0.07);
   box-shadow: inset 0 -2px 0 var(--pen);
   border-radius: 2px;
   color: transparent;
@@ -294,7 +327,7 @@ body {
   box-shadow: inset 0 -2px 0 var(--rule);
 }
 /* Hovering a pill lights up the number it came from. */
-.pad-highlight mark.hl.hl-linked { background: rgba(74, 77, 82, 0.18); }
+.pad-highlight mark.hl.hl-linked { background: rgba(43, 67, 160, 0.16); }
 
 .demo-note { margin: 0 0 0.5rem; font-style: italic; }
 .pad.demo-typing { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); }
@@ -311,13 +344,10 @@ body {
   animation: fadein 0.2s ease;
 }
 .demo-modal {
-  background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem 1.6rem;
+  padding: 1.6rem 1.7rem;
   max-width: 22rem;
   text-align: center;
-  box-shadow: 4px 4px 0 rgba(44, 42, 36, 0.25);
+  box-shadow: 0 24px 50px -18px rgba(40, 28, 10, 0.6);
 }
 .demo-modal .big { font-size: 1.6rem; margin-bottom: 0.5rem; }
 .demo-modal p { margin: 0 0 1.1rem; }
@@ -548,7 +578,7 @@ body {
   width: 1.05rem;
   height: 0.5rem;
   transform: rotate(-6deg);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 6 Q4 1 7 6 T13 6 T19 6 T23 6' stroke='%234a4d52' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 6 Q4 1 7 6 T13 6 T19 6 T23 6' stroke='%232b43a0' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 @keyframes beatin { to { opacity: 1; transform: none; } }
 .narrative.done .beat { animation: none; opacity: 1; transform: none; }
@@ -557,53 +587,133 @@ body {
 
 .after { margin-top: 1.4rem; display: flex; flex-direction: column; gap: 1.1rem; }
 
+/* The scorecard: a napkin with the score scrawled big in biro, the verdict
+   rubber-stamped under it, and every tier listed with yours circled. */
 .hero {
+  --band: var(--pen);
+  position: relative;
+  overflow: hidden;
   text-align: center;
-  border-radius: var(--radius-lg);
-  padding: 1.4rem 1rem 1.5rem;
-  border: 2px solid var(--faint);
-  background: var(--card);
+  padding: 1.7rem 1.3rem 1.5rem;
   opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.2, 1.3, 0.35, 1);
+  transform: translateY(8px) rotate(-0.4deg) scale(0.97);
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 1.3, 0.35, 1);
 }
 .hero.in { opacity: 1; transform: none; }
-.hero.nailed { border-color: var(--green); background: #eaf3ea; }
-.hero.sharp  { border-color: var(--teal);  background: #e8f2f1; }
-.hero.solid  { border-color: var(--pen);   background: var(--pen-soft); }
-.hero.close  { border-color: var(--amber); background: #f7efdc; }
-.hero.miss   { border-color: var(--red);   background: #f6e6e3; }
-.hero-emoji { font-size: 3.4rem; line-height: 1; }
-.hero-score { font-size: 2.4rem; line-height: 1.1; margin: 0.3rem 0 0.1rem; }
-.hero.nailed .hero-score { color: var(--green); }
-.hero.sharp  .hero-score { color: var(--teal); }
-.hero.solid  .hero-score { color: var(--pen); }
-.hero.close  .hero-score { color: var(--amber); }
-.hero.miss   .hero-score { color: var(--red); }
+.hero.nailed { --band: var(--green); }
+.hero.sharp  { --band: var(--teal); }
+.hero.solid  { --band: var(--pen); }
+.hero.close  { --band: var(--amber); }
+.hero.miss   { --band: var(--red); }
+/* A coffee ring someone left on the napkin. */
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -46px;
+  top: -52px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='41' fill='none' stroke='%238a5a2b' stroke-opacity='0.16' stroke-width='5' stroke-dasharray='190 14 40 12'/%3E%3Ccircle cx='51' cy='49' r='37.5' fill='none' stroke='%238a5a2b' stroke-opacity='0.09' stroke-width='2'/%3E%3C/svg%3E") no-repeat center / contain;
+  pointer-events: none;
+}
+.hero-kicker { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); }
+.hero-points-row { display: flex; justify-content: center; align-items: baseline; gap: 0.15rem; color: var(--band); }
+.hero-points { font-size: 5.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-outof { font-size: 1.5rem; color: var(--faint); }
+.band-stamp {
+  display: inline-block;
+  margin: 0.35rem 0 0.7rem;
+  padding: 0.15rem 0.9rem 0.1rem;
+  font-family: var(--hand);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--band);
+  border: 3px solid var(--band);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 3.5px var(--band);
+  opacity: 0;
+  transform: rotate(-6deg) scale(1.9);
+}
+.hero.scored .band-stamp { animation: bandstamp 0.42s cubic-bezier(0.2, 1.4, 0.3, 1) forwards; }
+@keyframes bandstamp {
+  60% { opacity: 1; }
+  to { opacity: 0.9; transform: rotate(-6deg) scale(1); }
+}
 .hero-ratio { font-size: 1.05rem; font-weight: 700; }
-.hero-quip { margin-top: 0.5rem; font-style: italic; color: var(--faint); }
+.hero-quip { margin-top: 0.35rem; font-style: italic; color: var(--faint); }
 .hero-highlight {
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 1px dashed var(--rule);
+  position: relative;
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 2px dotted var(--emboss);
   font-size: 0.92rem;
 }
 
-.answerbox {
-  text-align: center;
-  background: var(--card);
-  border: 1px dashed var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
+.tier-ladder { position: relative; display: flex; justify-content: center; gap: 0.2rem; margin: 1.1rem auto 0; max-width: 25rem; }
+.tier {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 0.1rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--faint);
+  opacity: 0.45;
 }
-.actualnum-wrap { position: relative; display: inline-block; }
-.actualnum { display: block; font-size: 2.6rem; margin: 0.2rem 0 0; }
+.tier.here { opacity: 1; color: var(--ink); font-weight: 700; }
+.tier-emoji { font-size: 1.35rem; line-height: 1; }
+.tier-circle { position: absolute; left: -2%; top: -6%; width: 104%; height: 112%; overflow: visible; pointer-events: none; }
+.tier-circle path {
+  fill: none;
+  stroke: var(--pen);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+}
+.hero.scored .tier-circle path { animation: circledraw 0.6s ease 0.25s forwards; }
+
+/* Scraps flung out of the score on a top-tier result. */
+.confetti { position: absolute; left: 50%; top: 5.2rem; width: 0; height: 0; pointer-events: none; }
+.confetto {
+  position: absolute;
+  width: 7px;
+  height: 11px;
+  border-radius: 1px;
+  opacity: 0;
+  animation: confetto 1.25s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+.confetto.round { width: 8px; height: 8px; border-radius: 50%; }
+@keyframes confetto {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--rot)); }
+}
+
+.answerbox { text-align: center; padding: 1.3rem 1.3rem 1.1rem; }
+.actualnum-wrap { position: relative; display: inline-block; margin: 0.2rem 0 0.4rem; }
+.actualnum { display: block; font-size: 2.6rem; color: var(--pen); }
 .actualnum.pop { animation: numpop 0.45s cubic-bezier(0.2, 1.6, 0.35, 1); }
 @keyframes numpop { 0% { transform: scale(1); } 45% { transform: scale(1.16); } 100% { transform: scale(1); } }
 
 /* A hand-drawn circle scribbles itself around the actual answer once it's
-   landed — the "circle the answer on the napkin" moment. */
-.answer-circle { position: absolute; inset: -0.3em -0.5em -0.25em -0.5em; overflow: visible; pointer-events: none; }
+   landed — the "circle the answer on the napkin" moment. An SVG only fills
+   its box when given an explicit size; `inset` alone left it at the default
+   300x150 and drifting off the number. */
+.answer-circle {
+  position: absolute;
+  left: -0.75em;
+  top: -0.25em;
+  width: calc(100% + 1.4em);
+  height: calc(100% + 0.45em);
+  overflow: visible;
+  pointer-events: none;
+}
 .answer-circle path {
   fill: none;
   stroke: var(--pen);
@@ -614,46 +724,65 @@ body {
 }
 .actualnum-wrap.circled .answer-circle path { animation: circledraw 0.7s ease forwards; }
 @keyframes circledraw { to { stroke-dashoffset: 0; } }
-.source { margin: 0; font-style: italic; }
+.source { margin: 0.4rem 0 0; font-style: italic; font-size: 0.82rem; }
 
-.gbar { padding-top: 0.2rem; }
-.gbar-track {
-  position: relative;
-  height: 2.2rem;
-  margin: 1.2rem 0;
-  border-radius: 6px;
-  background: var(--card);
-  border: 1px solid var(--rule);
-}
-.gbar-span {
+/* The number line: a biro rule with a tick per power of ten. */
+.gbar { margin: 0.4rem 0.6rem 0; }
+.gline { position: relative; height: 4.4rem; }
+.gline::before {
+  content: "";
   position: absolute;
-  top: 50%;
-  height: 3px;
-  transform: translateY(-50%);
-  background: var(--faint);
+  left: -0.3rem;
+  right: -0.3rem;
+  top: 2.2rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--pen);
+  opacity: 0.75;
 }
-.gbar-mark { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); }
-.gbar-mark.actual { background: var(--green); }
-.gbar-mark.you { background: var(--red); }
-.gbar-tag {
+.gtick { position: absolute; top: calc(2.2rem - 5px); width: 2px; height: 12px; background: var(--pen); opacity: 0.7; transform: translateX(-1px); }
+.gtick.minor { top: calc(2.2rem - 3px); height: 8px; opacity: 0.4; }
+.gtick-label {
   position: absolute;
+  top: 15px;
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--hand);
   font-size: 0.72rem;
+  color: var(--faint);
   white-space: nowrap;
 }
-.gbar-mark.actual .gbar-tag { bottom: -1.15rem; color: var(--green); }
-.gbar-mark.you .gbar-tag { top: -1.15rem; color: var(--red); }
-.gbar-scale { display: flex; justify-content: space-between; font-size: 0.75rem; }
+.gbar-span {
+  position: absolute;
+  top: calc(2.2rem - 5px);
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(178, 59, 46, 0.13);
+}
+.gbar-mark { position: absolute; top: calc(2.2rem + 1px); transform: translate(-50%, -50%); line-height: 1; }
+.gbar-mark.actual {
+  width: 17px;
+  height: 17px;
+  border: 3px solid var(--green);
+  border-radius: 50%;
+  background: var(--card);
+}
+.gbar-x { display: block; font-family: var(--hand); font-size: 1.45rem; font-weight: 700; color: var(--red); }
+.gbar-tag {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--hand);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.gbar-mark.actual .gbar-tag { color: var(--green); }
+.gbar-mark.you .gbar-tag { color: var(--red); }
+.gbar-mark.you.stack .gbar-tag { bottom: calc(100% + 17px); }
 
 /* ---------- napkin comparison ---------- */
-.compare {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 1rem;
-}
+.compare { padding: 1.2rem 1.3rem; }
 .compare summary { margin: 0; font-size: 1.2rem; cursor: pointer; }
 .compare[open] summary { margin-bottom: 0.7rem; }
 .youwrote {
@@ -696,13 +825,7 @@ body {
 .extras { margin: 0.7rem 0 0; }
 
 /* ---------- share card ---------- */
-.sharecard {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
-  text-align: center;
-}
+.sharecard { padding: 1.3rem; text-align: center; }
 .sharetext {
   font-family: var(--hand);
   font-size: 1.2rem;
@@ -716,13 +839,7 @@ body {
 .challenge-intro .statgrid { margin: 1rem 0; }
 .lede { font-size: 1.05rem; line-height: 1.5; margin: 0.2rem 0 0; max-width: 34rem; }
 
-.rulebox {
-  margin: 1.2rem 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  background: var(--card);
-}
+.rulebox { margin: 1.2rem 0; padding: 1.15rem 1.25rem; }
 .rulebox-title {
   margin: 0 0 0.6rem;
   font-size: 0.7rem;
@@ -809,24 +926,17 @@ body {
   display: grid;
   grid-template-columns: 2.5rem 1fr;
   gap: 0.2rem 0.7rem;
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 0.7rem 0.9rem;
+  padding: 0.95rem 1.1rem;
   cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.15s ease, outline-color 0.15s ease;
 }
-.qcard:hover { border-color: var(--pen); }
+.qcard:hover { outline-color: var(--pen); transform: translateY(-1px) rotate(-0.3deg); }
 .qnum { grid-row: span 2; font-family: var(--hand); font-size: 1.2rem; color: var(--pen); }
 .qtext { font-weight: 600; }
 .qmeta { font-size: 0.8rem; }
 
-.paywall {
-  text-align: center;
-  background: var(--card);
-  border: 1px dashed var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 1.4rem 1rem;
-}
+.paywall { text-align: center; padding: 1.5rem 1.2rem; }
 .paywall-lock { font-size: 1.8rem; line-height: 1; }
 .paywall-title { font-size: 1.2rem; margin: 0.4rem 0 0.1rem; }
 .paywall p { margin: 0 0 0.8rem; }
@@ -838,19 +948,14 @@ body {
   gap: 0.6rem;
   margin: 1rem 0;
 }
-.stat {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 0.9rem;
-  text-align: center;
-}
-.stat-val { font-size: 1.7rem; }
+.stat { padding: 1.1rem; text-align: center; }
+.stat-val { font-size: 1.7rem; color: var(--pen); }
 .stat-label { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
 .playedline { margin: -0.4rem 0 1rem; text-align: center; }
 
-.sparkbox { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 0.9rem; }
-.spark { width: 100%; height: 70px; margin-top: 0.4rem; overflow: visible; }
+.sparkbox { padding: 1.1rem 1.2rem; margin-top: 0.9rem; }
+.spark { display: block; width: 100%; height: auto; margin-top: 0.5rem; overflow: visible; }
+.spark-top { stroke: var(--green); opacity: 0.5; }
 .spark-base { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
 .spark-line { fill: none; stroke: var(--pen); stroke-width: 1.5; }
 .dot { stroke: #fff; stroke-width: 1; }
@@ -865,8 +970,8 @@ body {
 @media (max-width: 480px) {
   .question { font-size: 1.35rem; }
   .statgrid { grid-template-columns: 1fr 1fr; }
-  .hero-emoji { font-size: 2.8rem; }
-  .hero-score { font-size: 1.9rem; }
+  .hero-points { font-size: 4.4rem; }
+  .tier-name { font-size: 0.62rem; }
   .actualnum { font-size: 1.9rem; }
 
   /* Four tabs led by "Challenge" don't fit a phone at full size. */

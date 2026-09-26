@@ -510,7 +510,7 @@
       var acc = null;
       activeFactors().forEach(function (f) {
         var op = flipped[f.sig] || f.op;
-        if (acc == null) acc = f.value;
+        if (acc == null) acc = op === "/" ? 1 / f.value : f.value; // "per 1,000 people" on line one
         else if (op === "/") acc = acc / f.value;
         else if (op === "+") acc = acc + f.value;
         else acc = acc * f.value;
@@ -907,9 +907,18 @@
       if (skip.parentNode) skip.remove();
       after.hidden = false;
       var hero = after.querySelector(".hero");
-      if (hero) requestAnimationFrame(function () {
-        requestAnimationFrame(function () { hero.classList.add("in"); });
-      });
+      if (hero) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { hero.classList.add("in"); });
+        });
+        var pts = hero.querySelector(".hero-points");
+        var target = +pts.getAttribute("data-points");
+        setTimeout(function () { countUp(pts, target); }, 250);
+        setTimeout(function () {
+          hero.classList.add("scored");
+          if (target >= 77) burstConfetti(hero.querySelector(".confetti"), target >= 86 ? 34 : 18);
+        }, 1150);
+      }
       var num = after.querySelector(".actualnum");
       countUp(num, q.actual_answer);
       if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
@@ -938,10 +947,21 @@
         ? "eyeballed"
         : (res.rows && res.rows.length ? res.rows.length + (res.rows.length === 1 ? " number" : " numbers") : "hand-called");
     return [
-      "Napkin #" + res.napkinNumber,
-      scoreLine(sc) + " " + sc.band.emoji,
-      rowsBit + " · " + streak + "-day streak"
+      "Napkin #" + res.napkinNumber + " " + sc.band.emoji,
+      scoreBar(sc) + " " + sc.points + "/100",
+      scoreLine(sc) + " · " + rowsBit + " · " + streak + "-day streak",
+      "napkinmath.co.uk"
     ].join("\n");
+  }
+
+  // Ten squares filled by score, coloured by tier — readable at a glance in
+  // a group chat, the way a Wordle grid is.
+  var BAR_FILL = { nailed: "🟩", sharp: "🟩", solid: "🟨", close: "🟧", miss: "🟥" };
+  function scoreBar(sc) {
+    var filled = Math.max(sc.points > 0 ? 1 : 0, Math.round(sc.points / 10));
+    var out = "";
+    for (var i = 0; i < 10; i++) out += i < filled ? BAR_FILL[sc.band.key] : "⬜";
+    return out;
   }
 
   function shareResult(text, btn) {
@@ -956,23 +976,42 @@
     var ratioLine = scoreLine(sc);
 
     var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
+
+    // Every tier, worst to best, with yours circled in biro once the score lands.
+    var ladder = el("div", { class: "tier-ladder" });
+    scoring.BANDS.slice().reverse().forEach(function (b) {
+      var here = b.key === band.key;
+      ladder.appendChild(el("div", { class: "tier " + b.key + (here ? " here" : "") },
+        el("span", { class: "tier-emoji" }, b.emoji),
+        el("span", { class: "tier-name" }, b.short),
+        here ? elNS("svg", { class: "tier-circle", viewBox: "0 0 100 90", preserveAspectRatio: "none" },
+          elNS("path", { d: "M10,48 C8,22 30,6 52,6 C78,6 94,24 92,46 C90,70 70,84 48,84 C24,84 8,68 10,50 C11,44 14,42 18,44" })
+        ) : null
+      ));
+    });
+
     container.appendChild(el("div", { class: "hero " + band.key },
-      el("div", { class: "hero-emoji" }, band.emoji),
-      el("div", { class: "hero-score hand" }, band.label),
+      el("div", { class: "hero-kicker" }, "Your score"),
+      el("div", { class: "hero-points-row hand" },
+        el("span", { class: "hero-points", "data-points": sc.points }, "0"),
+        el("span", { class: "hero-outof" }, "/100")
+      ),
+      el("div", { class: "band-stamp" }, band.short),
       el("div", { class: "hero-ratio" }, ratioLine),
       el("div", { class: "hero-quip" }, roast),
-      highlight ? el("div", { class: "hero-highlight" }, highlight) : null
+      ladder,
+      highlight ? el("div", { class: "hero-highlight" }, highlight) : null,
+      el("div", { class: "confetti", "aria-hidden": "true" })
     ));
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
     var actualnumEl = el("div", { class: "hand actualnum" }, "0");
     container.appendChild(el("div", { class: "answerbox" },
       el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
-      circleWrap(actualnumEl)
+      circleWrap(actualnumEl),
+      guessBar(res.guess, q.actual_answer),
+      el("p", { class: "source muted" }, q.source)
     ));
-
-    container.appendChild(guessBar(res.guess, q.actual_answer));
-    container.appendChild(el("p", { class: "source muted" }, q.source));
 
     if (opts.challenge) {
       container.appendChild(buildComparison(q, res));
@@ -991,37 +1030,46 @@
     }
   }
 
+  // A hand-drawn log-scale number line: a tick at every power of ten, your
+  // guess crossed in red, the real answer ringed. On a log scale the gap
+  // between the two marks IS the miss, whichever direction it went.
   function guessBar(guess, actual) {
     var lo = Math.max(1, Math.min(guess, actual));
     var hi = Math.max(1, guess, actual);
-    var min = Math.pow(10, Math.floor(Math.log10(lo)) - 0.4);
-    var max = Math.pow(10, Math.ceil(Math.log10(hi)) + 0.4);
+    var minE = Math.floor(Math.log10(lo)), maxE = Math.ceil(Math.log10(hi));
+    if (maxE - minE < 2) { minE -= 1; maxE += 1; }
+    var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
     function pct(v) {
       v = Math.max(min, Math.min(max, v));
       return (Math.log(v / min) / Math.log(max / min)) * 100;
     }
     var gp = pct(guess), ap = pct(actual);
 
-    var track = el("div", { class: "gbar-track" });
+    var line = el("div", { class: "gline" });
+    var every = Math.ceil((maxE - minE + 1) / 7);
+    for (var e = minE; e <= maxE; e++) {
+      var labelled = (e - minE) % every === 0;
+      var tick = el("div", { class: "gtick" + (labelled ? "" : " minor") },
+        labelled ? el("span", { class: "gtick-label" }, util.humanize(Math.pow(10, e))) : null);
+      tick.style.left = pct(Math.pow(10, e)) + "%";
+      line.appendChild(tick);
+    }
+
     var span = el("div", { class: "gbar-span" });
     span.style.left = Math.min(gp, ap) + "%";
-    span.style.width = Math.max(0, Math.abs(gp - ap)) + "%";
-    track.appendChild(span);
+    span.style.width = Math.abs(gp - ap) + "%";
+    line.appendChild(span);
 
     var mAct = el("div", { class: "gbar-mark actual" }, el("span", { class: "gbar-tag" }, "actual"));
     mAct.style.left = ap + "%";
-    var mYou = el("div", { class: "gbar-mark you" }, el("span", { class: "gbar-tag" }, "you"));
+    // Too close to share a row: lift "you" above "actual".
+    var mYou = el("div", { class: "gbar-mark you" + (Math.abs(gp - ap) < 14 ? " stack" : "") },
+      el("span", { class: "gbar-x" }, "✗"), el("span", { class: "gbar-tag" }, "you"));
     mYou.style.left = gp + "%";
-    track.appendChild(mAct);
-    track.appendChild(mYou);
+    line.appendChild(mAct);
+    line.appendChild(mYou);
 
-    return el("div", { class: "gbar" },
-      track,
-      el("div", { class: "gbar-scale muted" },
-        el("span", {}, util.humanize(min)),
-        el("span", {}, util.humanize(max))
-      )
-    );
+    return el("div", { class: "gbar" }, line);
   }
 
   // Pick out the single number you nailed and the single number that hurt
@@ -1131,9 +1179,9 @@
         ));
       });
       var pctile = resultsApi.percentile(d.counts, d.total, res.band);
-      if (pctile != null) {
-        box.appendChild(el("div", { class: "dist-percentile hand" }, "Better than " + pctile + "% of today's players."));
-      }
+      box.appendChild(el("div", { class: "dist-percentile hand" }, pctile != null
+        ? "Better than " + pctile + "% of today's players."
+        : "You're first in today — check back later to see how you stack up."));
     }).catch(function () {
       box.innerHTML = "";
       box.appendChild(el("div", { class: "muted" }, "Couldn't load today's community stats."));
@@ -1410,9 +1458,12 @@
 
     var grid = el("div", { class: "statgrid" });
     grid.appendChild(stat("Streak", s.streak + (s.streak === 1 ? " day" : " days")));
-    grid.appendChild(stat("Longest streak", s.longestStreak + (s.longestStreak === 1 ? " day" : " days")));
+    grid.appendChild(stat("Avg score", s.avgPoints == null ? "—" : s.avgPoints + "/100"));
     wrap.appendChild(grid);
-    wrap.appendChild(el("p", { class: "muted playedline" }, s.played + (s.played === 1 ? " day played" : " days played")));
+    wrap.appendChild(el("p", { class: "muted playedline" },
+      s.played + (s.played === 1 ? " day played" : " days played") +
+      " · longest streak " + s.longestStreak +
+      (s.bestPoints != null ? " · best " + s.bestPoints + "/100" : "")));
 
     wrap.appendChild(buildPersonalDistribution(s.bandCounts));
 
@@ -1444,29 +1495,26 @@
   }
 
   function sparkline(series) {
-    var W = 300, H = 60, n = series.length;
-    function xs(i) { return n === 1 ? W / 2 : (i / (n - 1)) * (W - 8) + 4; }
-    function ys(r) {
-      var v = Math.max(1, Math.min(100, isFinite(r) ? r : 100));
-      return H - (Math.log(v) / Math.log(100)) * (H - 8) - 4;
-    }
-    var pts = series.map(function (d, i) { return xs(i) + "," + ys(d.ratio); }).join(" ");
+    var W = 600, H = 110, n = series.length;
+    function xs(i) { return n === 1 ? W / 2 : (i / (n - 1)) * (W - 16) + 8; }
+    function ys(p) { return H - 8 - (Math.max(0, Math.min(100, p || 0)) / 100) * (H - 16); }
+    var pts = series.map(function (d, i) { return xs(i) + "," + ys(d.points); }).join(" ");
     var parts = [
-      '<line x1="4" y1="' + ys(1) + '" x2="' + (W - 4) + '" y2="' + ys(1) + '" class="spark-base"/>'
+      '<line x1="8" y1="' + ys(0) + '" x2="' + (W - 8) + '" y2="' + ys(0) + '" class="spark-base"/>',
+      '<line x1="8" y1="' + ys(86) + '" x2="' + (W - 8) + '" y2="' + ys(86) + '" class="spark-base spark-top"/>'
     ];
     if (n > 1) parts.push('<polyline points="' + pts + '" class="spark-line"/>');
     series.forEach(function (d, i) {
-      parts.push('<circle cx="' + xs(i) + '" cy="' + ys(d.ratio) + '" r="3" class="dot dot-' + (d.band || "miss") + '"/>');
+      parts.push('<circle cx="' + xs(i) + '" cy="' + ys(d.points) + '" r="5" class="dot dot-' + (d.band || "miss") + '"/>');
     });
 
     var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.setAttribute("class", "spark");
-    svg.setAttribute("preserveAspectRatio", "none");
     svg.innerHTML = parts.join("");
 
     var box = el("div", { class: "sparkbox" });
-    box.appendChild(el("div", { class: "muted" }, "Miss ratio over time (lower is better)"));
+    box.appendChild(el("div", { class: "muted" }, "Score over time — the dashed line is Bang on (86)"));
     box.appendChild(svg);
     return box;
   }
@@ -1582,6 +1630,25 @@
   }
 
   /* ---------- misc ---------- */
+  // Scraps of ink and paper flung out from the score for a top-tier result.
+  var CONFETTI_COLORS = ["#2b43a0", "#b23b2e", "#4a8a4a", "#bd8420", "#8a5a2b", "#3c8a82"];
+  function burstConfetti(host, n) {
+    if (!host) return;
+    try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) { /* old browser */ }
+    for (var i = 0; i < n; i++) {
+      var angle = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+      var dist = 90 + Math.random() * 110;
+      var bit = el("span", { class: "confetto" + (i % 3 === 0 ? " round" : "") });
+      bit.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+      bit.style.setProperty("--dy", Math.sin(angle) * dist * 0.75 - 30 + "px");
+      bit.style.setProperty("--rot", Math.round(Math.random() * 540 - 270) + "deg");
+      bit.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      bit.style.animationDelay = Math.round(Math.random() * 90) + "ms";
+      host.appendChild(bit);
+    }
+    setTimeout(function () { host.innerHTML = ""; }, 1800);
+  }
+
   function countUp(node, target) {
     if (!node) return;
     var dur = 900, start = performance.now();

@@ -46,18 +46,20 @@ window.NAPKIN.results = (function () {
       });
   }
 
-  // Midpoint-rank percentile: bands strictly worse than yours count fully,
-  // your own band counts as half — splits ties fairly instead of everyone
-  // in the same band claiming to have "beaten" each other.
+  // Midpoint-rank percentile against everyone else (your own entry is in
+  // the counts, so it's taken back out): bands strictly worse than yours
+  // count fully, others in your band count as half. Null when you're the
+  // only one so far — "better than 50% of 1 player" means nothing.
   function percentile(counts, total, band) {
-    if (!total) return null;
+    var others = total - 1;
+    if (others < 1) return null;
     var worseCount = 0;
     for (var i = 0; i < BANDS_ORDER.length; i++) {
       if (BANDS_ORDER[i] === band) break;
       worseCount += counts[BANDS_ORDER[i]] || 0;
     }
-    var same = counts[band] || 0;
-    return Math.round(((worseCount + same / 2) / total) * 100);
+    var sameOthers = Math.max(0, (counts[band] || 0) - 1);
+    return Math.round(((worseCount + sameOthers / 2) / others) * 100);
   }
 
   return { submit: submit, distribution: distribution, percentile: percentile, BANDS_ORDER: BANDS_ORDER };
