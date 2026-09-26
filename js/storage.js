@@ -67,7 +67,7 @@ window.NAPKIN.storage = (function () {
     return Math.max(0, Math.round((today - epoch) / 86400000));
   }
 
-  function blank() { return { version: 1, results: [], challengeBest: 0 }; }
+  function blank() { return { version: 1, results: [], interviewBest: 0 }; }
 
   function save(state) {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* full / blocked */ }
@@ -79,7 +79,7 @@ window.NAPKIN.storage = (function () {
       if (!raw) return blank();
       var o = JSON.parse(raw);
       if (!o || !Array.isArray(o.results)) return blank();
-      return { version: 1, results: o.results, challengeBest: o.challengeBest || 0 };
+      return { version: 1, results: o.results, interviewBest: o.interviewBest || 0 };
     } catch (e) {
       return blank();
     }
@@ -101,20 +101,20 @@ window.NAPKIN.storage = (function () {
     if (!cloudUid || !window.firebase) return;
     firebase.firestore().collection("users").doc(cloudUid).set({
       results: state.results,
-      challengeBest: state.challengeBest || 0,
+      interviewBest: state.interviewBest || 0,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(function () { /* offline / rules not set up yet */ });
   }
 
   // Union of local + remote results by date (local wins on same-date
   // conflicts, since it's the freshest thing this device just did), plus
-  // the higher of either challengeBest.
+  // the higher of either interviewBest.
   function mergeState(local, remote) {
     var byDate = {};
     (remote.results || []).forEach(function (r) { byDate[r.date] = r; });
     (local.results || []).forEach(function (r) { byDate[r.date] = r; });
     var results = Object.keys(byDate).sort().map(function (d) { return byDate[d]; });
-    return { version: 1, results: results, challengeBest: Math.max(local.challengeBest || 0, remote.challengeBest || 0) };
+    return { version: 1, results: results, interviewBest: Math.max(local.interviewBest || 0, remote.interviewBest || 0) };
   }
 
   // Call once at boot. onMerged fires at most once, only if the cloud copy
@@ -131,7 +131,7 @@ window.NAPKIN.storage = (function () {
       firebase.firestore().collection("users").doc(cloudUid).get().then(function (doc) {
         var remote = doc.exists ? doc.data() : blank();
         var merged = mergeState(before, remote);
-        var changed = merged.results.length !== before.results.length || merged.challengeBest !== before.challengeBest;
+        var changed = merged.results.length !== before.results.length || merged.interviewBest !== before.interviewBest;
         save(merged);
         if (changed && onMerged) onMerged();
       }).catch(function () { /* offline / rules not set up yet — stay local-only */ });
@@ -139,12 +139,12 @@ window.NAPKIN.storage = (function () {
     firebase.auth().signInAnonymously().catch(function () { /* auth not enabled yet */ });
   }
 
-  // Challenge mode's high score: longest streak survived in a single run.
-  function challengeBest() { return load().challengeBest || 0; }
-  function recordChallengeBest(n) {
+  // Interview mode's high score: the highest rung reached (0 = Aspiring APM, 5 = Head of Product).
+  function interviewBest() { return load().interviewBest || 0; }
+  function recordInterviewBest(n) {
     var s = load();
-    if (n > (s.challengeBest || 0)) { s.challengeBest = n; save(s); }
-    return s.challengeBest;
+    if (n > (s.interviewBest || 0)) { s.interviewBest = n; save(s); }
+    return s.interviewBest;
   }
 
   function bankLength() {
@@ -236,7 +236,7 @@ window.NAPKIN.storage = (function () {
   function importJSON(str) {
     var o = JSON.parse(str);
     if (!o || !Array.isArray(o.results)) throw new Error("That doesn't look like a Napkin backup.");
-    save({ version: 1, results: o.results, challengeBest: o.challengeBest || 0 });
+    save({ version: 1, results: o.results, interviewBest: o.interviewBest || 0 });
   }
 
   function reset() { save(blank()); }
@@ -249,7 +249,7 @@ window.NAPKIN.storage = (function () {
     resultForDate: resultForDate, playedToday: playedToday,
     recordResult: recordResult,
     streak: streak, longestStreak: longestStreak, stats: stats,
-    challengeBest: challengeBest, recordChallengeBest: recordChallengeBest,
+    interviewBest: interviewBest, recordInterviewBest: recordInterviewBest,
     hasSeenPadDemo: hasSeenPadDemo, markPadDemoSeen: markPadDemoSeen,
     friendChallenge: friendChallenge, saveFriendChallenge: saveFriendChallenge,
     playerName: playerName, setPlayerName: setPlayerName,

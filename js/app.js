@@ -7,7 +7,7 @@
   var storage = window.NAPKIN.storage;
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "daily", practiceQ: null, challenge: null, challengeDifficulty: "hard" };
+  var STATE = { view: "daily", practiceQ: null, interview: null };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
@@ -141,10 +141,10 @@
     var node;
     if (STATE.view === "daily") node = viewDaily();
     else if (STATE.view === "practice") node = STATE.practiceQ ? napkinScreen(STATE.practiceQ, { practice: true }) : viewPracticeList();
-    else if (STATE.view === "challenge") {
-      node = (STATE.challenge && !STATE.challenge.over)
-        ? napkinScreen(byId(STATE.challenge.lastId), { challenge: true })
-        : viewChallengeIntro();
+    else if (STATE.view === "interview") {
+      node = (STATE.interview && !STATE.interview.over)
+        ? napkinScreen(byId(STATE.interview.lastId), { interview: true })
+        : viewInterviewIntro();
     }
     else node = viewStats();
     mount(node);
@@ -232,28 +232,30 @@
   /* ---------- the napkin screen ---------- */
   function napkinScreen(q, opts) {
     opts = opts || {};
-    var isEasyChallenge = !!(opts.challenge && STATE.challenge && STATE.challenge.difficulty === "easy");
     var wrap = el("section", { class: "screen napkin" });
 
     if (opts.practice) {
       var back = el("button", { class: "linkbtn" }, "‹ Back to list");
       back.addEventListener("click", function () { STATE.practiceQ = null; renderApp(); });
       wrap.appendChild(back);
-    } else if (opts.challenge) {
-      var quit = el("button", { class: "linkbtn" }, "‹ Quit run");
-      quit.addEventListener("click", function () {
-        if (!window.confirm("Quit this run? Your streak ends here.")) return;
-        STATE.challenge = null;
+    } else if (opts.interview) {
+      var iv = STATE.interview, round = LADDER[iv.level + 1];
+      var leave = el("button", { class: "linkbtn" }, "‹ Leave the interview");
+      leave.addEventListener("click", function () {
+        if (!window.confirm("Walk out of the interview? This run ends here.")) return;
+        STATE.interview = null;
         renderApp();
       });
-      wrap.appendChild(quit);
-      wrap.appendChild(el("div", { class: "chud-row" },
-        heartsNode(STATE.challenge.lives, STATE.challenge.maxLives),
-        el("span", { class: "chud-streak hand streak-big" }, fireLabel(STATE.challenge.streak)),
-        el("span", { class: "chud-diff muted" }, STATE.challenge.difficulty === "easy" ? "Easy" : "Hard")
+      wrap.appendChild(leave);
+      wrap.appendChild(el("div", { class: "daychip" },
+        el("span", { class: "chip" }, "Round " + (iv.level + 1) + " of 5"),
+        el("span", { class: "muted" }, "for " + round.title + (iv.held ? " · second chance" : ""))
       ));
-      var chase = bestChaseLabel(STATE.challenge.streak);
-      if (chase) wrap.appendChild(el("p", { class: "muted chud-chase" }, chase));
+      wrap.appendChild(el("div", { class: "vs-note iv-note" },
+        el("span", { class: "vs-note-icon" }, round.emoji),
+        el("span", {}, el("strong", { class: "iv-who" }, round.round + " · " + round.who), iv.opener)
+      ));
+      wrap.appendChild(roundPips(iv.level, iv.held));
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
         el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
@@ -278,7 +280,8 @@
     var mode = "napkin";
     var segNapkin = el("button", { class: "seg active" }, "Build a napkin");
     var segEye = el("button", { class: "seg" }, "Just eyeball it");
-    wrap.appendChild(el("div", { class: "segmented" }, segNapkin, segEye));
+    // An interview wants your working, so there's no eyeballing it.
+    if (!opts.interview) wrap.appendChild(el("div", { class: "segmented" }, segNapkin, segEye));
 
     /* ---- the scribble pad (C: multiply every number found) ---- */
     var totalOverride = null;   // set when the answer is typed by hand
@@ -346,41 +349,6 @@
     gutActionBtn.addEventListener("click", openGutCheckModal);
     padActions.appendChild(gutActionBtn);
 
-    // Lifelines live with the other pad tools, but on their own labelled row —
-    // they're a scarce one-shot resource, not an always-there utility.
-    var lifelineRow = null;
-    if (opts.challenge) {
-      lifelineRow = el("div", { class: "lifelines" },
-        el("span", { class: "helper-label muted" }, "Lifelines")
-      );
-      var numberBtn = el("button", { class: "tbtn", type: "button" }, "Borrow a number");
-      numberBtn.disabled = !!STATE.challenge.usedNumber;
-      numberBtn.addEventListener("click", function () {
-        if (STATE.challenge.usedNumber) return;
-        var row = nextUnfilledFrameworkRow();
-        insertLine((row.op === "/" ? "per " : "") + row.label + " " + inputNumber(row.model_value));
-        STATE.challenge.usedNumber = true;
-        numberBtn.disabled = true;
-      });
-      lifelineRow.appendChild(numberBtn);
-      if (!isEasyChallenge) {
-        var starterBtn = el("button", { class: "tbtn", type: "button" }, "Framework starter");
-        starterBtn.disabled = !!STATE.challenge.usedFrameworkStarter;
-        starterBtn.addEventListener("click", function () {
-          if (STATE.challenge.usedFrameworkStarter) return;
-          var starter = q.framework.slice(0, 2)
-            .map(function (f) { return (f.op === "/" ? "per " : "") + f.label + " "; })
-            .join("\n") + "\n";
-          pad.value = starter + pad.value;
-          onPad();
-          pad.focus();
-          STATE.challenge.usedFrameworkStarter = true;
-          starterBtn.disabled = true;
-        });
-        lifelineRow.appendChild(starterBtn);
-      }
-    }
-
     var ribbon = el("div", { class: "ribbon" });
     napkinPanel.appendChild(ribbon);
     var ribbonHint = el("p", { class: "muted ribbon-hint" }, "Tap a number to mute it · tap again to cycle × / ÷ / +");
@@ -404,55 +372,16 @@
     // chain so it doesn't interrupt pad → reading → total.
     var helpers = el("div", { class: "helpers" });
     helpers.appendChild(padActions);
-    if (lifelineRow) helpers.appendChild(lifelineRow);
     napkinPanel.appendChild(helpers);
 
-    /* Optional help — one quiet row, with each toggle's panel underneath it.
-       Challenge keeps its own separate one-shot lifelines (above) exactly as
-       they were. Practice/Daily get a single escalating "Stuck?" button
-       instead of two separate links: first press gives a number (if this
-       question has any back-pocket facts), second press shows the full
-       framework — no extra browser confirm() gate, since the two presses
-       already are the commitment. */
+    /* Optional help: a single escalating "Stuck?" button. First press gives
+       a number (if this question has any back-pocket facts), second press
+       shows the full framework — no extra confirm() gate, since the two
+       presses already are the commitment. An interview gets no help at all. */
     var padHelp = el("div", { class: "padhelp" });
     napkinPanel.appendChild(padHelp);
 
-    if (opts.challenge) {
-      if (q.reference_anchors && q.reference_anchors.length) {
-        var chips = el("div", { class: "anchorchips" });
-        chips.hidden = true;
-        q.reference_anchors.forEach(function (a) {
-          var chip = el("button", { class: "achip", type: "button" }, "+ " + a.label + " " + inputNumber(a.value));
-          chip.addEventListener("mousedown", function (e) { e.preventDefault(); });
-          chip.addEventListener("click", function () { insertLine(a.label + " " + inputNumber(a.value)); });
-          chips.appendChild(chip);
-        });
-        var hintBtn = el("button", { class: "linkbtn hintbtn", type: "button" }, "Need another number?");
-        hintBtn.addEventListener("click", function () {
-          chips.hidden = !chips.hidden;
-          hintBtn.textContent = chips.hidden ? "Need another number?" : "Hide the hints";
-        });
-        padHelp.appendChild(hintBtn);
-        napkinPanel.appendChild(chips);
-      }
-      /* peek — not offered in Challenge's easy mode, where the framework's already laid out */
-      if (!isEasyChallenge) {
-        var peekBtn = el("button", { class: "linkbtn peek", type: "button" }, "Show me the framework");
-        var peekNote = el("p", { class: "muted peeknote" }, "Framework peeked — this one counts as assisted.");
-        peekNote.hidden = true;
-        peekBtn.addEventListener("click", function () {
-          if (!window.confirm("Show the framework? You'll see the variable names (not the numbers), and this result gets an assisted mark.")) return;
-          assisted = true;
-          pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label; }).join("\n") + "\n";
-          onPad();
-          pad.focus();
-          peekBtn.remove();
-          peekNote.hidden = false;
-        });
-        padHelp.appendChild(peekBtn);
-        napkinPanel.appendChild(peekNote);
-      }
-    } else {
+    if (!opts.interview) {
       var hasAnchors = !!(q.reference_anchors && q.reference_anchors.length);
       var stuckChips = null;
       if (hasAnchors) {
@@ -536,9 +465,10 @@
       };
 
       function finish() {
-        if (opts.challenge) {
-          applyChallengeResult(sc);
-          mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { challenge: true }));
+        if (opts.interview) {
+          var roundNumber = STATE.interview.level + 1;
+          applyInterviewResult(sc);
+          mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null, round: roundNumber }, rec), { interview: true }));
         } else if (opts.practice) {
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
@@ -563,17 +493,6 @@
     function scan() { return util.scanFactors(pad.value); }
     function activeFactors() {
       return scan().filter(function (f) { return !muted[f.sig]; });
-    }
-    // "Borrow a Number" reveals whichever framework row your pad hasn't
-    // matched yet, using the same fuzzy label-matching the reveal screen
-    // grades with — falls back to the first row if nothing's been typed.
-    function nextUnfilledFrameworkRow() {
-      var userRows = activeFactors().map(function (f) {
-        return { op: flipped[f.sig] || f.op, label: f.label, value: String(f.value) };
-      });
-      var cmp = scoring.compareRows(userRows, q.framework);
-      var unfilled = cmp.pairs.filter(function (p) { return !p.user; });
-      return unfilled.length ? unfilled[0].model : q.framework[0];
     }
     function computeTotal() {
       var acc = null;
@@ -854,7 +773,7 @@
     // example into the empty pad so the "your numbers get read live" trick
     // is seen once, not just asserted. Any click/keypress cancels it.
     function startPadDemo() {
-      if (opts.practice || opts.challenge) return;
+      if (opts.practice || opts.interview) return;
       if (storage.hasSeenPadDemo() || pad.value !== "" || mode !== "napkin") return;
       showDemoIntro();
     }
@@ -915,11 +834,6 @@
       timer = setTimeout(tick, 130);
     }
 
-    // Easy mode: the framework's rows are laid out for you already — just plug in a number per line.
-    if (isEasyChallenge) {
-      pad.value = q.framework.map(function (f) { return (f.op === "/" ? "per " : "") + f.label + " "; }).join("\n") + "\n";
-    }
-
     onPad();
     refreshTotal();
     startPadDemo();
@@ -929,7 +843,7 @@
   /* ---------- the reveal screen ---------- */
   function revealScreen(q, res, opts) {
     opts = opts || {};
-    var chipLabel = opts.challenge ? "Challenge" : opts.practice ? "Practice" : ("Napkin #" + res.napkinNumber);
+    var chipLabel = opts.interview ? "Round " + res.round + " of 5" : opts.practice ? "Practice" : ("Napkin #" + res.napkinNumber);
     var wrap = el("section", { class: "screen reveal" });
 
     wrap.appendChild(el("div", { class: "reveal-head" },
@@ -1200,8 +1114,10 @@
   function buildAfter(container, q, res, opts) {
     var sc = scoring.score(res.guess, q);
     var band = sc.band;
-    var roast = scoring.quip(band, sc.ratio, sc.dir);
     var ratioLine = scoreLine(sc);
+    // In an interview the same six tiers read as the panel's vote.
+    var verdict = opts.interview ? VERDICTS[band.key] : null;
+    var roast = verdict ? verdict.feedback() : scoring.quip(band, sc.ratio, sc.dir);
 
     var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
 
@@ -1209,28 +1125,30 @@
     var ladder = el("div", { class: "tier-ladder" });
     scoring.BANDS.slice().reverse().forEach(function (b) {
       var here = b.key === band.key;
+      var shown = opts.interview ? VERDICTS[b.key] : b;
       ladder.appendChild(el("div", { class: "tier " + b.key + (here ? " here" : "") },
-        el("span", { class: "tier-emoji" }, b.emoji),
-        el("span", { class: "tier-name" }, b.short),
+        el("span", { class: "tier-emoji" }, shown.emoji),
+        el("span", { class: "tier-name" }, shown.short),
         here ? elNS("svg", { class: "tier-circle", viewBox: "0 0 100 90", preserveAspectRatio: "none" },
           elNS("path", { d: "M10,48 C8,22 30,6 52,6 C78,6 94,24 92,46 C90,70 70,84 48,84 C24,84 8,68 10,50 C11,44 14,42 18,44" })
         ) : null
       ));
     });
 
-    var isDaily = !opts.practice && !opts.challenge;
+    var isDaily = !opts.practice && !opts.interview;
     var vs = isDaily ? todaysChallenge() : null;
     if (vs && vs.n !== res.napkinNumber) vs = null;
 
     container.appendChild(el("div", { class: "hero " + band.key },
-      el("div", { class: "hero-kicker" }, "Your score"),
+      el("div", { class: "hero-kicker" }, opts.interview ? "Panel verdict" : "Your score"),
       el("div", { class: "hero-points-row hand" },
         el("span", { class: "hero-points", "data-points": sc.points }, "0"),
         el("span", { class: "hero-outof" }, "/100")
       ),
-      el("div", { class: "band-stamp" }, band.short),
+      el("div", { class: "band-stamp" + (verdict && verdict.outcome === "up" ? " good" : "") }, verdict ? verdict.name : band.short),
+      opts.interview ? interviewPromoLine() : null,
       el("div", { class: "hero-ratio" }, ratioLine),
-      el("div", { class: "hero-quip" }, roast),
+      el("div", { class: "hero-quip" }, opts.interview ? "“" + roast + "”" : roast),
       ladder,
       vs ? versusRow(vs, sc.points) : null,
       isDaily ? buildCrowdLine(res) : null,
@@ -1238,6 +1156,10 @@
       isDaily ? buildChallengeBlock(q, res, sc) : null,
       el("div", { class: "confetti", "aria-hidden": "true" })
     ));
+
+    // The interview's next step comes straight after the verdict: the next
+    // round, another go, or the letter that ends the run.
+    if (opts.interview) container.appendChild(buildInterviewOutcome(q, res, sc));
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
     var actualnumEl = el("div", { class: "hand actualnum" }, "0");
@@ -1248,9 +1170,8 @@
       el("p", { class: "source muted" }, q.source)
     ));
 
-    if (opts.challenge) {
+    if (opts.interview) {
       container.appendChild(buildComparison(q, res));
-      container.appendChild(buildChallengeOutcome());
     } else if (opts.practice) {
       container.appendChild(buildComparison(q, res));
       var again = el("button", { class: "btn" }, "Try another question");
@@ -1427,172 +1348,255 @@
     return card;
   }
 
-  /* ---------- challenge mode ----------
-   * Rapid-fire questions, no retries. Three hearts. A "miss" (off by more
-   * than 10×) costs a heart and resets the in-run streak to zero; the run
-   * itself only ends when hearts hit zero. Longest streak survived in a
-   * run is saved as the all-time best (storage.challengeBest). */
-  function heartsNode(lives, max) {
-    var s = "";
-    for (var i = 0; i < max; i++) s += i < lives ? "❤️" : "🖤";
-    return el("span", { class: "hearts" }, s);
+  /* ---------- interview mode ----------
+   * Five rounds to go from Aspiring APM to Head of Product at Napkin. Each
+   * round is one question with a more senior interviewer. The same six score
+   * tiers as everywhere else read as the panel's vote: Strong hire / Hire
+   * promote you, Lean hire / Lean no hire get you another question at the
+   * same level, No hire / Strong no hire end the run. No lifelines. The
+   * highest rung you've reached is kept (storage.interviewBest). */
+  var LADDER = [
+    { title: "Aspiring APM" },
+    { title: "Associate PM", round: "Recruiter screen", who: "Priya, Talent", emoji: "📋", difficulty: "medium",
+      openers: ["Just a quick one to see how you think. Relax.", "No wrong answers here. Well, there are. Lots.", "The hiring manager asked me to throw you an estimate. Have a go."] },
+    { title: "Product Manager", round: "Hiring manager", who: "Tom, Group PM", emoji: "☕", difficulty: "medium",
+      openers: ["I care more about the working than the number. Mostly.", "Walk me through it like I'm a stakeholder.", "Take your time. I've blocked out twenty minutes."] },
+    { title: "Senior PM", round: "Product-sense panel", who: "three PMs and a designer", emoji: "🧑‍💼", category: "product",
+      openers: ["We love a framework. Talk us through it.", "Size it for us. We'll poke holes afterwards.", "Pretend we're the exec team and we've got five minutes."] },
+    { title: "Lead PM", round: "VP of Product", who: "Anika, VP Product", emoji: "📈", difficulty: "hard",
+      openers: ["I don't need precise. I need defensible.", "My last Lead PM got this one wrong. No pressure.", "Show me you can reason when the data's thin."] },
+    { title: "Head of Product", round: "The founder", who: "who invented the napkin", emoji: "🎩", difficulty: "hard",
+      openers: ["I built this company on the back of a napkin. Your turn.", "One question. Then we talk equity.", "Impress me and the job's yours."] }
+  ];
+
+  function pickOne(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  // The six score tiers as a hiring panel's vote, each with the interviewer's feedback.
+  function verdict(name, short, emoji, outcome, lines) {
+    var last = null;
+    return {
+      name: name, short: short, emoji: emoji, outcome: outcome,
+      feedback: function () {
+        var pool = lines.filter(function (l) { return l !== last; });
+        last = pickOne(pool);
+        return last;
+      }
+    };
   }
-  function fireLabel(streak) {
-    var flames = streak >= 10 ? "🔥🔥🔥" : streak >= 5 ? "🔥🔥" : "🔥";
-    return (streak > 0 ? flames + " " : "") + "Streak: " + streak;
-  }
-  // 3, 5, then every 5 — matches the flame tiers above closely enough to feel earned.
-  function isMilestone(n) { return n === 3 || n === 5 || (n >= 10 && n % 5 === 0); }
-  function bestChaseLabel(streak) {
-    var best = storage.challengeBest();
-    if (best <= 0) return "";
-    if (streak > best) return "🏆 new best!";
-    if (streak === best) return "🏆 tied your best";
-    return (best - streak) + " to beat your best (" + best + ")";
+  var VERDICTS = {
+    bangon: verdict("Strong hire", "Strong hire", "🎉", "up", [
+      "Best framework I've seen this quarter.",
+      "Can you start Monday?",
+      "I've stopped taking notes. No need.",
+      "That's going in the hiring doc as the example answer.",
+      "Honestly? Better than mine.",
+      "Clean structure, right answer. Rare combination."
+    ]),
+    soclose: verdict("Hire", "Hire", "🤝", "up", [
+      "Strong structure. Slightly off on one input. Would work with.",
+      "Good instincts. I'd back you in a roadmap review.",
+      "Clear thinking, sensible assumptions. Moving you forward.",
+      "A couple of numbers were generous, but the logic held.",
+      "Solid. You showed your working and it showed."
+    ]),
+    goodshout: verdict("Lean hire", "Lean hire", "🙂", "hold", [
+      "Right shape, wobbly numbers. One more before we decide.",
+      "I liked the framework. I didn't love the answer.",
+      "You'd be fine. We're looking for better than fine.",
+      "Close to a yes. Show me it wasn't luck.",
+      "Promising. Let's see another."
+    ]),
+    ballpark: verdict("Lean no hire", "Lean no", "🤔", "hold", [
+      "Right instincts, shaky numbers. One more question before we decide.",
+      "I'm on the fence and the fence is uncomfortable.",
+      "Some good bits in there. Some very not good bits.",
+      "Let's try another one and pretend that didn't happen.",
+      "The panel is \"aligning offline\". Have another go."
+    ]),
+    notclose: verdict("No hire", "No hire", "😬", "out", [
+      "Thanks for your time. We'll be in touch. (We won't.)",
+      "The assumptions didn't survive contact with reality.",
+      "I lost you at the second line.",
+      "Not a fit for this level, I'm afraid.",
+      "Interesting approach. Wrong, but interesting."
+    ]),
+    binit: verdict("Strong no hire", "Strong no", "🚪", "out", [
+      "Security will see you out.",
+      "I'm going to need that napkin back.",
+      "We've circulated this internally. As a warning.",
+      "Did you hear the question?",
+      "That wasn't an estimate, that was a guess wearing a tie."
+    ])
+  };
+
+  // Five pips: one per round, green once passed, amber for a second chance.
+  function roundPips(level, held) {
+    var row = el("div", { class: "iv-pips", "aria-label": level + " of 5 rounds passed" });
+    for (var i = 0; i < 5; i++) {
+      row.appendChild(el("span", { class: i < level ? "on" : (i === level && held ? "hold" : "") }));
+    }
+    return row;
   }
 
-  // Shuffled "bag" of every question id — deals through the whole bank
-  // before any question can repeat, then reshuffles.
-  function shuffledIds() {
-    var ids = QUESTIONS.map(function (q) { return q.id; });
-    for (var i = ids.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = ids[i]; ids[i] = ids[j]; ids[j] = t;
-    }
-    return ids;
+  function pickInterviewQuestion(iv) {
+    var round = LADDER[iv.level + 1];
+    var fits = function (q) { return round.category ? q.category === round.category : q.difficulty === round.difficulty; };
+    var pool = QUESTIONS.filter(function (q) { return !iv.used[q.id] && fits(q); });
+    if (!pool.length) pool = QUESTIONS.filter(function (q) { return !iv.used[q.id]; });
+    if (!pool.length) { iv.used = {}; pool = QUESTIONS.slice(); }
+    var q = pickOne(pool);
+    iv.used[q.id] = true;
+    iv.lastId = q.id;
+    iv.opener = pickOne(round.openers);
   }
-  function nextChallengeQuestion(c) {
-    if (!c.queue.length) c.queue = shuffledIds();
-    var id = c.queue.shift();
-    if (id === c.lastId && c.queue.length) { c.queue.push(id); id = c.queue.shift(); }
-    c.lastId = id;
-    return byId(id);
-  }
-  function startChallenge() {
-    STATE.challenge = {
-      lives: 1, maxLives: 1, streak: 0, runBest: 0,
-      queue: [], lastId: null, over: false, lastLifeLost: false, isNewBest: false,
-      difficulty: STATE.challengeDifficulty,
-      usedNumber: false, usedFrameworkStarter: false
+
+  function startInterview() {
+    STATE.interview = {
+      level: 0, held: false, used: {}, lastId: null, opener: "",
+      over: false, hired: false, last: null, startBest: storage.interviewBest()
     };
-    nextChallengeQuestion(STATE.challenge);
-    STATE.view = "challenge";
+    pickInterviewQuestion(STATE.interview);
+    STATE.view = "interview";
     renderApp();
   }
-  function applyChallengeResult(sc) {
-    var c = STATE.challenge;
-    var lifeLost = sc.band.key === "binit";
-    c.lastLifeLost = lifeLost;
-    if (lifeLost) {
-      c.lives -= 1;
-      c.streak = 0;
-    } else {
-      c.streak += 1;
-      c.runBest = Math.max(c.runBest, c.streak);
-    }
-    c.over = c.lives <= 0;
-    if (c.over) {
-      c.isNewBest = c.runBest > storage.challengeBest();
-      storage.recordChallengeBest(c.runBest);
-    }
+
+  // Settles the round and deals the next question straight away, so going
+  // back to the tab can't re-answer the one just marked.
+  function applyInterviewResult(sc) {
+    var iv = STATE.interview, v = VERDICTS[sc.band.key];
+    iv.last = { outcome: v.outcome, from: iv.level, ratio: sc.ratio, question: byId(iv.lastId) };
+    if (v.outcome === "up") { iv.level += 1; iv.held = false; storage.recordInterviewBest(iv.level); }
+    else if (v.outcome === "hold") { iv.held = true; }
+    else { iv.over = true; }
+    if (iv.level >= 5) { iv.over = true; iv.hired = true; }
+    if (!iv.over) pickInterviewQuestion(iv);
   }
 
-  function viewChallengeIntro() {
-    var wrap = el("section", { class: "screen challenge-intro" });
-    wrap.appendChild(el("h2", { class: "hand" }, "Challenge mode"));
+  function interviewPromoLine() {
+    var iv = STATE.interview, last = iv.last;
+    if (last.outcome === "up") {
+      return el("div", { class: "iv-promo up" }, iv.hired ? "▲ Hired as Head of Product" : "▲ Promoted to " + LADDER[iv.level].title);
+    }
+    if (last.outcome === "hold") return el("div", { class: "iv-promo hold" }, "No promotion yet. They want to see one more.");
+    return el("div", { class: "iv-promo out" }, "Out in the " + LADDER[last.from + 1].round.toLowerCase() + " round");
+  }
 
-    var c = STATE.challenge;
-    if (c && c.over) {
-      wrap.appendChild(el("div", { class: "panel challenge-summary" },
-        el("div", { class: "hand big" }, "Game over"),
-        el("p", {}, "Your streak topped out at " + c.runBest + "."),
-        c.isNewBest ? el("p", { class: "newbest" }, "🏆 New best!") : null
-      ));
+  // 🟩 per round passed, 🟥 for the one that ended it, ⬜ for the rest.
+  function interviewBar(iv) {
+    var s = "";
+    for (var i = 0; i < 5; i++) s += i < iv.level ? "🟩" : (i === iv.level && !iv.hired ? "🟥" : "⬜");
+    return s;
+  }
+
+  function interviewShareText(iv) {
+    if (iv.hired) {
+      return ["Thrilled to announce I'm the new Head of Product at Napkin 🎉",
+        interviewBar(iv) + " five rounds, zero lifelines", SITE_URL].join("\n");
+    }
+    var miss = util.roundFactor(iv.last.ratio) + "× miss";
+    return ["Open to work 👀",
+      iv.level
+        ? "Made it to " + LADDER[iv.level].title + " at Napkin before a " + miss + " in the " + LADDER[iv.last.from + 1].round.toLowerCase() + " round."
+        : "Bombed the recruiter screen at Napkin with a " + miss + ".",
+      interviewBar(iv), SITE_URL].join("\n");
+  }
+
+  // Brand and subtitle on the left, the stamp on the right, so the stamp never
+  // lands on the letter text at phone width.
+  function letterhead(sub, stamp, kind) {
+    return el("div", { class: "letterhead" },
+      el("div", { class: "letterhead-text" }, el("span", { class: "letter-brand hand" }, "Napkin."), el("span", { class: "muted" }, sub)),
+      el("span", { class: "letter-stamp " + kind + " hand" }, stamp));
+  }
+
+  function rejectionLetter(iv) {
+    var role = LADDER[iv.last.from + 1].title;
+    var reached = iv.level ? LADDER[iv.level].title : null;
+    return el("div", { class: "letter" },
+      letterhead("Sent from a phone, obviously", "Rejected", "rejected"),
+      el("p", {}, "Dear candidate,"),
+      el("p", {}, "Thank you for your interest in the " + role + " role. After careful consideration (about four seconds), we won't be moving forward."),
+      el("p", {}, "You were ", el("b", {}, util.roundFactor(iv.last.ratio) + "× off"), " on “" + iv.last.question.question + "”"),
+      el("p", {}, reached
+        ? ["You made it to ", el("span", { class: "letter-mark hand" }, reached), ". We'll keep your napkin on file."]
+        : "You didn't make it past the recruiter. We'll keep your napkin on file. Somewhere."),
+      el("p", { class: "muted" }, "Best of luck with your search,", el("br"), "Talent team")
+    );
+  }
+
+  function offerLetter() {
+    return el("div", { class: "letter" },
+      letterhead("Offer of employment", "Hired", "hired"),
+      el("p", {}, "Dear Head of Product,"),
+      el("p", {}, "We're delighted to offer you the role. Five rounds, five promotions, no lifelines."),
+      el("dl", { class: "terms" },
+        el("dt", {}, "Role"), el("dd", {}, "Head of Product"),
+        el("dt", {}, "Salary"), el("dd", {}, "3 biscuits a day, rising to 4 on review"),
+        el("dt", {}, "Equity"), el("dd", {}, "0.5% of the napkin"),
+        el("dt", {}, "Start date"), el("dd", {}, "Tomorrow's Napkin")
+      ),
+      el("span", { class: "letter-sig hand" }, "The founder")
+    );
+  }
+
+  function buildInterviewOutcome(q, res, sc) {
+    var iv = STATE.interview;
+    var box = el("div", { class: "iv-outcome" });
+
+    if (!iv.over) {
+      box.appendChild(roundPips(iv.level, iv.held));
+      var next = el("button", { class: "btn" }, iv.last.outcome === "up"
+        ? "Next round: " + LADDER[iv.level + 1].round + " ▸"
+        : "Try another question ▸");
+      next.addEventListener("click", function () { STATE.view = "interview"; renderApp(); });
+      box.appendChild(next);
+      return box;
     }
 
+    box.appendChild(iv.hired ? offerLetter() : rejectionLetter(iv));
+    if (iv.level > iv.startBest && !iv.hired) {
+      box.appendChild(el("p", { class: "iv-best hand" }, "Furthest you've ever got 🏆"));
+    }
+    var share = el("button", { class: "btn" }, iv.hired ? "Share my offer" : "Share it");
+    share.addEventListener("click", function () { shareResult(interviewShareText(iv), share); });
+    var again = el("button", { class: "btn ghost" }, iv.hired ? "Go again" : "Reapply");
+    again.addEventListener("click", startInterview);
+    box.appendChild(el("div", { class: "iv-actions" }, share, again));
+    return box;
+  }
+
+  function viewInterviewIntro() {
+    var wrap = el("section", { class: "screen interview-intro" });
+    wrap.appendChild(el("h2", { class: "hand" }, "Interview mode"));
     wrap.appendChild(el("p", { class: "lede" },
-      "Rapid-fire questions, no retries, one life. Miss by 10× or more and the run's over — " +
-      "so how long can you keep the streak alive?"));
+      "Get hired as Head of Product at Napkin. Five rounds, each one a question and a more senior interviewer. No lifelines, no eyeballing: show your working."));
 
-    var grid = el("div", { class: "statgrid" },
-      stat("Best streak", String(storage.challengeBest())),
-      stat("Life", "❤️ one shot")
-    );
-    wrap.appendChild(grid);
+    var best = storage.interviewBest();
+    var career = el("div", { class: "career panel" });
+    for (var i = LADDER.length - 1; i >= 0; i--) {
+      var r = LADDER[i];
+      career.appendChild(el("div", { class: "rung" + (i <= best ? " done" : "") + (i === best ? " best" : "") + (i === 5 ? " goal" : "") },
+        el("span", { class: "rung-n hand" }, String(i)),
+        el("span", { class: "rung-title" }, r.title),
+        el("span", { class: "rung-who muted" }, i === 0 ? "where you start" : r.round + " · " + r.who)
+      ));
+    }
+    wrap.appendChild(career);
 
-    var easyBtn = el("button", { class: "seg" + (STATE.challengeDifficulty === "easy" ? " active" : "") }, "Easy");
-    var hardBtn = el("button", { class: "seg" + (STATE.challengeDifficulty === "easy" ? "" : " active") }, "Hard");
-    easyBtn.addEventListener("click", function () { STATE.challengeDifficulty = "easy"; renderApp(); });
-    hardBtn.addEventListener("click", function () { STATE.challengeDifficulty = "hard"; renderApp(); });
-    wrap.appendChild(el("div", { class: "segmented" }, easyBtn, hardBtn));
-    wrap.appendChild(el("p", { class: "muted diff-note" },
-      STATE.challengeDifficulty === "easy"
-        ? "The framework's laid out for you — just plug in the numbers."
-        : "Build the whole napkin yourself, from a blank pad."));
-
-    // Scannable rather than buried in the intro paragraph: these are the two
-    // things a player actually needs to remember mid-run.
-    var lifelineList = el("dl", { class: "rulelist" },
-      el("dt", {}, "Borrow a number"),
-      el("dd", {}, "Reveals one framework row's value."),
-      el("dt", {}, "Framework starter"),
-      el("dd", {}, "Lays out the first two rows to get you going.")
-    );
     wrap.appendChild(el("div", { class: "rulebox" },
-      el("h3", { class: "rulebox-title" }, "Lifelines · one use each per run"),
-      lifelineList
+      el("h3", { class: "rulebox-title" }, "How the panel votes"),
+      el("dl", { class: "rulelist" },
+        el("dt", {}, "🤝 Strong hire · Hire"), el("dd", {}, "Promoted to the next rung."),
+        el("dt", {}, "🤔 Lean hire · Lean no hire"), el("dd", {}, "No promotion. They want to see another one."),
+        el("dt", {}, "🚪 No hire · Strong no hire"), el("dd", {}, "You're out.")
+      )
     ));
 
-    var startBtn = el("button", { class: "btn" }, c && c.over ? "Play again" : "Start challenge");
-    startBtn.addEventListener("click", startChallenge);
-    wrap.appendChild(startBtn);
+    if (best > 0) wrap.appendChild(el("p", { class: "muted" }, "Furthest you've got: ", el("b", {}, LADDER[best].title)));
+    var start = el("button", { class: "btn" }, STATE.interview && STATE.interview.over ? "Reapply" : "Start the interview");
+    start.addEventListener("click", startInterview);
+    wrap.appendChild(start);
     return wrap;
-  }
-
-  function buildChallengeOutcome() {
-    var c = STATE.challenge;
-    var box = el("div", { class: "challenge-hud" });
-
-    var hudRow = el("div", { class: "chud-row" + (c.lastLifeLost ? " hit" : "") },
-      heartsNode(c.lives, c.maxLives),
-      el("span", { class: "chud-streak hand streak-big" }, fireLabel(c.streak)),
-      el("span", { class: "chud-diff muted" }, c.difficulty === "easy" ? "Easy" : "Hard")
-    );
-    box.appendChild(hudRow);
-
-    if (c.lastLifeLost) {
-      box.appendChild(el("p", { class: "challenge-msg miss" }, "💔 Off by a mile — that's the run."));
-    } else if (isMilestone(c.streak)) {
-      box.appendChild(el("div", { class: "milestone-banner hand" }, "🔥 " + c.streak + " IN A ROW!"));
-    } else {
-      var chase = bestChaseLabel(c.streak);
-      box.appendChild(el("p", { class: "challenge-msg" }, chase || "Streak's alive. Keep the napkins coming."));
-    }
-
-    if (c.over) {
-      box.appendChild(el("div", { class: "challenge-gameover" },
-        el("div", { class: "hand big" }, "Game over"),
-        el("p", {}, "Your streak topped out at " + c.runBest + "."),
-        c.isNewBest
-          ? el("p", { class: "newbest" }, "🏆 New best!")
-          : el("p", { class: "muted" }, "Best: " + storage.challengeBest() + ".")
-      ));
-      var again = el("button", { class: "btn" }, "Play again");
-      again.addEventListener("click", startChallenge);
-      var menu = el("button", { class: "linkbtn" }, "‹ Back to menu");
-      menu.addEventListener("click", function () { STATE.challenge = null; STATE.view = "challenge"; renderApp(); });
-      box.appendChild(again);
-      box.appendChild(menu);
-    } else {
-      var next = el("button", { class: "btn" }, "Next question ▸");
-      next.addEventListener("click", function () {
-        nextChallengeQuestion(STATE.challenge);
-        STATE.view = "challenge";
-        renderApp();
-      });
-      box.appendChild(next);
-    }
-    return box;
   }
 
   /* ---------- practice list ---------- */

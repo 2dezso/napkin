@@ -57,7 +57,7 @@ body {
    One shared surface for every card. The dotted outline, pulled 7px inside
    the edge, is the embossed border a diner napkin has. */
 .panel, .hero, .answerbox, .compare, .distbox, .stat, .paywall, .tally,
-.sparkbox, .qcard, .rulebox, .demo-modal, .challenge-summary {
+.sparkbox, .qcard, .rulebox, .demo-modal, .letter {
   background-color: var(--card);
   background-image: var(--tissue);
   border: 0;
@@ -488,7 +488,6 @@ body {
   text-decoration: underline;
 }
 
-.hintbtn { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; }
 .anchorchips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; align-items: center; }
 .chips-h { width: 100%; font-style: italic; }
 .achip {
@@ -954,8 +953,7 @@ body {
 .vs-mid { color: var(--faint); font-size: 1rem; }
 .vs-verdict { grid-column: 1 / -1; font-weight: 700; }
 
-/* ---------- challenge mode ---------- */
-.challenge-intro .statgrid { margin: 1rem 0; }
+/* ---------- interview mode ---------- */
 .lede { font-size: 1.05rem; line-height: 1.5; margin: 0.2rem 0 0; max-width: 34rem; }
 
 .rulebox { margin: 1.2rem 0; padding: 1.15rem 1.25rem; }
@@ -974,68 +972,73 @@ body {
   .rulelist { grid-template-columns: 1fr; gap: 0.1rem; }
   .rulelist dd { margin-bottom: 0.5rem; }
 }
-.challenge-summary { text-align: center; margin-bottom: 1rem; }
-.challenge-summary .big { font-size: 1.9rem; }
 
-.chud-row {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  margin: 0.3rem 0 1rem;
+/* The career ladder, top rung first. */
+.career { display: flex; flex-direction: column; gap: 3px; padding: 1rem 1.2rem; margin: 1rem 0 0; }
+.rung {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 3px;
+  color: var(--faint);
 }
-.hearts { font-size: 1.25rem; letter-spacing: 0.08rem; }
-.chud-streak { font-size: 1.1rem; color: var(--pen); }
-.chud-streak.streak-big { font-size: 1.7rem; font-weight: 700; }
-.chud-diff {
-  font-size: 0.7rem;
+.rung-title { font-weight: 600; }
+.rung-who { font-size: 0.78rem; text-align: right; }
+.rung.done { color: var(--pen); }
+.rung.best { color: var(--ink); background: rgba(194, 70, 58, 0.07); box-shadow: inset 3px 0 0 var(--red); }
+.rung.goal .rung-title { font-family: var(--hand); font-size: 1.1rem; font-weight: 400; color: var(--ink); }
+@media (max-width: 480px) {
+  .rung { grid-template-columns: 1.2rem 1fr; }
+  .rung-who { grid-column: 2; text-align: left; }
+}
+
+/* A round: the interviewer's sticky note and the five-round progress pips. */
+.iv-who { display: block; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.iv-pips { display: flex; justify-content: center; gap: 6px; margin: 0 0 1rem; }
+.iv-pips span { width: 34px; height: 8px; border-radius: 4px; background: rgba(58, 59, 64, 0.15); }
+.iv-pips span.on { background: var(--green); }
+.iv-pips span.hold { background: var(--amber); }
+
+/* The verdict on the scorecard, and what happens next. */
+.band-stamp.good { --band: var(--green); }
+.iv-promo { font-weight: 700; margin: -0.2rem 0 0.5rem; }
+.iv-promo.up { color: var(--green); }
+.iv-promo.hold { color: var(--amber); }
+.iv-promo.out { color: var(--red); }
+.iv-outcome { display: flex; flex-direction: column; gap: 0.8rem; }
+.iv-outcome .iv-pips { margin: 0; }
+.iv-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.iv-actions .btn { flex: 1; }
+.iv-best { margin: 0; text-align: center; font-size: 1.1rem; color: var(--green); }
+
+/* Letters: the rejection and the offer. */
+.letter { position: relative; overflow: hidden; padding: 1.5rem 1.4rem 1.3rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.95rem; }
+.letter p { margin: 0; }
+.letterhead { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; padding-bottom: 0.6rem; border-bottom: 2px dotted var(--emboss); }
+.letterhead-text { display: flex; flex-direction: column; min-width: 0; }
+.letter-brand { font-size: 1.3rem; font-weight: 700; }
+.letter-stamp {
+  flex: none;
+  padding: 0.05rem 0.8rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 0.12rem 0.55rem;
+  border: 3px solid currentColor;
+  border-radius: 50% / 60%;
+  transform: rotate(-12deg);
+  opacity: 0.88;
+  filter: url(#graphite);
 }
-.chud-chase { margin: -0.4rem 0 0.6rem; font-size: 0.85rem; }
-.chud-row.hit { animation: chudshake 0.4s ease; }
-@keyframes chudshake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-
-.lifelines { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0.45rem 0 0; }
-
-.milestone-banner {
-  font-size: 1.6rem;
-  color: var(--pen);
-  margin: 0.3rem 0 0.9rem;
-  animation: milestonepop 0.5s cubic-bezier(0.2, 1.6, 0.35, 1);
-}
-@keyframes milestonepop {
-  0% { transform: scale(0.6); opacity: 0; }
-  60% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.challenge-hud {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
-}
-.challenge-hud .chud-row { justify-content: center; }
-.challenge-msg { margin: 0.4rem 0 0.9rem; }
-.challenge-msg.miss { color: var(--red); font-weight: 600; }
-.challenge-gameover {
-  margin: 0.6rem 0 1.1rem;
-  padding-top: 0.9rem;
-  border-top: 2px dashed var(--rule);
-}
-.challenge-gameover .big { font-size: 2rem; }
-.newbest { color: var(--green); font-weight: 700; }
-.challenge-hud .btn, .challenge-hud .linkbtn { margin: 0.3rem 0.3rem 0 0; }
+.letter-stamp.rejected { color: var(--red); }
+.letter-stamp.hired { color: var(--green); }
+.letter-mark { color: var(--red); font-size: 1.05rem; }
+.terms { display: grid; grid-template-columns: 7rem 1fr; gap: 0.2rem 0.6rem; margin: 0.2rem 0; }
+.terms dt { padding-top: 0.15rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.terms dd { margin: 0; }
+.letter-sig { align-self: flex-start; font-size: 1.5rem; color: var(--pen); transform: rotate(-3deg); filter: url(#graphite); }
 
 /* ---------- practice list ---------- */
 .qlist { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
