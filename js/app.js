@@ -230,6 +230,23 @@
   }
 
   /* ---------- the napkin screen ---------- */
+  // A doodle that draws itself, and a line about today's crowd. The crowd
+  // number is real (the same store the scorecard reads), or quietly absent.
+  function buildHook() {
+    var crowd = el("div", { class: "crowd" }, "Today's napkin is on the table.");
+    var doodle = elNS("svg", { class: "doodle", viewBox: "0 0 64 64", "aria-hidden": "true" },
+      elNS("path", { d: "M14 22 L50 22 L46 56 L18 56 Z" }),
+      elNS("path", { d: "M14 22 C18 14 46 14 50 22" }),
+      elNS("path", { class: "r", d: "M24 38 C28 34 36 34 40 38" }),
+      elNS("path", { class: "r", d: "M26 46 L38 46" }));
+    var box = el("div", { class: "hook" }, doodle, crowd);
+    var api = window.NAPKIN.results;
+    if (api) api.distribution(storage.todayISO()).then(function (d) {
+      if (d && d.total > 0) crowd.textContent = util.withCommas(d.total) + (d.total === 1 ? " person has" : " people have") + " had a go today. Be next.";
+    }).catch(function () { /* keep the quiet default */ });
+    return box;
+  }
+
   function napkinScreen(q, opts) {
     opts = opts || {};
     var wrap = el("section", { class: "screen napkin" });
@@ -266,6 +283,7 @@
     }
 
     wrap.appendChild(el("h1", { class: "question hand" }, q.question));
+    if (!opts.practice && !opts.interview) wrap.appendChild(buildHook());
 
     if (q.clarifications && q.clarifications.length) {
       var det = el("details", { class: "fineprint" });
@@ -276,12 +294,8 @@
       wrap.appendChild(det);
     }
 
-    /* mode toggle */
+    /* The napkin is the game; eyeballing is a quiet escape hatch under Lock it in. */
     var mode = "napkin";
-    var segNapkin = el("button", { class: "seg active" }, "Build a napkin");
-    var segEye = el("button", { class: "seg" }, "Just eyeball it");
-    // An interview wants your working, so there's no eyeballing it.
-    if (!opts.interview) wrap.appendChild(el("div", { class: "segmented" }, segNapkin, segEye));
 
     /* ---- the scribble pad (C: multiply every number found) ---- */
     var totalOverride = null;   // set when the answer is typed by hand
@@ -292,6 +306,8 @@
     var seenFactorSigs = {};    // factor sig -> true once its pill has popped in / ticked
 
     var napkinPanel = el("div", { class: "panel" });
+    napkinPanel.appendChild(el("span", { class: "tag" }, "back of the napkin"));
+    napkinPanel.appendChild(el("div", { class: "pencil", "aria-hidden": "true" }));
 
     var padWrap = el("div", { class: "padwrap" });
     // Sits behind the real textarea (which is made transparent) and mirrors
@@ -341,11 +357,11 @@
       el("span", { class: "helper-label muted" }, "Tools")
     );
     if (window.NAPKIN.commonFacts && window.NAPKIN.commonFacts.length) {
-      var factsActionBtn = el("button", { class: "tbtn", type: "button" }, "Back-pocket numbers");
+      var factsActionBtn = el("button", { class: "tbtn", type: "button" }, "Handy numbers");
       factsActionBtn.addEventListener("click", openFactsModal);
       padActions.appendChild(factsActionBtn);
     }
-    var gutActionBtn = el("button", { class: "tbtn", type: "button" }, "Gut check");
+    var gutActionBtn = el("button", { class: "tbtn", type: "button" }, "Sense-check");
     gutActionBtn.addEventListener("click", openGutCheckModal);
     padActions.appendChild(gutActionBtn);
 
@@ -370,16 +386,26 @@
     // Everything above is the working area — what you wrote, what we read from
     // it, what it comes to. Everything below is optional help, kept out of that
     // chain so it doesn't interrupt pad → reading → total.
+    var needHand = el("details", { class: "needhand" },
+      el("summary", {}, "Need a hand?"),
+      el("ul", { class: "howto" },
+        el("li", {}, "One thought per line. Every number you write gets multiplied."),
+        el("li", {}, "Put per, / or ÷ before a number to divide. 1 in 4, 25%, 5k and 2.5M all work."),
+        el("li", {}, "Tap a number's pill to mute it; tap again to flip × ÷ +."),
+        el("li", {}, "Made a mess? Ctrl or ⌘ + Z undoes it.")
+      )
+    );
     var helpers = el("div", { class: "helpers" });
     helpers.appendChild(padActions);
-    napkinPanel.appendChild(helpers);
+    needHand.appendChild(helpers);
+    napkinPanel.appendChild(needHand);
 
     /* Optional help: a single escalating "Stuck?" button. First press gives
        a number (if this question has any back-pocket facts), second press
        shows the full framework — no extra confirm() gate, since the two
        presses already are the commitment. An interview gets no help at all. */
     var padHelp = el("div", { class: "padhelp" });
-    napkinPanel.appendChild(padHelp);
+    needHand.appendChild(padHelp);
 
     if (!opts.interview) {
       var hasAnchors = !!(q.reference_anchors && q.reference_anchors.length);
@@ -396,13 +422,13 @@
       }
       var stuckPeekNote = el("p", { class: "muted peeknote" }, "Framework peeked — this one counts as assisted.");
       stuckPeekNote.hidden = true;
-      var stuckBtn = el("button", { class: "linkbtn stuckbtn", type: "button" }, "Stuck?");
+      var stuckBtn = el("button", { class: "linkbtn stuckbtn", type: "button" }, "Give me a nudge");
       var gaveNumber = false;
       stuckBtn.addEventListener("click", function () {
         if (hasAnchors && !gaveNumber) {
           gaveNumber = true;
           stuckChips.hidden = false;
-          stuckBtn.textContent = "Still stuck?";
+          stuckBtn.textContent = "A bigger nudge";
           return;
         }
         assisted = true;
@@ -413,8 +439,8 @@
         stuckPeekNote.hidden = false;
       });
       padHelp.appendChild(stuckBtn);
-      if (stuckChips) napkinPanel.appendChild(stuckChips);
-      napkinPanel.appendChild(stuckPeekNote);
+      if (stuckChips) needHand.appendChild(stuckChips);
+      needHand.appendChild(stuckPeekNote);
     }
 
     /* eyeball escape hatch */
@@ -433,13 +459,19 @@
     wrap.appendChild(napkinPanel);
     wrap.appendChild(eyePanel);
 
-    wrap.appendChild(el("p", { class: "muted undohint" }, "Changed your mind? ⌘Z / Ctrl+Z undoes — it's just one page of text."));
-
     var submit = el("button", { class: "btn submit lockbtn", type: "button" },
       opts.practice ? "See how close I got" : "Lock it in");
     submit.disabled = true;
     submit.addEventListener("click", doLock);
     wrap.appendChild(submit);
+
+    // Eyeballing stays available, but as a quiet link rather than a tab above the pad.
+    var eyeLink = null;
+    if (!opts.interview) {
+      eyeLink = el("button", { class: "linkbtn eyelink", type: "button" }, "Can't work it out? Just eyeball it");
+      eyeLink.addEventListener("click", function () { setMode(mode === "napkin" ? "eyeball" : "napkin"); });
+      wrap.appendChild(el("div", { class: "eyerow" }, eyeLink));
+    }
 
     function doLock() {
       if (submit.disabled) return;
@@ -622,7 +654,7 @@
         row.addEventListener("click", function () { insertLine(f.label + " " + inputNumber(f.value)); close(); });
         list.appendChild(row);
       });
-      close = openInfoModal("Back-pocket numbers", list);
+      close = openInfoModal("Handy numbers", list);
     }
 
     function openGutCheckModal() {
@@ -630,7 +662,7 @@
       if (g == null) return; // button's disabled for this, but stay safe
       var ctx = contextualizeGuess(g);
       var line = "You're at ≈ " + util.humanize(g) + (ctx ? " — that's " + ctx + "." : ".");
-      openInfoModal("Gut check", el("p", {}, line));
+      openInfoModal("Sense-check", el("p", {}, line));
     }
 
     function renderRibbon() {
@@ -682,7 +714,7 @@
       var start = performance.now(), dur = 380;
       function step(now) {
         if (gen !== rollGen) return;
-        var p = Math.min(1, (now - start) / dur);
+        var p = Math.max(0, Math.min(1, (now - start) / dur));
         var v = from + (to - from) * (1 - Math.pow(1 - p, 3));
         node.textContent = "≈ " + util.humanize(v);
         if (p < 1) requestAnimationFrame(step);
@@ -738,8 +770,7 @@
     }
     function setMode(m) {
       mode = m;
-      segNapkin.classList.toggle("active", m === "napkin");
-      segEye.classList.toggle("active", m === "eyeball");
+      if (eyeLink) eyeLink.textContent = m === "napkin" ? "Can't work it out? Just eyeball it" : "‹ Back to the napkin";
       napkinPanel.hidden = m !== "napkin";
       eyePanel.hidden = m !== "eyeball";
       updateSubmit();
@@ -765,9 +796,6 @@
       pad.focus();
       onPad();
     }
-
-    segNapkin.addEventListener("click", function () { setMode("napkin"); });
-    segEye.addEventListener("click", function () { setMode("eyeball"); });
 
     // First-ever visit: a short welcome, then (if they want it) type an
     // example into the empty pad so the "your numbers get read live" trick
@@ -851,37 +879,17 @@
       el("span", { class: "muted" }, q.question)
     ));
 
-    // Show what they actually answered right away — no coy "?" delay. The
-    // suspense is saved for the score/comparison further down, not this.
-    var guessNumEl = el("span", { class: "hand big guessnum" }, util.humanize(res.guess));
-    wrap.appendChild(el("div", { class: "yourcall" },
-      el("span", { class: "muted" }, res.mode === "eyeball" ? "You eyeballed…" : "You answered…"),
-      guessNumEl
-    ));
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { guessNumEl.classList.add("pop"); });
-    });
+    // Nothing is given away up front: your ✗ lands on a ruler, the model
+    // writes its working line by line while a dot crawls towards you, then
+    // the total scrambles, lands and gets fact-checked. Only then the score.
+    // Regulars get a brisker pace; a first-timer gets the full build-up.
+    var played = 0;
+    try { played = storage.stats().played; } catch (e) { /* no history */ }
+    var calm = prefersReducedMotion();
+    var model = buildModelReveal(q, res, played > 3);
+    wrap.appendChild(model.node);
 
-    var BEAT = 1150;
-    var narr = el("div", { class: "narrative" });
-    q.narrative.forEach(function (line, i) {
-      var last = i === q.narrative.length - 1;
-      var p = el("p", { class: "beat" + (last ? " answerbeat" : "") }, underlineNumbers(line, i * BEAT + 400));
-      p.style.animationDelay = (i * BEAT / 1000).toFixed(2) + "s";
-      narr.appendChild(p);
-    });
-    wrap.appendChild(narr);
-
-    // The model's running total, stuck to the bottom of the screen while the
-    // working plays out, sliding towards (or past) your number.
-    var tally = buildTally(q, res.guess);
-    wrap.appendChild(tally.node);
-
-    var drumroll = el("p", { class: "drumroll hand" }, "And the real answer is", el("span", { class: "dots" }, "…"));
-    drumroll.hidden = true;
-    wrap.appendChild(drumroll);
-
-    var skip = el("button", { class: "linkbtn skip" }, "Skip to the score ▸");
+    var skip = el("button", { class: "btn ghost skip", type: "button" }, "Skip to the score");
     wrap.appendChild(skip);
 
     var after = el("div", { class: "after" });
@@ -889,37 +897,20 @@
     buildAfter(after, q, res, opts);
     wrap.appendChild(after);
 
-    var timers = [];
-    function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
-
-    if (opts.instant) {
-      // Revisiting a finished Napkin: everything already written out.
-      narr.classList.add("done");
-      tally.finish(false);
+    if (opts.instant || calm) {
+      // Revisiting a finished Napkin (or no motion wanted): everything already written out.
+      model.finish();
       reveal();
     } else {
-      tally.steps.forEach(function (s, k) {
-        later(function () { tally.show(k, true); }, k * BEAT + 450);
-      });
-      later(function () { tally.finish(true); }, tally.steps.length * BEAT + 450);
-      var beatsDone = q.narrative.length * BEAT;
-      later(function () { if (skip.parentNode) drumroll.hidden = false; }, beatsDone + 200);
-      later(reveal, beatsDone + 1900);
-      skip.addEventListener("click", function () {
-        timers.forEach(clearTimeout);
-        narr.classList.add("done");
-        tally.finish(false);
-        reveal();
-      });
+      model.play(reveal);
+      skip.addEventListener("click", function () { model.stop(); model.finish(); reveal(); });
     }
 
     function reveal() {
       if (skip.parentNode) skip.remove();
-      drumroll.hidden = true;
-      tally.node.classList.add("settled");
       after.hidden = false;
       if (!opts.instant) {
-        try { after.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { after.scrollIntoView(); }
+        try { after.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" }); } catch (e) { after.scrollIntoView(); }
       }
       var hero = after.querySelector(".hero");
       if (hero) {
@@ -933,6 +924,11 @@
           hero.classList.add("scored");
           var beatFriend = !!hero.querySelector(".vs-row.won");
           if (target >= 86 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 95 || beatFriend ? 34 : 18);
+          if (!opts.practice && !opts.interview) {
+            var note = hero.querySelector(".pile-note");
+            if (note) note.classList.add("in");
+            setTimeout(function () { dropIntoPile(hero.querySelector(".hero-points"), target); }, 900);
+          }
         }, 1150);
       }
       var num = after.querySelector(".actualnum");
@@ -944,57 +940,26 @@
     return wrap;
   }
 
-  // A narrative line with each number wrapped, so it gets underlined in
-  // pencil just after the line lands.
-  function underlineNumbers(line, delayMs) {
-    var out = [], pos = 0;
-    util.scanFactors(line).forEach(function (t) {
-      if (t.start < pos) return;
-      out.push(line.slice(pos, t.start));
-      var s = el("span", { class: "beat-num" }, line.slice(t.start, t.end));
-      s.style.animationDelay = (delayMs / 1000).toFixed(2) + "s";
-      out.push(s);
-      pos = t.end;
-    });
-    out.push(line.slice(pos));
-    return out;
-  }
+  function fmtFull(v) { return v >= 1000 ? util.withCommas(Math.round(v)) : util.humanize(v); }
 
-  // Slides a number between two values on a log scale, so 3M -> 60M reads
-  // as steady growth rather than a jump at the end.
-  function tweenNumber(node, from, to, ms) {
-    var id = (node._tween || 0) + 1;
-    node._tween = id;
-    if (!(from > 0) || !(to > 0)) { node.textContent = util.humanize(to); return; }
-    var start = performance.now(), a = Math.log(from), b = Math.log(to);
-    function step(now) {
-      if (node._tween !== id) return;
-      var p = Math.min(1, (now - start) / ms);
-      node.textContent = util.humanize(Math.exp(a + (b - a) * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  // The running total napkin: the model's framework multiplied out one row
-  // at a time, with a number line showing that total closing in on (or
-  // sailing past) your own guess — so the reveal builds to something.
-  function buildTally(q, guess) {
-    var steps = [], acc = null;
-    q.framework.forEach(function (r, i) {
+  // The model's turn. Returns { node, play(onDone), stop(), finish() }.
+  // play() runs the tense version; finish() jumps straight to the end state.
+  function buildModelReveal(q, res, fast) {
+    var F = fast ? 0.62 : 1, rows = q.framework || [], steps = [], acc = null;
+    rows.forEach(function (r) {
       var v = r.model_value;
       if (acc == null) acc = r.op === "/" ? 1 / v : v;
       else if (r.op === "/") acc /= v;
       else if (r.op === "+") acc += v;
       else acc *= v;
-      // Non-breaking spaces: each term is an inline-block, which would eat plain ones.
-      var sym = i === 0 ? "" : (r.op === "/" ? " ÷ " : r.op === "+" ? " + " : " × ");
-      steps.push({ value: acc, term: sym + util.humanize(v) });
+      steps.push(acc);
     });
+    var total = acc, guess = res.guess, real = q.actual_answer;
+    var sc = scoring.score(guess, q);
 
-    var vals = steps.map(function (s) { return s.value; }).concat(guess).filter(function (v) { return v > 0; });
-    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-    var minE = Math.floor(Math.log10(lo)), maxE = Math.ceil(Math.log10(hi));
+    // An adaptive log ruler that holds every number in play.
+    var vals = steps.concat(guess, real).filter(function (v) { return v > 0; });
+    var minE = Math.floor(Math.log10(Math.min.apply(null, vals))), maxE = Math.ceil(Math.log10(Math.max.apply(null, vals)));
     if (maxE - minE < 2) { minE -= 1; maxE += 1; }
     var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
     function pct(v) {
@@ -1002,63 +967,119 @@
       return (Math.log(v / min) / Math.log(max / min)) * 100;
     }
 
-    var line = el("div", { class: "gline tally-line" });
+    var ruler = el("div", { class: "rv-ruler", "aria-hidden": "true" }, el("div", { class: "rv-axis" }));
     var every = Math.ceil((maxE - minE + 1) / 6);
     for (var e = minE; e <= maxE; e++) {
-      var labelled = (e - minE) % every === 0;
-      var tick = el("div", { class: "gtick" + (labelled ? "" : " minor") },
-        labelled ? el("span", { class: "gtick-label" }, util.humanize(Math.pow(10, e))) : null);
-      tick.style.left = pct(Math.pow(10, e)) + "%";
-      line.appendChild(tick);
-    }
-    var you = el("div", { class: "gbar-mark you" }, el("span", { class: "gbar-x" }, "✗"), el("span", { class: "gbar-tag" }, "you"));
-    you.style.left = pct(guess) + "%";
-    var dot = el("div", { class: "gbar-mark working" });
-    dot.hidden = true;
-    line.appendChild(you);
-    line.appendChild(dot);
-
-    var formula = el("div", { class: "tally-formula hand" });
-    var num = el("span", { class: "tally-num" }, "…");
-    var gap = el("div", { class: "tally-gap" });
-    var node = el("div", { class: "tally" },
-      el("div", { class: "tally-head" }, el("span", {}, "Working it out"), el("span", {}, "✗ you said " + util.humanize(guess))),
-      formula,
-      el("div", { class: "tally-total hand" }, "≈ ", num),
-      line,
-      gap
-    );
-    if (!steps.length) node.hidden = true;
-
-    var shown = -1, current = null;
-    function gapText(v) {
-      var r = v / guess;
-      if (r > 0.87 && r < 1.15) return "Right on top of yours 👀";
-      var f = util.roundFactor(r >= 1 ? r : 1 / r) + "×";
-      return f + (r < 1 ? " below yours so far" : " above yours so far");
-    }
-    function show(k, animate) {
-      for (var i = shown + 1; i <= k; i++) {
-        formula.appendChild(el("span", { class: "tally-term" + (animate ? " fresh" : "") }, steps[i].term));
+      var tk = el("div", { class: "rv-tick" });
+      tk.style.left = pct(Math.pow(10, e)) + "%";
+      ruler.appendChild(tk);
+      if ((e - minE) % every === 0) {
+        var tl = el("div", { class: "rv-tl" }, util.humanize(Math.pow(10, e)));
+        tl.style.left = pct(Math.pow(10, e)) + "%";
+        ruler.appendChild(tl);
       }
-      shown = k;
-      var v = steps[k].value;
-      if (animate && current != null) tweenNumber(num, current, v, 550);
-      else { num._tween = (num._tween || 0) + 1; num.textContent = util.humanize(v); }
-      current = v;
-      dot.hidden = false;
-      dot.style.left = pct(v) + "%";
-      gap.textContent = gapText(v);
-      if (animate) sfxTick();
     }
-    function finish(animate) {
-      if (!steps.length) return;
-      if (shown < steps.length - 1) show(steps.length - 1, false);
-      node.classList.add("landed");
-      gap.textContent = gapText(current).replace(" so far", "");
-      if (animate) sfxDing();
+    var gx = pct(guess), rx = pct(real);
+    var you = el("div", { class: "rv-you" }, el("small", {}, "you"), "✗");
+    you.style.left = gx + "%";
+    var dotLabel = el("small", {});
+    var dot = el("div", { class: "rv-dot" }, dotLabel);
+    dot.style.left = pct(steps[0] || guess) + "%";
+    var realMark = el("div", { class: "rv-real" }, el("small", {}, "real"), el("i", {}));
+    realMark.style.left = rx + "%";
+    var gap = el("div", { class: "rv-gap" });
+    gap.style.left = Math.min(gx, rx) + "%"; gap.style.width = Math.abs(gx - rx) + "%";
+    var gapLabel = el("div", { class: "rv-gaplabel" }, util.humanize(guess) + " vs " + util.humanize(real) + " · " + scoreLine(sc));
+    gapLabel.style.left = (gx + rx) / 2 + "%";
+    [you, dot, realMark, gap, gapLabel].forEach(function (n) { ruler.appendChild(n); });
+
+    var lead = el("p", { class: "rv-lead" }, "Locked in. Now let's see how the model gets there…");
+    var lineEls = rows.map(function (r, i) {
+      var v = r.model_value, asPct = r.unit === "fraction" && v > 0 && v < 1;
+      var show = asPct ? (Math.round(v * 1000) / 10) + "%" : util.humanize(v);
+      var sym = i === 0 ? null : el("span", { class: "rv-op" }, (r.op === "/" ? "÷" : r.op === "+" ? "+" : "×") + " ");
+      return el("div", { class: "rv-ml" }, el("span", { class: "w" }, sym, el("span", { class: "n" }, show), " " + r.label));
+    });
+    var num = el("span", { class: "num" }, "?");
+    var totRow = el("div", { class: "rv-tot" }, el("span", { class: "eqs" }, "="), num);
+    var checkText = q.sanity_check || q.narrative[q.narrative.length - 1] || "";
+    var checkW = el("span", { class: "w" }, checkText);
+    var check = el("div", { class: "rv-check" }, el("span", { class: "tick" }, "✓"), checkW);
+    var vig = el("div", { class: "rv-vig", "aria-hidden": "true" });
+
+    var nap = el("div", { class: "nap b" },
+      el("div", { class: "sheet" }),
+      el("div", { class: "ncontent" },
+        el("span", { class: "tag" }, "the model's napkin"),
+        el("div", { class: "rv-lines" }, lineEls),
+        totRow, check));
+    if (!rows.length) nap.hidden = true;
+    var node = el("div", { class: "rv" }, lead, el("div", { class: "rv-rulerbox" }, ruler), nap, vig);
+
+    var timers = [];
+    function at(ms, fn) { timers.push(setTimeout(fn, ms * F)); }
+    function stop() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); timers = []; }
+    function tick() { try { sfxTick(); } catch (x) { /* audio is optional */ } }
+
+    function finish() {
+      lead.textContent = "Here's how the model got there.";
+      you.classList.add("in"); dot.classList.add("in"); dot.classList.remove("tense");
+      if (total != null) { dot.style.left = pct(total) + "%"; dotLabel.textContent = "model"; num.textContent = fmtFull(total); }
+      lineEls.forEach(function (l) { l.classList.add("go", "ring"); });
+      totRow.classList.add("in"); check.classList.add("in");
+      realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in");
+      vig.classList.remove("on");
     }
-    return { node: node, steps: steps, show: show, finish: finish };
+
+    function play(onDone) {
+      if (!rows.length) { finish(); setTimeout(onDone, 400); return; }
+      var t = 350;
+      at(t, function () { you.classList.add("in"); try { sfxLock(); } catch (x) { /* audio */ } });
+      t += 900;
+      at(t, function () { lead.textContent = "The model has a go…"; });
+      rows.forEach(function (r, i) {
+        var last = i === rows.length - 1, el2 = lineEls[i], val = steps[i];
+        at(t, function () {
+          el2.classList.add("go");
+          var n = 0, iv = setInterval(function () { tick(); if (++n > 5) clearInterval(iv); }, 130);
+          timers.push(iv);
+        });
+        at(t + 800, function () { el2.classList.add("ring"); tick(); });
+        if (!last) at(t + 900, function () {
+          dot.classList.add("in"); dot.style.left = pct(val) + "%"; dotLabel.textContent = util.humanize(val);
+          totRow.classList.add("in"); num.textContent = fmtFull(val);
+          num.classList.remove("settle"); void num.offsetWidth; num.classList.add("settle");
+        });
+        t += last ? 1300 : 1250;
+      });
+      // the last multiplication: scramble, heartbeat, land it
+      var finalText = fmtFull(total);
+      at(t, function () { vig.classList.add("on"); dot.classList.add("in", "tense"); totRow.classList.add("in"); lead.textContent = "Multiplying it all out…"; dotLabel.textContent = "?"; });
+      at(t + 100, function () {
+        var iv = setInterval(function () {
+          var s = ""; for (var k = 0; k < finalText.length; k++) s += /\d/.test(finalText.charAt(k)) ? Math.floor(Math.random() * 10) : finalText.charAt(k);
+          num.textContent = s; if (Math.random() < 0.3) tick();
+        }, 70);
+        timers.push(iv); timers.push(setTimeout(function () { clearInterval(iv); }, 1550 * F));
+      });
+      t += 1700;
+      at(t, function () {
+        num.textContent = finalText; num.classList.add("settle"); dot.classList.remove("tense");
+        dot.style.left = pct(total) + "%"; dotLabel.textContent = "model"; vig.classList.remove("on");
+        lead.textContent = "That's the model's answer."; try { sfxLock(); } catch (x) { /* audio */ }
+      });
+      t += 1100;
+      at(t, function () { check.classList.add("in"); lead.textContent = "Does that sound right?"; try { sfxDing(); } catch (x) { /* audio */ } });
+      at(t + 200, function () {
+        checkW.style.display = "inline-block"; checkW.style.clipPath = "inset(-5px 100% -5px 0)";
+        requestAnimationFrame(function () { checkW.style.transition = "clip-path 1.3s steps(24,end)"; checkW.style.clipPath = "inset(-5px 0 -5px 0)"; });
+      });
+      t += 1900;
+      at(t, function () { realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in"); lead.textContent = "And you said…"; tick(); });
+      t += 1300;
+      at(t, function () { lead.textContent = "Here's how you did."; onDone(); });
+    }
+    return { node: node, play: play, stop: stop, finish: finish };
   }
 
   // Close misses read better as a percentage ("14% away") than a multiplier;
@@ -1106,6 +1127,107 @@
     return out;
   }
 
+  /* ---------- share as a picture ----------
+     A napkin with the question and your score on it, and nothing else: no
+     working, so it gives nothing away to whoever hasn't played yet. */
+  function wobblePath(ctx, x, y, w, h, j) {
+    var pts = [], steps = 26, i, r = function () { return (Math.random() - 0.5) * j; };
+    for (i = 0; i <= steps; i++) pts.push([x + w * i / steps + r(), y + r()]);
+    for (i = 1; i <= steps; i++) pts.push([x + w + r(), y + h * i / steps + r()]);
+    for (i = 1; i <= steps; i++) pts.push([x + w - w * i / steps + r(), y + h + r()]);
+    for (i = 1; i < steps; i++) pts.push([x + r(), y + h - h * i / steps + r()]);
+    ctx.beginPath();
+    pts.forEach(function (p, k) { if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
+    ctx.closePath();
+  }
+  function wrapCanvasText(ctx, text, maxW) {
+    var words = text.split(" "), lines = [], cur = "";
+    words.forEach(function (w) {
+      var t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function napkinImage(q, res, sc) {
+    var W = 1080, H = 1350, c = document.createElement("canvas"), i;
+    c.width = W; c.height = H;
+    var x = c.getContext("2d");
+    var font = function (px) { return px + "px 'Patrick Hand', 'Segoe Print', cursive"; };
+    x.fillStyle = "#d9bb8d"; x.fillRect(0, 0, W, H);
+    for (i = 0; i < W; i += 180) { x.fillStyle = "rgba(110,70,25,.2)"; x.fillRect(i, 0, 3, H); }
+    for (i = 0; i < 1400; i++) { x.fillStyle = "rgba(90,55,15," + Math.random() * 0.07 + ")"; x.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 160, 1.5); }
+    x.save(); x.translate(W / 2, 640); x.rotate(-0.022); x.translate(-W / 2, -640);
+    var nx = 70, ny = 120, nw = 940, nh = 1040;
+    x.shadowColor = "rgba(60,35,10,.45)"; x.shadowBlur = 40; x.shadowOffsetY = 26;
+    wobblePath(x, nx, ny, nw, nh, 9); x.fillStyle = "#fbf8f1"; x.fill(); x.shadowColor = "transparent";
+    x.save(); wobblePath(x, nx, ny, nw, nh, 0); x.clip();
+    for (var yy = ny; yy < ny + nh; yy += 22) for (var xx = nx + ((yy / 22) % 2 ? 11 : 0); xx < nx + nw; xx += 22) {
+      x.fillStyle = "rgba(130,100,60,.13)"; x.beginPath(); x.arc(xx, yy, 2.1, 0, 7); x.fill();
+      x.fillStyle = "rgba(255,255,255,.9)"; x.beginPath(); x.arc(xx + 2, yy + 2, 1.5, 0, 7); x.fill();
+    }
+    x.fillStyle = "rgba(120,95,55,.2)"; x.fillRect(nx + nw / 2 - 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 - 1, nw, 2);
+    x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(nx + nw / 2 + 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 + 1, nw, 2);
+    x.restore();
+    x.setLineDash([2, 10]); x.lineCap = "round"; x.lineWidth = 4; x.strokeStyle = "rgba(146,115,70,.55)";
+    x.strokeRect(nx + 22, ny + 22, nw - 44, nh - 44); x.setLineDash([]);
+
+    var cx = nx + nw / 2;
+    x.textBaseline = "alphabetic"; x.textAlign = "center";
+    x.fillStyle = "#6b655a"; x.font = font(38);
+    x.fillText(res.napkinNumber ? "NAPKIN #" + res.napkinNumber : "NAPKIN", cx, ny + 110);
+    x.fillStyle = "#2b2925"; x.font = font(72);
+    var qy = ny + 240;
+    wrapCanvasText(x, q.question, nw - 170).forEach(function (l) { x.fillText(l, cx, qy); qy += 86; });
+    var sy = Math.max(qy + 190, ny + 640);
+    x.fillStyle = "#3b3c41"; x.font = font(300); x.fillText(String(sc.points), cx - 70, sy);
+    var pw = x.measureText(String(sc.points)).width;
+    x.font = font(92); x.fillStyle = "#6b655a"; x.fillText("/100", cx - 70 + pw / 2 + 120, sy);
+    x.strokeStyle = "#c2463a"; x.lineWidth = 8; x.beginPath();
+    x.moveTo(cx - pw / 2 - 100, sy + 34); x.quadraticCurveTo(cx - 60, sy + 22, cx + pw / 2 + 200, sy + 32);
+    x.moveTo(cx - pw / 2 - 80, sy + 62); x.quadraticCurveTo(cx - 40, sy + 54, cx + pw / 2 + 170, sy + 60); x.stroke();
+    x.save(); x.translate(cx, sy + 200); x.rotate(-0.06);
+    x.font = font(110);
+    var label = sc.band.short.toUpperCase(), sw = x.measureText(label).width + 90;
+    x.shadowColor = "rgba(60,15,10,.45)"; x.shadowBlur = 16; x.shadowOffsetY = 8; x.fillStyle = "#c2463a"; x.beginPath();
+    if (x.roundRect) x.roundRect(-sw / 2, -92, sw, 140, 18); else x.rect(-sw / 2, -92, sw, 140);
+    x.fill(); x.shadowColor = "transparent";
+    x.fillStyle = "#fff8e8"; x.fillText(label, 0, 18); x.restore();
+    x.restore();
+    x.textAlign = "center"; x.fillStyle = "#2f2212"; x.font = font(64); x.fillText("Can you beat me?", W / 2, 1250);
+    x.font = font(38); x.fillStyle = "#5a4526"; x.fillText("One question a day", W / 2, 1310);
+    return c;
+  }
+
+  function shareNapkinImage(q, res, sc, btn) {
+    function go() {
+      var c = napkinImage(q, res, sc), url = c.toDataURL("image/png");
+      var img = el("img", { src: url, alt: "Your napkin: the question and your score of " + sc.points + " out of 100" });
+      var send = el("button", { class: "btn", type: "button" }, "Share");
+      var close = el("button", { class: "btn ghost", type: "button" }, "Close");
+      var overlay = el("div", { class: "demo-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Share your napkin" },
+        el("div", { class: "sharecard" }, img, el("div", { class: "sharerow" }, send, close)));
+      function shut() { if (overlay.parentNode) overlay.remove(); }
+      close.addEventListener("click", shut);
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) shut(); });
+      send.addEventListener("click", function () {
+        c.toBlob(function (b) {
+          var file = new File([b], "my-napkin.png", { type: "image/png" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], text: "Napkin " + (res.napkinNumber || "") + ": " + sc.band.short + ", " + sc.points + "/100. Can you beat me?" }).catch(function () {});
+          } else {
+            var a = el("a", { href: url, download: file.name });
+            document.body.appendChild(a); a.click(); a.remove();
+          }
+        });
+      });
+      document.body.appendChild(overlay);
+      send.focus();
+    }
+    var ready = document.fonts && document.fonts.load ? document.fonts.load("40px 'Patrick Hand'") : Promise.resolve();
+    ready.then(go, go);
+  }
+
   function shareResult(text, btn) {
     if (navigator.share) { navigator.share({ text: text }).catch(function () {}); }
     else { copyText(text, btn); }
@@ -1141,14 +1263,15 @@
 
     container.appendChild(el("div", { class: "hero " + band.key },
       el("div", { class: "hero-kicker" }, opts.interview ? "Panel verdict" : "Your score"),
-      el("div", { class: "hero-points-row hand" },
+      el("div", { class: "hero-points-row hand", role: "img", "aria-label": sc.points + " out of 100" },
         el("span", { class: "hero-points", "data-points": sc.points }, "0"),
         el("span", { class: "hero-outof" }, "/100")
       ),
       el("div", { class: "band-stamp" + (verdict && verdict.outcome === "up" ? " good" : "") }, verdict ? verdict.name : band.short),
       opts.interview ? interviewPromoLine() : null,
       el("div", { class: "hero-ratio" }, ratioLine),
-      el("div", { class: "hero-quip" }, opts.interview ? "“" + roast + "”" : roast),
+      el("div", { class: "hero-quip", role: "status" }, opts.interview ? "“" + roast + "”" : roast),
+      (!opts.practice && !opts.interview) ? el("div", { class: "pile-note hand " + pileTone(sc.points) }, pileCaption(sc.points)) : null,
       ladder,
       vs ? versusRow(vs, sc.points) : null,
       isDaily ? buildCrowdLine(res) : null,
@@ -1162,9 +1285,10 @@
     if (opts.interview) container.appendChild(buildInterviewOutcome(q, res, sc));
 
     var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
-    var actualnumEl = el("div", { class: "hand actualnum" }, "0");
+    var actualnumEl = el("div", { class: "hand actualnum", "aria-hidden": "true" }, "0");
     container.appendChild(el("div", { class: "answerbox" },
       el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
+      el("span", { class: "sr-only" }, util.humanize(q.actual_answer)),
       circleWrap(actualnumEl),
       guessBar(res.guess, q.actual_answer),
       el("p", { class: "source muted" }, q.source)
@@ -1179,8 +1303,11 @@
       container.appendChild(again);
     } else {
       container.appendChild(buildComparison(q, res));
-      container.appendChild(el("p", { class: "muted comeback" },
-        "That's it for today. Come back tomorrow for Napkin #" + (res.napkinNumber + 1) + "."));
+      var st = storage.stats();
+      container.appendChild(el("div", { class: "sendoff" },
+        tallyMarks(st.streak),
+        el("p", { class: "hand sendoff-text" },
+          "Day " + st.streak + " on the wall. Napkin #" + (res.napkinNumber + 1) + " is tomorrow.")));
     }
   }
 
@@ -1336,6 +1463,10 @@
     nameInput.value = storage.playerName();
     nameInput.addEventListener("input", function () { storage.setPlayerName(cleanName(nameInput.value)); });
     card.appendChild(nameInput);
+
+    var picBtn = el("button", { class: "btn ghost", type: "button" }, "Share your napkin");
+    picBtn.addEventListener("click", function () { shareNapkinImage(q, res, sc, picBtn); });
+    card.appendChild(picBtn);
 
     var btn = el("button", { class: "btn" }, "Challenge a friend");
     btn.addEventListener("click", function () {
@@ -1673,7 +1804,7 @@
       box.appendChild(el("div", { class: "distrow " + b.key },
         el("span", { class: "dist-emoji" }, b.emoji),
         el("span", { class: "dist-label" }, b.label),
-        el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "width:" + pct + "%" })),
+        el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "--p:" + (pct / 100) })),
         el("span", { class: "dist-pct" }, pct + "%")
       ));
     });
@@ -1686,7 +1817,11 @@
     wrap.appendChild(el("h2", { class: "hand" }, "Your run"));
 
     var grid = el("div", { class: "statgrid" });
-    grid.appendChild(stat("Streak", s.streak + (s.streak === 1 ? " day" : " days")));
+    var streakCard = el("div", { class: "stat streakstat" },
+      s.streak ? tallyMarks(s.streak) : null,
+      el("div", { class: "stat-val hand streak-num" }, s.streak + (s.streak === 1 ? " day" : " days")),
+      el("div", { class: "stat-label muted" }, "Streak"));
+    grid.appendChild(streakCard);
     grid.appendChild(stat("Avg score", s.avgPoints == null ? "—" : s.avgPoints + "/100"));
     wrap.appendChild(grid);
     wrap.appendChild(el("p", { class: "muted playedline" },
@@ -1696,7 +1831,7 @@
 
     wrap.appendChild(buildPersonalDistribution(s.bandCounts));
 
-    if (s.series.length) wrap.appendChild(sparkline(s.series));
+    wrap.appendChild(pileBox(s.series));
 
     var backup = el("div", { class: "backup" });
     backup.appendChild(el("h3", { class: "hand" }, "Backup"));
@@ -1723,31 +1858,6 @@
     );
   }
 
-  function sparkline(series) {
-    var W = 600, H = 110, n = series.length;
-    function xs(i) { return n === 1 ? W / 2 : (i / (n - 1)) * (W - 16) + 8; }
-    function ys(p) { return H - 8 - (Math.max(0, Math.min(100, p || 0)) / 100) * (H - 16); }
-    var pts = series.map(function (d, i) { return xs(i) + "," + ys(d.points); }).join(" ");
-    var parts = [
-      '<line x1="8" y1="' + ys(0) + '" x2="' + (W - 8) + '" y2="' + ys(0) + '" class="spark-base"/>',
-      '<line x1="8" y1="' + ys(95) + '" x2="' + (W - 8) + '" y2="' + ys(95) + '" class="spark-base spark-top"/>'
-    ];
-    if (n > 1) parts.push('<polyline points="' + pts + '" class="spark-line"/>');
-    series.forEach(function (d, i) {
-      parts.push('<circle cx="' + xs(i) + '" cy="' + ys(d.points) + '" r="5" class="dot dot-' + (d.band || "binit") + '"/>');
-    });
-
-    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    svg.setAttribute("class", "spark");
-    svg.innerHTML = parts.join("");
-
-    var box = el("div", { class: "sparkbox" });
-    box.appendChild(el("div", { class: "muted" }, "Score over time — the dashed line is Bang on (95)"));
-    box.appendChild(svg);
-    return box;
-  }
-
   /* ---------- backup ---------- */
   function downloadHistory() {
     var blob = new Blob([storage.exportJSON()], { type: "application/json" });
@@ -1764,10 +1874,10 @@
     reader.onload = function () {
       try {
         storage.importJSON(String(reader.result));
-        window.alert("History imported.");
         renderApp();
+        showNotice("History imported. Your pile is back on the table.");
       } catch (e) {
-        window.alert("Import failed: " + e.message);
+        showNotice("That file didn't work: " + e.message + " Try the .json you exported from Napkin.");
       }
     };
     reader.readAsText(file);
@@ -1878,11 +1988,137 @@
     setTimeout(function () { host.innerHTML = ""; }, 1800);
   }
 
+  /* ---------- the pile ----------
+     Every finished napkin joins a pile on the Stats tab: great ones are
+     pinned up, middling ones kept, real misses scrunched into a ball. */
+  function pileTone(points) { return points >= 86 ? "pinned" : points < 40 ? "scrunched" : "kept"; }
+  function pileCaption(points) {
+    var t = pileTone(points);
+    return t === "pinned" ? "Pinned up on the wall."
+      : t === "scrunched" ? "Scrunched up and lobbed at the bin."
+      : "Saved to your pile.";
+  }
+
+  // A ragged paper ball: a wobbly outline plus a few crease lines, seeded by
+  // the napkin number so the same miss always crumples the same way.
+  function crumpledSvg(seed) {
+    function rnd(k) { var x = Math.sin(seed * 97.13 + k * 12.9898) * 43758.5453; return x - Math.floor(x); }
+    var pts = [], creases = "", N = 11;
+    for (var i = 0; i < N; i++) {
+      var a = (Math.PI * 2 * i) / N, r = 34 + rnd(i) * 11;
+      pts.push((50 + Math.cos(a) * r).toFixed(1) + "," + (50 + Math.sin(a) * r).toFixed(1));
+    }
+    for (var c = 0; c < 4; c++) {
+      var x1 = 24 + rnd(20 + c) * 52, y1 = 22 + rnd(30 + c) * 56;
+      creases += "M" + x1.toFixed(1) + "," + y1.toFixed(1) + " l" + (rnd(40 + c) * 30 - 15).toFixed(1) + "," + (rnd(50 + c) * 26 - 8).toFixed(1) + " ";
+    }
+    return elNS("svg", { class: "ball", viewBox: "0 0 100 100", "aria-hidden": "true" },
+      elNS("polygon", { points: pts.join(" "), class: "ball-body" }),
+      elNS("path", { d: creases, class: "ball-crease" })
+    );
+  }
+
+  function napkinTile(d) {
+    var tone = pileTone(d.points);
+    var tilt = ((Math.sin(d.n * 7.7) * 3.2)).toFixed(1) + "deg";
+    var tile = el("div", { class: "tile " + tone, style: "--tilt:" + tilt, title: "Napkin #" + d.n + " · " + d.points + "/100" });
+    if (tone === "scrunched") tile.appendChild(crumpledSvg(d.n));
+    else tile.appendChild(el("span", { class: "tile-sheet" }));
+    if (tone === "pinned") tile.appendChild(el("span", { class: "tile-pin" }));
+    tile.appendChild(el("span", { class: "tile-pts hand" }, String(d.points)));
+    tile.appendChild(el("span", { class: "tile-n" }, "#" + d.n));
+    return tile;
+  }
+
+  function pileBox(series) {
+    var box = el("div", { class: "pilebox" });
+    box.appendChild(el("h3", { class: "hand pile-title" }, "Your pile"));
+    if (!series.length) {
+      box.appendChild(el("p", { class: "muted" }, "Empty table. Finish today's napkin and it lands here."));
+      return box;
+    }
+    var grid = el("div", { class: "pile" });
+    series.slice().reverse().forEach(function (d) { grid.appendChild(napkinTile(d)); });
+    box.appendChild(grid);
+    return box;
+  }
+
+  // Five-bar gates, the way you'd count days on a pub wall.
+  function tallyMarks(n) {
+    var cap = Math.min(n, 40), x = 4, parts = [];
+    var svg = elNS("svg", { class: "tally-marks", viewBox: "0 0 " + (Math.ceil(cap / 5) * 34 + 6) + " 30", "aria-hidden": "true" });
+    for (var g = 0; g < Math.ceil(cap / 5); g++) {
+      var inGroup = Math.min(5, cap - g * 5);
+      for (var i = 0; i < Math.min(4, inGroup); i++) {
+        var lx = x + i * 6 + (((g + i) % 3) - 1) * 0.6;
+        svg.appendChild(elNS("path", { d: "M" + lx + ",4 L" + (lx + 0.8) + ",26" }));
+      }
+      if (inGroup === 5) svg.appendChild(elNS("path", { d: "M" + (x - 3) + ",22 L" + (x + 27) + ",8" }));
+      x += 34;
+    }
+    return svg;
+  }
+
+  // The fresh napkin flies to the Stats tab: pinned or flat if it did well,
+  // scrunched and lobbed if it did not.
+  function dropIntoPile(fromNode, points) {
+    var tab = document.querySelector('.tab[data-view="stats"]');
+    if (!fromNode || !tab) return;
+    var reduce = false;
+    try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { /* old browser */ }
+    function bump() { tab.classList.remove("bump"); void tab.offsetWidth; tab.classList.add("bump"); }
+    if (reduce || !fromNode.animate) { bump(); return; }
+    var a = fromNode.getBoundingClientRect(), b = tab.getBoundingClientRect();
+    var tone = pileTone(points);
+    var sheet = el("div", { class: "drop " + tone }, el("span", { class: "hand" }, String(points)));
+    if (tone === "pinned") sheet.appendChild(el("span", { class: "tile-pin" }));
+    sheet.style.left = a.left + a.width / 2 - 32 + "px";
+    sheet.style.top = a.top + a.height / 2 - 32 + "px";
+    document.body.appendChild(sheet);
+    var dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    var ease = "cubic-bezier(0.22, 1, 0.36, 1)";
+    var anim;
+    if (tone === "scrunched") {
+      sheet.style.clipPath = "polygon(0 0,100% 0,100% 100%,0 100%)";
+      anim = sheet.animate([
+        { transform: "scale(1) rotate(0)", clipPath: "polygon(0 0,100% 0,100% 100%,0 100%)", offset: 0 },
+        { transform: "scale(0.82) rotate(-14deg)", clipPath: "polygon(8% 4%,52% 12%,94% 0,88% 50%,100% 92%,50% 84%,6% 100%,14% 48%)", offset: 0.3 },
+        { transform: "translate(" + dx * 0.4 + "px," + (dy * 0.4 - 90) + "px) scale(0.5) rotate(200deg)", clipPath: "polygon(20% 10%,60% 20%,90% 14%,82% 56%,88% 88%,46% 80%,14% 92%,22% 50%)", offset: 0.65 },
+        { transform: "translate(" + dx + "px," + dy + "px) scale(0.22) rotate(420deg)", clipPath: "polygon(20% 10%,60% 20%,90% 14%,82% 56%,88% 88%,46% 80%,14% 92%,22% 50%)", opacity: 0.9, offset: 1 }
+      ], { duration: 1300, easing: ease, fill: "forwards" });
+    } else {
+      anim = sheet.animate([
+        { transform: "scale(0.6) rotate(-6deg)", opacity: 0, offset: 0 },
+        { transform: "scale(1.15) rotate(3deg)", opacity: 1, offset: 0.25 },
+        { transform: "scale(1) rotate(-2deg)", opacity: 1, offset: 0.45 },
+        { transform: "translate(" + dx + "px," + dy + "px) scale(0.25) rotate(8deg)", opacity: 0.95, offset: 1 }
+      ], { duration: 1200, easing: ease, fill: "forwards" });
+    }
+    anim.onfinish = function () { sheet.remove(); bump(); try { sfxTick(); } catch (e) { /* audio is optional */ } };
+  }
+
+  function prefersReducedMotion() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  }
+
+  // A notice in the napkin's own voice, in place of the browser's alert().
+  function showNotice(message) {
+    var ok = el("button", { class: "btn", type: "button" }, "Got it");
+    var card = el("div", { class: "demo-modal info-modal", role: "dialog", "aria-modal": "true" },
+      el("p", { class: "hand big" }, message), ok);
+    var overlay = el("div", { class: "demo-overlay" }, card);
+    function close() { if (overlay.parentNode) overlay.remove(); }
+    ok.addEventListener("click", close);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    document.body.appendChild(overlay);
+    ok.focus();
+  }
+
   function countUp(node, target) {
     if (!node) return;
     var dur = 900, start = performance.now();
     function step(now) {
-      var p = Math.min(1, (now - start) / dur);
+      var p = Math.max(0, Math.min(1, (now - start) / dur));
       var v = Math.round(target * (1 - Math.pow(1 - p, 3)));
       node.textContent = util.withCommas(v);
       if (p < 1) requestAnimationFrame(step);

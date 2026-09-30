@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Napkin prototype A2 — A real napkin, a tense reveal</title>
+<style>
+@font-face { font-family: "Patrick Hand"; src: url("../assets/fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+:root {
+  --wood: #d9bb8d; --wood-deep: #8f6234; --tissue: #fbf8f1; --ink: #2b2925; --faint: #5d574b;
+  --pencil: #3b3c41; --red: #c2463a; --crease: rgba(120,95,55,.2); --hand: "Patrick Hand", "Segoe Print", cursive;
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--ink); font-family: system-ui, "Segoe UI", sans-serif; overflow-x: hidden;
+  background-color: var(--wood);
+  /* a café tabletop: long planks with grain, lit from above */
+  background-image:
+    radial-gradient(ellipse 85% 50% at 50% 0%, rgba(255,248,228,.6), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 118px, rgba(110,70,25,.2) 118px 120px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .18' numOctaves='3' seed='3'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .35 0 0 0 0 .2 0 0 0 0 .07 0 0 0 -1.6 1.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.55'/%3E%3C/svg%3E");
+  background-attachment: fixed; }
+main { max-width: 640px; margin: 0 auto; padding: .8rem 1.1rem 3.5rem; position: relative; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: .3rem 0 .6rem; }
+.brand { font-family: var(--hand); font-size: 1.7rem; color: #3a2a16; }
+.chip { background: #fff8e8; color: var(--ink); border-radius: 6px; padding: .15rem .65rem; font-family: var(--hand); box-shadow: 0 2px 0 rgba(110,70,25,.4); }
+h1 { font-family: var(--hand); font-weight: 400; font-size: clamp(1.8rem, 6.4vw, 2.4rem); line-height: 1.12; margin: .4rem 0 1.3rem; color: #2f2212; text-wrap: balance; }
+
+/* ---------- the napkin itself ----------
+   A real folded paper napkin: soft tissue, a pressed diamond emboss, a dotted
+   embossed border, a quarter-fold cross, and an edge that isn't quite straight. */
+.nap { position: relative; transform: rotate(-1.4deg); filter: drop-shadow(0 2px 1.5px rgba(50,30,10,.35)) drop-shadow(0 22px 16px rgba(50,30,10,.35)); }
+.nap.b { transform: rotate(1.1deg); }
+.sheet { position: absolute; inset: 0; background-color: var(--tissue); filter: url(#rough);
+  background-image:
+    linear-gradient(90deg, transparent calc(50% - 2px), var(--crease) calc(50% - 1px), rgba(255,255,255,.85) 50%, transparent calc(50% + 2px)),
+    linear-gradient(0deg, transparent calc(50% - 2px), var(--crease) calc(50% - 1px), rgba(255,255,255,.85) 50%, transparent calc(50% + 2px)),
+    linear-gradient(135deg, rgba(120,95,55,.07), transparent 40%),
+    radial-gradient(circle at 25% 25%, rgba(130,100,60,.13) 0 1.3px, transparent 1.9px),
+    radial-gradient(circle at 75% 75%, rgba(130,100,60,.13) 0 1.3px, transparent 1.9px),
+    radial-gradient(circle at 27% 27%, rgba(255,255,255,.95) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 77% 77%, rgba(255,255,255,.95) 0 1px, transparent 1.6px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)' opacity='.07'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 100% 100%, 16px 16px, 16px 16px, 16px 16px, 16px 16px, 200px 200px; }
+.sheet::after { content: ""; position: absolute; inset: 11px; border: 2.5px dotted rgba(146,115,70,.5); border-radius: 3px; }
+.ncontent { position: relative; padding: 1.7rem 1.6rem 1.3rem; }
+.tag { position: absolute; top: .65rem; left: 1.7rem; font-family: var(--hand); font-size: .92rem; color: var(--faint); }
+
+.padwrap { position: relative; margin-top: .6rem; }
+.pad, .hl { font-family: var(--hand); font-size: 1.45rem; line-height: 2.15rem; padding: .2rem .2rem .5rem; width: 100%; min-height: 11.5rem; margin: 0; white-space: pre-wrap; word-wrap: break-word; border: 0; }
+.hl { position: absolute; inset: 0; color: transparent; pointer-events: none; }
+.pad { position: relative; background: transparent; color: var(--pencil); resize: none; outline: none; caret-color: var(--red); overflow: hidden; }
+.pad::placeholder { color: #746e60; }
+.hl mark { background: none; color: transparent; outline: 2.5px solid var(--red); outline-offset: 1px; border-radius: 48% 52% 46% 54% / 62% 58% 42% 40%; animation: ring .35s var(--ease); }
+@keyframes ring { from { outline-color: transparent; transform: scale(1.3); } }
+
+.eq { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .55rem; min-height: 2.4rem; margin-top: .7rem; font-family: var(--hand); font-size: 1.5rem; position: relative; padding-top: .9rem; }
+.eq::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 8px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='8'%3E%3Cpath d='M0 4 Q10 0 20 4 T40 4 T60 4 T80 4 T100 4 T120 4' fill='none' stroke='%233b3c41' stroke-width='1.6' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E") repeat-x; }
+.eq .t { animation: pop .35s var(--ease); } .eq .op { color: var(--red); font-size: 1.3rem; } .eq .empty { color: var(--faint); font-size: 1.1rem; }
+@keyframes pop { from { transform: scale(.4) rotate(-8deg); opacity: 0; } }
+.sum { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
+.sum .big { font-family: var(--hand); font-size: 3.2rem; line-height: 1.1; position: relative; }
+.sum .big.has::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 10px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='10' preserveAspectRatio='none' viewBox='0 0 200 10'%3E%3Cpath d='M2 3 Q60 0 120 3 T198 2 M6 8 Q70 5 130 8 T194 7' fill='none' stroke='%23c2463a' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat; background-size: 100% 100%; }
+.sum .big.bump { animation: bump .25s var(--ease); } @keyframes bump { 50% { transform: scale(1.07) rotate(-1.5deg); } }
+.sum .vibe { font-family: var(--hand); color: var(--faint); font-size: 1.15rem; }
+
+/* a pencil left lying on the table */
+.pencil { position: absolute; right: -1.2rem; bottom: -3.2rem; width: 13.5rem; height: 1.15rem; transform: rotate(-16deg); pointer-events: none; z-index: 2; filter: drop-shadow(0 6px 3px rgba(50,30,10,.4));
+  background: linear-gradient(90deg, #e98a8a 0 7%, #c9ccd2 7% 10%, #f0b92e 10% 88%, #f2d9a8 88% 94%, #3b3c41 94%); border-radius: 3px 0 0 3px; clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%); }
+.lock { display: block; width: 100%; margin-top: 3.6rem; font-family: var(--hand); font-size: 1.55rem; padding: .75rem; border: 0; border-radius: 8px; background: #2d2b28; color: #fff8e8; cursor: pointer; box-shadow: 0 5px 0 #0f0e0d, 0 14px 18px rgba(40,25,8,.35); transition: transform .12s, box-shadow .12s, opacity .2s; }
+.lock:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #0f0e0d; }
+.lock:disabled { opacity: .55; cursor: not-allowed; }
+.nudge { text-align: center; font-size: .92rem; color: #4a3820; margin-top: .8rem; }
+/* hook strip: a doodle that draws itself, plus today's crowd */
+.hook { display: flex; align-items: center; gap: .9rem; margin: -.5rem 0 1.2rem; flex-wrap: wrap; }
+.doodle { width: 3.6rem; height: 3.6rem; flex: none; }
+.doodle path { fill: none; stroke: #3a2a16; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: draw 1.6s .3s var(--ease) forwards; }
+.doodle path.r { stroke: #c2463a; animation-delay: 1.2s; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.crowd { font-family: var(--hand); font-size: 1.15rem; color: #3a2a16; line-height: 1.25; }
+.crowd b { font-weight: 400; color: #b03a2e; }
+
+
+/* share preview */
+.shareov { position: fixed; inset: 0; z-index: 60; background: rgba(20,10,0,.78); display: grid; place-items: center; padding: 1rem; }
+.sharecard { background: #fff8e8; border-radius: 12px; padding: .9rem; max-width: 420px; width: 100%; max-height: 94vh; overflow: auto; text-align: center; }
+.sharecard img { width: 100%; height: auto; border-radius: 6px; display: block; box-shadow: 0 8px 18px -8px rgba(40,25,8,.6); }
+.sharecard .row { display: flex; gap: .6rem; justify-content: center; margin-top: .8rem; flex-wrap: wrap; }
+.primary { font-family: var(--hand); font-size: 1.3rem; background: var(--red); color: #fff8e8; border: 0; border-radius: 8px; padding: .55rem 1.3rem; cursor: pointer; box-shadow: 0 4px 0 #7d2219; }
+.after .row2 { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+:focus-visible { outline: 2px solid #2f2212; outline-offset: 3px; }
+
+/* ---------- the reveal ---------- */
+#reveal { padding-top: .2rem; }
+.rq { font-family: var(--hand); font-size: 1.15rem; color: #4a3820; text-align: center; margin: 0 0 .5rem; }
+.rulerbox { position: relative; background: rgba(255,248,232,.92); border-radius: 10px; padding: .4rem .9rem .3rem; margin-bottom: 1.3rem; box-shadow: 0 10px 18px -10px rgba(40,25,8,.6); }
+.ruler { position: relative; height: 138px; }
+.ruler .line { position: absolute; left: 0; right: 0; top: 52px; height: 3px; background: var(--pencil); opacity: .8; border-radius: 2px; }
+.ruler .tk { position: absolute; top: 46px; width: 2px; height: 15px; background: var(--pencil); opacity: .55; }
+.ruler .tl { position: absolute; top: 66px; font-size: .68rem; color: var(--faint); transform: translateX(-50%); }
+.you { position: absolute; top: -40px; transform: translateX(-50%); font-family: var(--hand); color: var(--red); font-size: 2.4rem; line-height: 1; text-align: center; transition: top .7s cubic-bezier(.3,1.5,.4,1); opacity: 0; }
+.you small { display: block; font-size: .9rem; color: var(--pencil); margin-bottom: .1rem; }
+.you.in { opacity: 1; top: 12px; }
+.dot { position: absolute; top: 43px; width: 21px; height: 21px; margin-left: -10px; border-radius: 50%; background: var(--pencil); opacity: 0; transition: left .85s cubic-bezier(.5,0,.2,1), opacity .3s, transform .3s; box-shadow: 0 0 0 0 rgba(58,59,64,.5); }
+.dot.in { opacity: 1; } .dot.tense { animation: tense .5s ease-in-out infinite; }
+@keyframes tense { 0%,100% { box-shadow: 0 0 0 0 rgba(194,70,58,.55); transform: scale(1); } 50% { box-shadow: 0 0 0 14px rgba(194,70,58,0); transform: scale(1.25); } }
+.dot small { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); font-family: var(--hand); font-size: .9rem; color: var(--faint); white-space: nowrap; }
+.gap { position: absolute; top: 98px; height: 14px; border: 2px solid var(--red); border-top: 0; border-radius: 0 0 6px 6px; opacity: 0; transition: opacity .4s; }
+.gap.in { opacity: 1; } .gaplabel { position: absolute; top: 116px; transform: translateX(-50%); font-family: var(--hand); font-size: 1rem; color: var(--red); white-space: nowrap; opacity: 0; transition: opacity .4s; } .gaplabel.in { opacity: 1; }
+
+.mnap .ncontent { padding-bottom: 1.4rem; }
+.mlines { margin-top: .7rem; }
+.ml { font-family: var(--hand); font-size: 1.4rem; line-height: 1.5; margin: .15rem 0; min-height: 2.1rem; }
+.ml .w { display: inline-block; clip-path: inset(-10px 100% -10px 0); }
+.ml.go .w { transition: clip-path .75s steps(16, end); clip-path: inset(-10px 0 -10px 0); }
+.ml .n { position: relative; }
+.ml .n::after { content: ""; position: absolute; inset: -3px -6px; border: 2.5px solid var(--red); border-radius: 48% 52% 46% 54% / 62% 58% 42% 40%; opacity: 0; transform: scale(1.3); }
+.ml.ring .n::after { opacity: 1; transform: none; transition: opacity .2s, transform .35s var(--ease); }
+.mtot { display: flex; align-items: baseline; gap: .6rem; margin-top: .5rem; padding-top: .9rem; position: relative; font-family: var(--hand); }
+.mtot::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--pencil); border-radius: 2px; opacity: .7; transform-origin: left; transform: scaleX(0); transition: transform .5s var(--ease); }
+.mtot.in::before { transform: none; }
+.mtot .eqs { font-size: 1.6rem; color: var(--faint); } .mtot .num { font-size: clamp(2.8rem, 12vw, 4.2rem); line-height: 1.05; min-width: 4ch; }
+.mtot .num.settle { animation: settle .45s cubic-bezier(.2,1.5,.35,1); } @keyframes settle { from { transform: scale(1.25); } }
+.check { font-family: var(--hand); font-size: 1.18rem; color: var(--faint); margin-top: .8rem; min-height: 3.6rem; }
+.check .tick { color: #3d7d45; font-size: 1.6rem; margin-right: .3rem; display: inline-block; transform: scale(0); }
+.check.in .tick { animation: settle .5s cubic-bezier(.2,1.6,.35,1) forwards; transform: scale(1); }
+.check .w { display: inline; }
+
+.verdict { position: relative; text-align: center; min-height: 10rem; margin-top: 1.6rem; }
+.stamp { display: inline-block; font-family: var(--hand); font-size: clamp(2.3rem, 10.5vw, 3.6rem); letter-spacing: .04em; text-transform: uppercase; color: #fff8e8; background: var(--red); border-radius: 10px; padding: .1rem 1.1rem; opacity: 0; transform: rotate(-4deg) scale(3.2); box-shadow: 0 6px 0 #7d2219, 0 14px 18px rgba(40,25,8,.4); }
+.stamp.in { animation: slam .42s cubic-bezier(.2,1.3,.3,1) forwards; } @keyframes slam { 0% { opacity: 0; transform: rotate(-4deg) scale(3.2); } 70% { opacity: 1; transform: rotate(-4deg) scale(.9); } 100% { opacity: 1; transform: rotate(-4deg) scale(1); } }
+.shake { animation: shake .4s; } @keyframes shake { 20% { transform: translate(-5px, 3px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+.pts, .quip { font-family: var(--hand); opacity: 0; transition: opacity .4s; color: #2f2212; }
+.pts { font-size: 1.7rem; margin-top: .9rem; } .quip { font-size: 1.25rem; max-width: 28ch; margin: .3rem auto 0; }
+.pts.in, .quip.in { opacity: 1; }
+.after { margin-top: 1.3rem; text-align: center; opacity: 0; transition: opacity .4s; } .after.in { opacity: 1; }
+.ghost { font-family: var(--hand); font-size: 1.25rem; background: #fff8e8; border: 0; border-radius: 8px; padding: .5rem 1.2rem; cursor: pointer; color: var(--ink); box-shadow: 0 4px 0 rgba(60,35,12,.5); }
+.skip { position: fixed; right: 1rem; bottom: 1rem; z-index: 30; font-size: .88rem; background: rgba(255,248,232,.95); border: 0; border-radius: 999px; padding: .4rem 1rem; cursor: pointer; box-shadow: 0 3px 8px rgba(40,25,8,.4); }
+.vig { position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(20,10,0,.65)); transition: opacity .6s; }
+.vig.on { opacity: 1; animation: beat .9s ease-in-out infinite; } @keyframes beat { 50% { opacity: .55; } }
+.bit { position: fixed; z-index: 25; width: 10px; height: 12px; background: #fbf8f1; border-radius: 2px; pointer-events: none; box-shadow: 0 1px 2px rgba(40,25,8,.4); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="7"/></filter></svg>
+<div class="vig" id="vig"></div>
+<main>
+  <div class="top"><div class="brand">Napkin.</div><span class="chip" id="chip"></span></div>
+  <h1 id="q"></h1>
+  <div class="hook" id="hook">
+    <svg class="doodle" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 22 L50 22 L46 56 L18 56 Z"/><path d="M14 22 C18 14 46 14 50 22"/><path class="r" d="M24 38 C28 34 36 34 40 38"/><path class="r" d="M26 46 L38 46"/></svg>
+    <div class="crowd" id="crowd"></div>
+  </div>
+
+  <section id="play">
+    <div class="nap">
+      <div class="sheet"></div>
+      <div class="ncontent">
+        <span class="tag">back of the napkin</span>
+        <div class="padwrap">
+          <div class="hl" id="hl" aria-hidden="true"></div>
+          <textarea class="pad" id="pad" rows="6" spellcheck="false" placeholder="Scribble your thinking here. Every number you write gets multiplied.&#10;&#10;e.g. 3 million people&#10;1 in 4 of them&#10;÷ 7 days"></textarea>
+        </div>
+        <div class="eq" id="eq" aria-live="polite"></div>
+        <div class="sum"><span class="big" id="big">—</span><span class="vibe" id="vibe"></span></div>
+      </div>
+      <div class="pencil" aria-hidden="true"></div>
+    </div>
+    <button class="lock" id="lock" disabled>Lock it in</button>
+    <p class="nudge">Per, ÷ or / before a number divides. 1 in 4, 25% and 5k all work.</p>
+  </section>
+
+  <section id="reveal" hidden>
+    <p class="rq" id="rq">Locked in. Now let's see how the model gets there…</p>
+    <div class="rulerbox"><div class="ruler" id="ruler"></div></div>
+    <div class="nap b mnap">
+      <div class="sheet"></div>
+      <div class="ncontent">
+        <span class="tag">the model's napkin</span>
+        <div class="mlines" id="mlines"></div>
+        <div class="mtot" id="mtot"><span class="eqs">=</span><span class="num" id="num">?</span></div>
+        <div class="check" id="check"></div>
+      </div>
+    </div>
+    <div class="verdict"><div class="stamp" id="stamp"></div><div class="pts" id="pts"></div><p class="quip" id="quip"></p></div>
+    <div class="after" id="after"><div class="row2"><button class="primary" id="share">Share your napkin</button><button class="ghost" id="again">Go again</button></div></div>
+    <button class="skip" id="skip">Skip ▸</button>
+  </section>
+</main>
+<script src="shared.js"></script>
+<script>
+(function () {
+  var Q = P.Q, $ = function (id) { return document.getElementById(id); };
+  $("chip").textContent = "Napkin #" + Q.n; $("q").textContent = Q.question;
+  var pad = $("pad"), guess = null, lastCount = 0;
+
+  function onPad() {
+    var text = pad.value, fs = P.parse(text), html = "", pos = 0;
+    fs.forEach(function (f) { html += P.esc(text.slice(pos, f.start)) + "<mark>" + P.esc(text.slice(f.start, f.end)) + "</mark>"; pos = f.end; });
+    $("hl").innerHTML = html + P.esc(text.slice(pos)) + "\n";
+    var eq = $("eq"); eq.innerHTML = "";
+    fs.forEach(function (f, i) {
+      if (i) { var o = document.createElement("span"); o.className = "op"; o.textContent = f.op === "/" ? "÷" : "×"; eq.appendChild(o); }
+      var t = document.createElement("span"); t.className = "t"; t.textContent = P.humanize(f.value); if (i < lastCount) t.style.animation = "none"; eq.appendChild(t);
+    });
+    if (!fs.length) eq.innerHTML = '<span class="empty">Your working builds up here.</span>';
+    if (fs.length > lastCount) P.sfx.tick(); lastCount = fs.length;
+    guess = P.total(fs);
+    var big = $("big"); big.textContent = guess ? "≈ " + P.full(guess) : "—"; big.classList.toggle("has", !!guess);
+    big.classList.remove("bump"); void big.offsetWidth; if (guess) big.classList.add("bump");
+    $("vibe").textContent = guess ? P.compare(guess) : "";
+    $("lock").disabled = !(guess > 0);
+  }
+  pad.addEventListener("input", onPad);
+  pad.addEventListener("scroll", function () { $("hl").scrollTop = pad.scrollTop; });
+
+  /* ---------- the hook: today's crowd (demo numbers; the real app has these in results.js) ---------- */
+  $("crowd").innerHTML = "<b>14,203</b> have had a go today<br>Median score <b>61</b>. Beat it.";
+
+  /* ---------- share: draw your napkin to an image ---------- */
+  var padText = "";
+  function wobble(ctx, x, y, w, h, j) {
+    var pts = [], steps = 26, r = function () { return (Math.random() - .5) * j; }, i;
+    for (i = 0; i <= steps; i++) pts.push([x + w * i / steps + r(), y + r()]);
+    for (i = 1; i <= steps; i++) pts.push([x + w + r(), y + h * i / steps + r()]);
+    for (i = 1; i <= steps; i++) pts.push([x + w - w * i / steps + r(), y + h + r()]);
+    for (i = 1; i < steps; i++) pts.push([x + r(), y + h - h * i / steps + r()]);
+    ctx.beginPath(); pts.forEach(function (p, k) { k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath();
+  }
+  function wrapLines(ctx, text, maxW) {
+    var words = text.split(" "), lines = [], cur = "";
+    words.forEach(function (w) { var t = cur ? cur + " " + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+    if (cur) lines.push(cur); return lines;
+  }
+  function circleAt(ctx, cx, cy, rx, ry) {
+    ctx.strokeStyle = "#c2463a"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    for (var k = 0; k < 2; k++) { ctx.beginPath(); ctx.ellipse(cx + k * 3, cy - k * 2, rx + k * 4, ry + k * 2, (k ? -.06 : .05), .2 + k * .4, Math.PI * 2 + .55 + k * .3); ctx.stroke(); }
+  }
+  function makeImage(sc) {
+    var W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H; var x = c.getContext("2d"), i;
+    x.fillStyle = "#d9bb8d"; x.fillRect(0, 0, W, H);                                  // the table
+    for (i = 0; i < W; i += 180) { x.fillStyle = "rgba(110,70,25,.2)"; x.fillRect(i, 0, 3, H); }
+    for (i = 0; i < 1400; i++) { x.fillStyle = "rgba(90,55,15," + (Math.random() * .07) + ")"; x.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 160, 1.5); }
+    x.save(); x.translate(W / 2, 640); x.rotate(-.022); x.translate(-W / 2, -640);      // the napkin
+    x.shadowColor = "rgba(60,35,10,.45)"; x.shadowBlur = 40; x.shadowOffsetY = 26;
+    var nx = 70, ny = 120, nw = 940, nh = 1040; wobble(x, nx, ny, nw, nh, 9); x.fillStyle = "#fbf8f1"; x.fill(); x.shadowColor = "transparent";
+    x.save(); wobble(x, nx, ny, nw, nh, 0); x.clip();
+    for (var yy = ny; yy < ny + nh; yy += 22) for (var xx = nx + ((yy / 22) % 2 ? 11 : 0); xx < nx + nw; xx += 22) {
+      x.fillStyle = "rgba(130,100,60,.13)"; x.beginPath(); x.arc(xx, yy, 2.1, 0, 7); x.fill(); x.fillStyle = "rgba(255,255,255,.9)"; x.beginPath(); x.arc(xx + 2, yy + 2, 1.5, 0, 7); x.fill(); }
+    x.fillStyle = "rgba(120,95,55,.2)"; x.fillRect(nx + nw / 2 - 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 - 1, nw, 2);
+    x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(nx + nw / 2 + 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 + 1, nw, 2);
+    x.restore();
+    x.setLineDash([2, 10]); x.lineCap = "round"; x.lineWidth = 4; x.strokeStyle = "rgba(146,115,70,.55)"; x.strokeRect(nx + 22, ny + 22, nw - 44, nh - 44); x.setLineDash([]);
+    var font = function (px) { return px + "px 'Patrick Hand', 'Segoe Print', cursive"; };
+    x.textBaseline = "alphabetic"; x.textAlign = "center"; var cx = nx + nw / 2;
+    x.fillStyle = "#6b655a"; x.font = font(38); x.fillText("NAPKIN #" + Q.n, cx, ny + 110);
+    x.fillStyle = "#2b2925"; x.font = font(72); var ls = wrapLines(x, Q.question, nw - 170), qy = ny + 240;
+    ls.forEach(function (l) { x.fillText(l, cx, qy); qy += 86; });
+    // the score, written big and underlined in red pencil
+    var sy = Math.max(qy + 190, ny + 640);
+    x.fillStyle = "#3b3c41"; x.font = font(300); x.fillText(String(sc.points), cx - 70, sy);
+    var pw = x.measureText(String(sc.points)).width; x.font = font(92); x.fillStyle = "#6b655a"; x.fillText("/100", cx - 70 + pw / 2 + 120, sy);
+    x.strokeStyle = "#c2463a"; x.lineWidth = 8; x.beginPath(); x.moveTo(cx - pw / 2 - 100, sy + 34); x.quadraticCurveTo(cx - 60, sy + 22, cx + pw / 2 + 200, sy + 32);
+    x.moveTo(cx - pw / 2 - 80, sy + 62); x.quadraticCurveTo(cx - 40, sy + 54, cx + pw / 2 + 170, sy + 60); x.stroke();
+    x.save(); x.translate(cx, sy + 200); x.rotate(-.06);                                // the stamp
+    x.font = font(110); var label = sc.tier.name.toUpperCase(), sw = x.measureText(label).width + 90;
+    x.shadowColor = "rgba(60,15,10,.45)"; x.shadowBlur = 16; x.shadowOffsetY = 8; x.fillStyle = "#c2463a"; x.beginPath();
+    if (x.roundRect) x.roundRect(-sw / 2, -92, sw, 140, 18); else x.rect(-sw / 2, -92, sw, 140); x.fill(); x.shadowColor = "transparent";
+    x.fillStyle = "#fff8e8"; x.fillText(label, 0, 18); x.restore();
+    x.restore();
+    x.textAlign = "center"; x.fillStyle = "#2f2212"; x.font = font(64); x.fillText("Can you beat me?", W / 2, 1250);
+    x.font = font(38); x.fillStyle = "#5a4526"; x.fillText("One question a day", W / 2, 1310);
+    return c;
+  }
+  function openShare() {
+    var sc = P.score(guess, Q.actual);
+    function go() {
+      var c = makeImage(sc), url = c.toDataURL("image/png"), ov = document.createElement("div"); ov.className = "shareov";
+      ov.innerHTML = '<div class="sharecard"><img alt="Your napkin, with your working and your score" src="' + url + '"><div class="row"><button class="primary" id="sv">Share</button><button class="ghost" id="cl">Close</button></div></div>';
+      document.body.appendChild(ov);
+      ov.onclick = function (e) { if (e.target === ov || e.target.id === "cl") ov.remove(); };
+      ov.querySelector("#sv").onclick = function () {
+        c.toBlob(function (b) {
+          var file = new File([b], "my-napkin-" + Q.n + ".png", { type: "image/png" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], text: "Napkin #" + Q.n + ": " + sc.tier.name + ", " + sc.points + "/100. Can you beat me?" }).catch(function () {});
+          else { var a = document.createElement("a"); a.href = url; a.download = file.name; a.click(); }
+        });
+      };
+    }
+    (document.fonts && document.fonts.load ? document.fonts.load("40px 'Patrick Hand'") : Promise.resolve()).then(go, go);
+  }
+  $("share").addEventListener("click", openShare);
+  if (P.qs.get("sharetest")) setTimeout(function () { $("share").click(); }, 500);
+
+  var timers = [], skipped = false, FAST = P.qs.get("fast") ? 0.55 : 1;
+  function at(ms, fn) { timers.push(setTimeout(fn, ms * FAST)); }
+  function tween(node, from, to, ms) {
+    var a = Math.log(Math.max(1, from)), b = Math.log(to), t0 = performance.now();
+    (function step(now) { var p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      node.textContent = P.full(p >= 1 ? to : Math.exp(a + (b - a) * e)); if (p < 1) requestAnimationFrame(step); })(t0);
+  }
+
+  function confetti(n) {
+    if (P.reduced()) return;
+    var r = $("stamp").getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (var i = 0; i < n; i++) {
+      var b = document.createElement("span"); b.className = "bit"; b.style.left = cx + "px"; b.style.top = cy + "px"; b.style.background = ["#fbf8f1", "#c2463a", "#f0b92e", "#fff"][i % 4];
+      document.body.appendChild(b);
+      var a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 190;
+      b.animate([{ transform: "translate(0,0) rotate(0)", opacity: 1 }, { transform: "translate(" + Math.cos(a) * d + "px," + (Math.sin(a) * d - 60) + "px) rotate(" + (Math.random() * 720 - 360) + "deg)", opacity: 1, offset: .6 },
+        { transform: "translate(" + Math.cos(a) * d * 1.1 + "px," + (Math.sin(a) * d + 160) + "px) rotate(540deg)", opacity: 0 }], { duration: 1500 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = function () { b.remove(); };
+    }
+  }
+
+  function reveal() {
+    $("play").hidden = true; $("reveal").hidden = false; window.scrollTo(0, 0);
+    var sc = P.score(guess, Q.actual), ruler = $("ruler"), M = Q.model;
+    ruler.innerHTML = '<div class="line"></div>';
+    [["1", 1], ["100", 100], ["10k", 1e4], ["1M", 1e6], ["100M", 1e8]].forEach(function (t) {
+      ruler.insertAdjacentHTML("beforeend", '<div class="tk" style="left:' + P.logPos(t[1]) + '%"></div><div class="tl" style="left:' + P.logPos(t[1]) + '%">' + t[0] + "</div>");
+    });
+    var gx = P.logPos(guess), ax = P.logPos(Q.actual);
+    ruler.insertAdjacentHTML("beforeend",
+      '<div class="you" id="you" style="left:' + gx + '%"><small>you</small>✗</div>' +
+      '<div class="dot" id="dot" style="left:0%"><small id="dl"></small></div>' +
+      '<div class="gap" id="gap" style="left:' + Math.min(gx, ax) + '%;width:' + Math.abs(gx - ax) + '%"></div>' +
+      '<div class="gaplabel" id="gl" style="left:' + (gx + ax) / 2 + '%"></div>');
+    var off = Math.round(Math.abs(guess - Q.actual) / Q.actual * 100);
+    $("gl").textContent = P.humanize(guess) + " vs " + P.humanize(Q.actual) + (off ? " · " + off + "% " + (guess > Q.actual ? "over" : "under") : " · spot on");
+
+    var lines = $("mlines"); lines.innerHTML = "";
+    M.forEach(function (m, i) {
+      var p = document.createElement("div"); p.className = "ml";
+      var parts = m.t.split("|");
+      p.innerHTML = '<span class="w">' + (i ? '<span style="color:var(--red)">× </span>' : "") + '<span class="n">' + P.esc(m.show) + "</span> " + P.esc(m.t) + "</span>";
+      lines.appendChild(p);
+    });
+    $("stamp").textContent = sc.tier.name; $("quip").textContent = sc.tier.quip; $("pts").textContent = sc.points + " / 100";
+    $("check").innerHTML = '<span class="tick">✓</span><span class="w">' + P.esc(Q.check) + "</span>";
+
+    function finalState() {
+      $("you").classList.add("in"); var d = $("dot"); d.classList.add("in"); d.style.left = ax + "%"; d.classList.remove("tense");
+      $("dl").textContent = "model"; $("gap").classList.add("in"); $("gl").classList.add("in");
+      [].forEach.call(document.querySelectorAll(".ml"), function (m) { m.classList.add("go", "ring"); });
+      $("mtot").classList.add("in"); $("num").textContent = P.full(Q.actual); $("check").classList.add("in");
+      $("stamp").classList.add("in"); $("pts").classList.add("in"); $("quip").classList.add("in"); $("after").classList.add("in");
+      $("vig").classList.remove("on"); $("skip").hidden = true; $("rq").textContent = "Here's how the model got there.";
+    }
+    if (P.qs.get("end")) { finalState(); return; }
+
+    // -------- the timeline --------
+    var t = 350, acc = null;
+    at(t, function () { $("you").classList.add("in"); P.sfx.thud(); });
+    t += 900;
+    at(t, function () { $("rq").textContent = "The model has a go…"; });
+    M.forEach(function (m, i) {
+      acc = acc == null ? m.v : acc * m.v;
+      var val = acc, prev = i ? M.slice(0, i).reduce(function (a, x) { return a * x.v; }, 1) : 1, el = lines.children[i], last = i === M.length - 1;
+      at(t, function () { el.classList.add("go"); var n = 0, iv = setInterval(function () { P.sfx.tick(); if (++n > 5) clearInterval(iv); }, 130); timers.push(iv); });
+      at(t + 800, function () { el.classList.add("ring"); P.sfx.pop(); });
+      if (!last) at(t + 900, function () {
+        var d = $("dot"); d.classList.add("in"); d.style.left = P.logPos(val) + "%"; $("dl").textContent = P.humanize(val);
+        $("mtot").classList.add("in"); $("num").textContent = P.full(val); $("num").classList.remove("settle"); void $("num").offsetWidth; $("num").classList.add("settle");
+      });
+      t += last ? 1300 : 1250;
+    });
+    // the last multiplication: scramble, heartbeat, then land it
+    at(t, function () { $("vig").classList.add("on"); $("dot").classList.add("tense"); $("rq").textContent = "Multiplying it all out…"; $("dl").textContent = "?"; });
+    var scrambleLen = P.full(Q.actual).length;
+    at(t + 100, function () { var iv = setInterval(function () { var s = ""; for (var k = 0; k < scrambleLen; k++) s += /\d/.test(P.full(Q.actual)[k]) ? Math.floor(Math.random() * 10) : P.full(Q.actual)[k]; $("num").textContent = s; if (Math.random() < .3) P.sfx.tick(); }, 70); timers.push(iv); timers.push(setTimeout(function () { clearInterval(iv); }, (t + 1650) * FAST)); });
+    t += 1700;
+    at(t, function () { $("num").textContent = P.full(Q.actual); $("num").classList.add("settle"); $("dot").classList.remove("tense"); $("dot").style.left = ax + "%"; $("dl").textContent = "model"; $("vig").classList.remove("on"); P.sfx.thud(); });
+    t += 1100;
+    at(t, function () { $("check").classList.add("in"); P.sfx.ding(); $("rq").textContent = "Does that sound right?"; });
+    at(t + 200, function () { var w = document.querySelector("#check .w"); w.style.display = "inline-block"; w.style.clipPath = "inset(-5px 100% -5px 0)"; requestAnimationFrame(function () { w.style.transition = "clip-path 1.3s steps(24,end)"; w.style.clipPath = "inset(-5px 0 -5px 0)"; }); });
+    t += 1900;
+    at(t, function () { $("gap").classList.add("in"); $("gl").classList.add("in"); $("rq").textContent = "And you said…"; P.sfx.tick(); });
+    t += 1100;
+    at(t, function () {
+      $("stamp").classList.add("in"); P.sfx.thud(); $("pts").classList.add("in");
+      document.body.classList.add("shake"); setTimeout(function () { document.body.classList.remove("shake"); }, 450);
+      if (sc.points >= 86) { confetti(sc.points >= 95 ? 46 : 26); P.sfx.ding(); }
+      $("rq").textContent = "Here's how the model got there.";
+    });
+    at(t + 450, function () { $("quip").classList.add("in"); $("after").classList.add("in"); $("skip").hidden = true; $("stamp").scrollIntoView({ behavior: "smooth", block: "center" }); });
+    $("skip").onclick = function () { timers.forEach(function (x) { clearTimeout(x); clearInterval(x); }); finalState(); };
+    $("skip").hidden = false;
+  }
+
+  $("lock").addEventListener("click", function () { padText = pad.value; P.sfx.thud(); setTimeout(reveal, 350); });
+  $("again").addEventListener("click", function () { location.href = location.pathname; });
+  if (P.qs.get("demo") || P.qs.get("end")) { pad.value = Q.demo; padText = Q.demo; onPad(); }
+  if (P.qs.get("end")) reveal();
+})();
+</script>
+</body>
+</html>

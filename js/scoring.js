@@ -401,7 +401,7 @@ window.NAPKIN.scoring = (function () {
         ["Fine for a napkin. Not for an interview."],
         ["You'd get away with it in a meeting."],
         ["Right idea, sloppy numbers."],
-        ["The maths went a bit Friday afternoon."]
+        ["The sums went a bit Friday afternoon."]
       ]
     },
     {

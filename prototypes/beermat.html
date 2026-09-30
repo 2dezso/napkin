@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Napkin prototype B — Chips and beer mat</title>
+<style>
+@font-face { font-family: "Patrick Hand"; src: url("../assets/fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+:root {
+  --felt: #1f4a3b; --felt-deep: #163a2d; --paper: #fffdf8; --ink: #2a2620; --chalk: #f4f1e6; --chalk-dim: #d8e6dc;
+  --brass: #d6a84a; --brass-deep: #9b7424; --oxblood: #8f2d39; --cream: #f2e6c6; --rule: #dcd2bb;
+  --hand: "Patrick Hand", "Segoe Print", cursive; --ease: cubic-bezier(.22,1,.36,1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--chalk); font-family: system-ui, "Segoe UI", sans-serif; background-color: var(--felt);
+  background-image: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255,255,255,.12), transparent 70%),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"); }
+main { max-width: 620px; margin: 0 auto; padding: 1rem 1.1rem 3rem; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: .3rem 0 .6rem; }
+.brand { font-family: var(--hand); font-size: 1.7rem; color: var(--brass); }
+.chip-n { border: 2px dashed var(--chalk-dim); border-radius: 999px; padding: .1rem .8rem; font-family: var(--hand); color: var(--chalk); }
+h1 { font-family: var(--hand); font-weight: 400; font-size: clamp(1.8rem, 6.4vw, 2.5rem); line-height: 1.12; margin: .4rem 0 1.1rem; text-wrap: balance; text-shadow: 0 2px 0 rgba(0,0,0,.25); }
+
+/* napkin */
+.napkin { position: relative; background: var(--paper); color: var(--ink); padding: 1rem 1.1rem .8rem; transform: rotate(1deg); border-radius: 3px;
+  box-shadow: 0 22px 30px -14px rgba(0,0,0,.6), 0 2px 0 rgba(255,255,255,.4) inset; outline: 2px dotted rgba(146,120,80,.4); outline-offset: -8px; }
+.padwrap { position: relative; }
+.pad, .hl { font-family: var(--hand); font-size: 1.4rem; line-height: 2.1rem; padding: .3rem .4rem .5rem; width: 100%; min-height: 10.5rem; margin: 0; white-space: pre-wrap; word-wrap: break-word; border: 0; }
+.hl { position: absolute; inset: 0; color: transparent; pointer-events: none;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(2.1rem - 1px), var(--rule) calc(2.1rem - 1px), var(--rule) 2.1rem); background-position: 0 .3rem; }
+.pad { position: relative; background: transparent; color: var(--ink); resize: none; outline: none; caret-color: var(--oxblood); overflow: hidden; }
+.pad::placeholder { color: #746e60; }
+.hl mark { color: transparent; background: linear-gradient(transparent 12%, rgba(255,205,70,.75) 12%, rgba(255,205,70,.75) 88%, transparent 88%); border-radius: 4px; animation: hi .3s var(--ease); }
+@keyframes hi { from { background-size: 0 100%; background-repeat: no-repeat; } to { background-size: 100% 100%; background-repeat: no-repeat; } }
+
+/* chip tray */
+.tray { margin-top: 1rem; padding: .9rem .8rem; border-radius: 14px; background: var(--felt-deep); box-shadow: inset 0 4px 10px rgba(0,0,0,.45); min-height: 6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem .35rem; }
+.tray .hint { color: var(--chalk-dim); font-family: var(--hand); font-size: 1.15rem; }
+.chip { position: relative; width: 4.3rem; height: 4.3rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--hand); font-size: 1.15rem; color: var(--ink); background: var(--cream);
+  box-shadow: 0 4px 0 #b9a676, 0 8px 10px rgba(0,0,0,.4); animation: drop .5s cubic-bezier(.3,1.4,.4,1); }
+.chip::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; border: 2px dashed rgba(42,38,32,.45); }
+.chip.div { background: #e4a0a6; box-shadow: 0 4px 0 #a9565e, 0 8px 10px rgba(0,0,0,.4); }
+.chip.steady { animation: none; }
+@keyframes drop { from { transform: translateY(-46px) rotate(-40deg) scale(.6); opacity: 0; } }
+.opg { font-family: var(--hand); font-size: 1.6rem; color: var(--brass); width: 1rem; text-align: center; }
+.plaque { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; margin-top: .9rem; padding: .55rem 1rem; border-radius: 10px; background: linear-gradient(#e6bf64, #c8973a); color: #3b2b0c; box-shadow: 0 4px 0 var(--brass-deep), 0 8px 14px rgba(0,0,0,.4); }
+.plaque .big { font-family: var(--hand); font-size: 2.6rem; line-height: 1.1; }
+.plaque .big.bump { animation: bump .25s var(--ease); }
+@keyframes bump { 50% { transform: scale(1.07); } }
+.plaque .vibe { font-family: var(--hand); font-size: 1.05rem; text-align: right; max-width: 12ch; line-height: 1.15; }
+.lock { display: block; width: 100%; margin-top: 1.1rem; font-family: var(--hand); font-size: 1.6rem; padding: .7rem; border: 0; border-radius: 12px; background: var(--oxblood); color: #fff; cursor: pointer; box-shadow: 0 5px 0 #5d1a23, 0 10px 16px rgba(0,0,0,.35); transition: transform .12s, box-shadow .12s, opacity .2s; }
+.lock:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #5d1a23; }
+.lock:disabled { opacity: .5; cursor: not-allowed; }
+.nudge { text-align: center; font-size: .9rem; color: var(--chalk-dim); margin-top: .8rem; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+/* reveal */
+#reveal { text-align: center; padding-top: .8rem; }
+.stage { position: relative; height: 15.5rem; margin: .3rem auto 0; }
+.answer { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.answer .lab { font-family: var(--hand); font-size: 1.3rem; color: var(--chalk-dim); }
+.answer .num { font-family: var(--hand); font-size: clamp(3.4rem, 15vw, 5.4rem); line-height: 1.05; color: var(--chalk); text-shadow: 0 0 .6rem rgba(255,255,255,.18); min-height: 1.1em; }
+.answer .what { font-family: var(--hand); color: var(--brass); font-size: 1.2rem; min-height: 1.5rem; opacity: 0; transition: opacity .4s; }
+.answer .what.in { opacity: 1; }
+.mat { position: absolute; left: 50%; top: 50%; width: 15rem; height: 15rem; margin: -7.5rem 0 0 -7.5rem; border-radius: 50%; cursor: pointer; border: 0; padding: 0;
+  background: radial-gradient(circle, #f3ead2 0 52%, #e8d9b0 52% 55%, #f3ead2 55% 100%); color: var(--oxblood); font-family: var(--hand);
+  box-shadow: 0 14px 20px rgba(0,0,0,.5), inset 0 0 0 7px #f3ead2, inset 0 0 0 9px rgba(143,45,57,.75);
+  transform: rotate(-8deg); transition: transform .8s cubic-bezier(.5,-.2,.3,1), opacity .5s .3s; animation: wob 1.6s ease-in-out infinite; display: grid; place-items: center; text-align: center; font-size: 1.5rem; line-height: 1.15; }
+.mat small { display: block; font-size: 1rem; color: #5e5033; margin-top: .4rem; }
+.mat.lifted { animation: none; transform: translate(9rem, -4rem) rotate(150deg) scale(.7); opacity: 0; pointer-events: none; }
+@keyframes wob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(-4deg) translateY(-4px); } }
+
+.ruler { position: relative; height: 96px; margin: .6rem .7rem .3rem; opacity: 0; transition: opacity .4s; }
+.ruler.in { opacity: 1; }
+.ruler .line { position: absolute; left: 0; right: 0; top: 48px; height: 3px; background: var(--chalk-dim); border-radius: 2px; }
+.ruler .tk { position: absolute; top: 42px; width: 2px; height: 15px; background: var(--chalk-dim); }
+.ruler .tl { position: absolute; top: 62px; font-size: .68rem; color: var(--chalk-dim); transform: translateX(-50%); }
+.ruler .real, .ruler .you { position: absolute; transform: translateX(-50%); top: 35px; }
+.ruler .real i { display: block; width: 26px; height: 26px; margin: 0 auto; border-radius: 50%; background: var(--brass); box-shadow: 0 3px 0 var(--brass-deep); }
+.ruler .you i { display: grid; place-items: center; width: 40px; height: 40px; margin: 0 auto; border-radius: 50%; background: var(--cream); box-shadow: 0 4px 0 #b9a676; color: var(--ink); font-family: var(--hand); font-size: .9rem; position: relative; top: -60px; transition: top .7s cubic-bezier(.3,1.5,.4,1); }
+.ruler .you i::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed rgba(42,38,32,.4); }
+.ruler.landed .you i { top: -6px; }
+.ruler small { position: absolute; left: 50%; transform: translateX(-50%); font-size: .82rem; color: var(--chalk-dim); white-space: nowrap; font-family: var(--hand); }
+.ruler .real small { top: -1.3rem; } .ruler .you small { top: 2.6rem; }
+
+.verdict { min-height: 8.5rem; padding-top: .4rem; }
+.badge { display: inline-block; font-family: var(--hand); font-size: clamp(2rem, 9vw, 3rem); color: #3b2b0c; background: linear-gradient(#e6bf64, #c8973a); border-radius: 12px; padding: .1rem 1.1rem; box-shadow: 0 5px 0 var(--brass-deep), 0 12px 16px rgba(0,0,0,.4); transform: scale(0) rotate(-6deg); }
+.badge.in { animation: badge .55s cubic-bezier(.2,1.6,.35,1) forwards; }
+@keyframes badge { to { transform: scale(1) rotate(-2deg); } }
+.pts, .quip { font-family: var(--hand); opacity: 0; transition: opacity .4s; }
+.pts { font-size: 1.3rem; margin-top: .7rem; } .quip { font-size: 1.2rem; color: var(--chalk-dim); max-width: 28ch; margin: .3rem auto 0; }
+.pts.in, .quip.in { opacity: 1; }
+.after { margin-top: 1.2rem; opacity: 0; transition: opacity .4s; } .after.in { opacity: 1; }
+details.how { text-align: left; background: var(--felt-deep); border-radius: 12px; padding: .8rem 1.1rem; margin-bottom: .9rem; }
+details.how summary { cursor: pointer; font-family: var(--hand); font-size: 1.25rem; color: var(--brass); }
+details.how ol { margin: .6rem 0 0; padding-left: 1.3rem; color: var(--chalk); } details.how li { margin: .3rem 0; }
+.ghost { font-family: var(--hand); font-size: 1.2rem; background: none; border: 2px solid var(--chalk-dim); border-radius: 10px; padding: .4rem 1rem; cursor: pointer; color: var(--chalk); }
+.skip { position: fixed; right: 1rem; bottom: 1rem; font-size: .85rem; background: rgba(0,0,0,.35); color: var(--chalk); border: 1px solid var(--chalk-dim); border-radius: 999px; padding: .35rem .9rem; cursor: pointer; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">Napkin.</div><span class="chip-n" id="chip"></span></div>
+  <h1 id="q"></h1>
+
+  <section id="play">
+    <div class="napkin">
+      <div class="padwrap">
+        <div class="hl" id="hl" aria-hidden="true"></div>
+        <textarea class="pad" id="pad" rows="5" spellcheck="false" placeholder="Think out loud. Every number you write becomes a chip.&#10;&#10;e.g. 3 million people&#10;1 in 4 of them&#10;÷ 7 days"></textarea>
+      </div>
+    </div>
+    <div class="tray" id="tray" aria-live="polite"></div>
+    <div class="plaque"><span class="big" id="big">—</span><span class="vibe" id="vibe"></span></div>
+    <button class="lock" id="lock" disabled>Lock it in</button>
+    <p class="nudge">Per, ÷ or / before a number divides. 1 in 4, 25% and 5k all work.</p>
+  </section>
+
+  <section id="reveal" hidden>
+    <div class="stage">
+      <div class="answer"><div class="lab">The real answer</div><div class="num" id="num" aria-label=""></div><div class="what" id="what"></div></div>
+      <button class="mat" id="mat" aria-label="Lift the beer mat to see the answer">What's under<br>the mat?<small>tap to lift</small></button>
+    </div>
+    <div class="ruler" id="ruler"></div>
+    <div class="verdict"><div class="badge" id="badge"></div><div class="pts" id="pts"></div><p class="quip" id="quip"></p></div>
+    <div class="after" id="after">
+      <details class="how"><summary>How the model got there</summary><ol id="steps"></ol></details>
+      <button class="ghost" id="again">Go again</button>
+    </div>
+    <button class="skip" id="skip">Skip</button>
+  </section>
+</main>
+<script src="shared.js"></script>
+<script>
+(function () {
+  var Q = P.Q, $ = function (id) { return document.getElementById(id); };
+  $("chip").textContent = "Napkin #" + Q.n; $("q").textContent = Q.question;
+  var pad = $("pad"), guess = null, lastCount = 0;
+
+  function onPad() {
+    var text = pad.value, fs = P.parse(text), html = "", pos = 0;
+    fs.forEach(function (f) { html += P.esc(text.slice(pos, f.start)) + "<mark>" + P.esc(text.slice(f.start, f.end)) + "</mark>"; pos = f.end; });
+    $("hl").innerHTML = html + P.esc(text.slice(pos)) + "\n";
+    var tray = $("tray"); tray.innerHTML = "";
+    fs.forEach(function (f, i) {
+      if (i) { var o = document.createElement("span"); o.className = "opg"; o.textContent = f.op === "/" ? "÷" : "×"; tray.appendChild(o); }
+      var c = document.createElement("span"); c.className = "chip" + (f.op === "/" ? " div" : "") + (i < lastCount ? " steady" : ""); c.textContent = P.humanize(f.value); tray.appendChild(c);
+    });
+    if (!fs.length) tray.innerHTML = '<span class="hint">Your numbers land here as chips.</span>';
+    if (fs.length > lastCount) P.sfx.pop();
+    lastCount = fs.length;
+    guess = P.total(fs);
+    var big = $("big"); big.textContent = guess ? "≈ " + P.full(guess) : "—"; big.classList.remove("bump"); void big.offsetWidth; if (guess) big.classList.add("bump");
+    $("vibe").textContent = guess ? P.compare(guess) : "";
+    $("lock").disabled = !(guess > 0);
+  }
+  pad.addEventListener("input", onPad);
+  pad.addEventListener("scroll", function () { $("hl").scrollTop = pad.scrollTop; });
+
+  var timers = [], done = false;
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function countTo(node, target, ms, cb) {
+    var a = Math.log(1), b = Math.log(target), t0 = performance.now();
+    (function step(now) { var p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      node.textContent = P.full(p >= 1 ? target : Math.exp(a + (b - a) * e)); if (p < 1 && !done) requestAnimationFrame(step); else if (cb) cb(); })(t0);
+  }
+
+  function reveal() {
+    $("play").hidden = true; $("reveal").hidden = false; window.scrollTo(0, 0);
+    var sc = P.score(guess, Q.actual), ruler = $("ruler");
+    ruler.innerHTML = '<div class="line"></div>';
+    [["1", 1], ["100", 100], ["10k", 1e4], ["1M", 1e6], ["100M", 1e8]].forEach(function (t) {
+      ruler.insertAdjacentHTML("beforeend", '<div class="tk" style="left:' + P.logPos(t[1]) + '%"></div><div class="tl" style="left:' + P.logPos(t[1]) + '%">' + t[0] + "</div>");
+    });
+    ruler.insertAdjacentHTML("beforeend", '<div class="real" style="left:' + P.logPos(Q.actual) + '%"><small>real</small><i></i></div><div class="you" style="left:' + P.logPos(guess) + '%"><i>you</i><small>' + P.humanize(guess) + "</small></div>");
+    $("badge").textContent = sc.tier.name; $("quip").textContent = sc.tier.quip; $("pts").textContent = sc.points + " / 100";
+    $("steps").innerHTML = Q.steps.map(function (s) { return "<li>" + P.esc(s) + "</li>"; }).join("");
+    $("num").setAttribute("aria-label", "The real answer is " + P.full(Q.actual));
+
+    function afterNum() {
+      $("what").textContent = P.compare(Q.actual); $("what").classList.add("in"); P.sfx.ding();
+      at(250, function () { ruler.classList.add("in"); });
+      at(650, function () { ruler.classList.add("landed"); P.sfx.thud(); });
+      at(1400, function () { $("badge").classList.add("in"); $("pts").classList.add("in"); P.sfx.ding(); });
+      at(1900, function () { $("quip").classList.add("in"); $("after").classList.add("in"); $("skip").hidden = true; });
+    }
+    var lifted = false;
+    function lift(instant) {
+      if (lifted) return; lifted = true; $("mat").classList.add("lifted"); P.sfx.thud();
+      if (instant) { done = true; $("num").textContent = P.full(Q.actual); $("what").textContent = P.compare(Q.actual); $("what").classList.add("in");
+        ruler.classList.add("in", "landed"); ["badge", "pts", "quip", "after"].forEach(function (i) { $(i).classList.add("in"); }); $("skip").hidden = true; return; }
+      at(450, function () { countTo($("num"), Q.actual, 900, afterNum); });
+    }
+    $("mat").onclick = function () { lift(false); };
+    at(4200, function () { lift(false); });            // never leave them hanging
+    $("skip").onclick = function () { timers.forEach(clearTimeout); lift(true); };
+    if (P.qs.get("end")) lift(true);
+  }
+  $("lock").addEventListener("click", function () { P.sfx.thud(); setTimeout(reveal, 300); });
+  $("again").addEventListener("click", function () { location.href = location.pathname; });
+  if (P.qs.get("demo") || P.qs.get("end")) { pad.value = Q.demo; onPad(); }
+  if (P.qs.get("end")) reveal();
+})();
+</script>
+</body>
+</html>

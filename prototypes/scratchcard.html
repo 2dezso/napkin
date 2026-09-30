@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Napkin prototype C — Live ruler and scratch card</title>
+<style>
+@font-face { font-family: "Patrick Hand"; src: url("../assets/fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+:root {
+  --table: #e7dcc6; --card: #fffdf8; --ink: #2c2a24; --faint: #5f594d; --rule: #ddd4bf; --emboss: rgba(146,120,80,.34);
+  --pen: #3a3b40; --red: #c2463a; --gold: #f2b632; --gold-deep: #c98a10; --hot: #e8452c; --ink-blue: #2d4fa1;
+  --hand: "Patrick Hand", "Segoe Print", cursive; --ease: cubic-bezier(.22,1,.36,1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; font-family: system-ui, "Segoe UI", sans-serif; color: var(--ink); background: var(--table);
+  background-image: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(255,250,238,.6), transparent 70%); }
+main { max-width: 620px; margin: 0 auto; padding: 1rem 1.1rem 3rem; }
+.top { display: flex; justify-content: space-between; align-items: baseline; padding: .4rem 0 .6rem; }
+.brand { font-family: var(--hand); font-size: 1.6rem; }
+.chip { background: var(--pen); color: #fff; border-radius: 6px; padding: .15rem .6rem; font-family: var(--hand); }
+h1 { font-family: var(--hand); font-weight: 400; font-size: clamp(1.7rem, 6vw, 2.3rem); line-height: 1.15; margin: .4rem 0 1rem; text-wrap: balance; }
+
+.napkin { position: relative; background: var(--card); padding: 1.1rem 1.2rem 1rem; box-shadow: 0 1px 1px rgba(80,58,24,.08), 0 18px 30px -16px rgba(80,58,24,.55); outline: 2px dotted var(--emboss); outline-offset: -8px; transform: rotate(.4deg); border-radius: 3px; }
+/* live ruler */
+.lr { position: relative; height: 4.6rem; margin: .1rem .4rem .2rem; }
+.lr .line { position: absolute; left: 0; right: 0; top: 2.4rem; height: 3px; background: var(--pen); border-radius: 2px; opacity: .8; }
+.lr .tk { position: absolute; top: 2.05rem; width: 2px; height: .8rem; background: var(--pen); opacity: .55; }
+.lr .tl { position: absolute; top: 3.3rem; font-size: .7rem; color: var(--faint); transform: translateX(-50%); white-space: nowrap; }
+.lr .tl.end { transform: translateX(-85%); }
+.lr .cross { position: absolute; top: .35rem; font-family: var(--hand); font-size: 2.1rem; color: var(--red); line-height: 1; transform: translateX(-50%); transition: left .6s cubic-bezier(.3,1.5,.4,1), opacity .3s; opacity: 0; }
+.lr .cross.on { opacity: 1; }
+.lr .cross small { position: absolute; top: -1.1rem; left: 50%; transform: translateX(-50%); font-size: .95rem; color: var(--pen); white-space: nowrap; }
+.lr .cross::after { content: ""; position: absolute; left: 50%; top: 1.85rem; width: 2px; height: .55rem; background: var(--red); transform: translateX(-50%); }
+.react { font-family: var(--hand); text-align: center; min-height: 1.6rem; font-size: 1.15rem; color: var(--faint); margin: .1rem 0 .5rem; }
+.padwrap { position: relative; }
+.pad, .hl { font-family: var(--hand); font-size: 1.35rem; line-height: 2.1rem; padding: .3rem .3rem .5rem; width: 100%; min-height: 9.5rem; margin: 0; white-space: pre-wrap; word-wrap: break-word; border: 0; }
+.hl { position: absolute; inset: 0; color: transparent; pointer-events: none; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(2.1rem - 1px), var(--rule) calc(2.1rem - 1px), var(--rule) 2.1rem); background-position: 0 .3rem; }
+.pad { position: relative; background: transparent; color: var(--pen); resize: none; outline: none; caret-color: var(--red); overflow: hidden; }
+.pad::placeholder { color: #746e60; }
+.hl mark { color: transparent; background: none; border-bottom: 3px solid var(--red); border-radius: 0 0 40% 60% / 0 0 100% 100%; animation: ul .3s var(--ease); }
+@keyframes ul { from { border-bottom-color: transparent; } }
+.eq { display: flex; flex-wrap: wrap; gap: .1rem .5rem; align-items: baseline; margin-top: .6rem; padding-top: .6rem; border-top: 2px dashed var(--rule); font-family: var(--hand); font-size: 1.3rem; min-height: 2.3rem; }
+.eq .op { color: var(--red); } .eq .empty { color: var(--faint); font-size: 1.05rem; } .eq .eqs { font-size: 1.9rem; margin-left: auto; }
+.lock { display: block; width: 100%; margin-top: 1rem; font-family: var(--hand); font-size: 1.55rem; padding: .7rem; border: 0; border-radius: 8px; background: var(--hot); color: #fff; cursor: pointer; box-shadow: 0 5px 0 #9b2a16; transition: transform .12s, box-shadow .12s, opacity .2s; }
+.lock:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 #9b2a16; }
+.lock:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.nudge { text-align: center; font-size: .9rem; color: var(--faint); margin-top: .7rem; }
+:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+
+/* scratch card */
+#reveal { text-align: center; padding-top: .6rem; }
+.lead { font-family: var(--hand); font-size: 1.5rem; color: var(--faint); margin: 0 0 .7rem; }
+.ticket { position: relative; width: min(100%, 420px); margin: 0 auto; padding: 1rem 1rem 1.1rem; border-radius: 14px; transform: rotate(-1.5deg);
+  background: repeating-linear-gradient(135deg, var(--gold) 0 14px, #f6c855 14px 28px); box-shadow: 0 18px 26px -12px rgba(80,58,24,.6), inset 0 0 0 4px var(--hot); }
+.ticket h2 { margin: 0 0 .5rem; font-family: var(--hand); font-weight: 400; font-size: 1.5rem; letter-spacing: .08em; color: #7d1f0f; text-transform: uppercase; }
+.panel { position: relative; height: 9.5rem; border-radius: 8px; background: #fff8e6; box-shadow: inset 0 3px 8px rgba(0,0,0,.25); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.panel .lab { font-family: var(--hand); font-size: 1.05rem; color: #5a4a3a; }
+.panel .num { font-family: var(--hand); font-size: clamp(2.8rem, 12.5vw, 4.4rem); line-height: 1.05; color: #7d1f0f; }
+.panel .num.pop { animation: pop .5s cubic-bezier(.2,1.5,.35,1); }
+@keyframes pop { from { transform: scale(.6); } }
+.foil { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; transition: opacity .5s; }
+.foil.gone { opacity: 0; pointer-events: none; }
+.tools { margin-top: .7rem; font-size: .95rem; color: #4a1d0a; } .tools .linkbtn { color: #4a1d0a; }
+.linkbtn { background: none; border: 0; color: var(--pen); text-decoration: underline; cursor: pointer; font: inherit; }
+.what { font-family: var(--hand); color: var(--faint); font-size: 1.2rem; min-height: 1.6rem; margin: .8rem 0 0; opacity: 0; transition: opacity .4s; }
+.what.in { opacity: 1; }
+.rv { display: none; } .rv.on { display: block; }
+.ruler { position: relative; height: 96px; margin: .8rem .7rem .2rem; opacity: 0; transition: opacity .4s; }
+.ruler.in { opacity: 1; }
+.ruler .line { position: absolute; left: 0; right: 0; top: 50px; height: 3px; background: var(--pen); opacity: .8; border-radius: 2px; }
+.ruler .tk { position: absolute; top: 44px; width: 2px; height: 15px; background: var(--pen); opacity: .55; }
+.ruler .tl { position: absolute; top: 64px; font-size: .68rem; color: var(--faint); transform: translateX(-50%); }
+.ruler .you, .ruler .real { position: absolute; transform: translateX(-50%); font-family: var(--hand); }
+.ruler .you { top: -34px; color: var(--red); font-size: 2.3rem; line-height: 1; transition: top .6s cubic-bezier(.3,1.5,.4,1); }
+.ruler .real { top: 38px; } .ruler .real i { display: block; width: 18px; height: 18px; margin: 0 auto; border-radius: 50%; background: var(--pen); }
+.ruler.landed .you { top: 18px; }
+.ruler small { position: absolute; left: 50%; transform: translateX(-50%); font-size: .85rem; color: var(--faint); white-space: nowrap; }
+.ruler .you small { top: -1rem; } .ruler .real small { top: -1.35rem; }
+.verdict { min-height: 8.5rem; }
+.stamp { display: inline-block; font-family: var(--hand); font-size: clamp(2.2rem, 10vw, 3.3rem); letter-spacing: .04em; text-transform: uppercase; color: var(--red); border: 4px solid var(--red); border-radius: 10px; padding: .15rem 1rem; opacity: 0; transform: rotate(-4deg) scale(3); }
+.stamp.in { animation: slam .42s cubic-bezier(.2,1.3,.3,1) forwards; }
+@keyframes slam { 0% { opacity: 0; transform: rotate(-4deg) scale(3); } 70% { opacity: 1; transform: rotate(-4deg) scale(.92); } 100% { opacity: 1; transform: rotate(-4deg) scale(1); } }
+.pts, .quip { font-family: var(--hand); opacity: 0; transition: opacity .4s; } .pts { font-size: 1.3rem; margin-top: .6rem; } .quip { font-size: 1.25rem; color: var(--faint); max-width: 28ch; margin: .3rem auto 0; }
+.pts.in, .quip.in { opacity: 1; }
+.after { margin-top: 1.2rem; opacity: 0; transition: opacity .4s; } .after.in { opacity: 1; }
+details.how { text-align: left; background: var(--card); padding: .9rem 1.1rem; box-shadow: 0 10px 20px -14px rgba(80,58,24,.5); outline: 2px dotted var(--emboss); outline-offset: -6px; margin-bottom: .9rem; }
+details.how summary { cursor: pointer; font-family: var(--hand); font-size: 1.25rem; } details.how ol { margin: .6rem 0 0; padding-left: 1.3rem; } details.how li { margin: .3rem 0; }
+.ghost { font-family: var(--hand); font-size: 1.2rem; background: none; border: 2px solid var(--pen); border-radius: 6px; padding: .4rem 1rem; cursor: pointer; color: var(--pen); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">Napkin.</div><span class="chip" id="chip"></span></div>
+  <h1 id="q"></h1>
+
+  <section id="play">
+    <div class="napkin">
+      <div class="lr" id="lr" aria-hidden="true"></div>
+      <div class="react" id="react" aria-live="polite"></div>
+      <div class="padwrap">
+        <div class="hl" id="hl" aria-hidden="true"></div>
+        <textarea class="pad" id="pad" rows="5" spellcheck="false" placeholder="Think out loud. Watch your guess climb the ruler as you add numbers.&#10;&#10;e.g. 3 million people&#10;1 in 4 of them&#10;÷ 7 days"></textarea>
+      </div>
+      <div class="eq" id="eq"></div>
+    </div>
+    <button class="lock" id="lock" disabled>Lock it in</button>
+    <p class="nudge">Per, ÷ or / before a number divides. 1 in 4, 25% and 5k all work.</p>
+  </section>
+
+  <section id="reveal" hidden>
+    <p class="lead" id="lead">You're locked in. Scratch to see the real answer.</p>
+    <div class="ticket">
+      <h2>Instant answer</h2>
+      <div class="panel">
+        <div class="lab">The real answer</div><div class="num" id="num" aria-label=""></div>
+        <canvas class="foil" id="foil" aria-hidden="true"></canvas>
+      </div>
+      <div class="tools" id="tools">Scratch with your finger or mouse, or <button class="linkbtn" id="rvbtn">reveal it for me</button></div>
+    </div>
+    <div class="rv" id="rv">
+      <p class="what" id="what"></p>
+      <div class="ruler" id="ruler"></div>
+      <div class="verdict"><div class="stamp" id="stamp"></div><div class="pts" id="pts"></div><p class="quip" id="quip"></p></div>
+      <div class="after" id="after">
+        <details class="how"><summary>How the model got there</summary><ol id="steps"></ol></details>
+        <button class="ghost" id="again">Go again</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="shared.js"></script>
+<script>
+(function () {
+  var Q = P.Q, $ = function (id) { return document.getElementById(id); };
+  $("chip").textContent = "Napkin #" + Q.n; $("q").textContent = Q.question;
+  var pad = $("pad"), guess = null, lastCount = 0;
+
+  var lr = $("lr"); lr.innerHTML = '<div class="line"></div><div class="cross" id="cross"><small id="cs"></small>✗</div>';
+  [["1", 1], ["100", 100], ["10k", 1e4], ["1M", 1e6], ["100M", 1e8], ["1bn", 1e9]].forEach(function (t, i, a) {
+    lr.insertAdjacentHTML("beforeend", '<div class="tk" style="left:' + P.logPos(t[1]) + '%"></div><div class="tl' + (i === a.length - 1 ? " end" : "") + '" style="left:' + P.logPos(t[1]) + '%">' + t[0] + "</div>");
+  });
+
+  function onPad() {
+    var text = pad.value, fs = P.parse(text), html = "", pos = 0;
+    fs.forEach(function (f) { html += P.esc(text.slice(pos, f.start)) + "<mark>" + P.esc(text.slice(f.start, f.end)) + "</mark>"; pos = f.end; });
+    $("hl").innerHTML = html + P.esc(text.slice(pos)) + "\n";
+    var eq = $("eq"); eq.innerHTML = "";
+    fs.forEach(function (f, i) { eq.insertAdjacentHTML("beforeend", (i ? '<span class="op">' + (f.op === "/" ? "÷" : "×") + "</span>" : "") + "<span>" + P.humanize(f.value) + "</span>"); });
+    guess = P.total(fs);
+    if (!fs.length) eq.innerHTML = '<span class="empty">Your working builds up here.</span>';
+    else eq.insertAdjacentHTML("beforeend", '<span class="eqs">≈ ' + P.full(guess) + "</span>");
+    if (fs.length > lastCount) P.sfx.tick(); lastCount = fs.length;
+    var c = $("cross"); c.classList.toggle("on", !!guess);
+    if (guess) { c.style.left = P.logPos(guess) + "%"; $("cs").textContent = P.humanize(guess); }
+    $("react").textContent = guess ? P.compare(guess) : "";
+    $("lock").disabled = !(guess > 0);
+  }
+  pad.addEventListener("input", onPad);
+  pad.addEventListener("scroll", function () { $("hl").scrollTop = pad.scrollTop; });
+
+  var timers = [];
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+
+  function reveal() {
+    $("play").hidden = true; $("reveal").hidden = false; window.scrollTo(0, 0);
+    var sc = P.score(guess, Q.actual), ruler = $("ruler");
+    $("num").textContent = P.full(Q.actual); $("num").setAttribute("aria-label", "The real answer is " + P.full(Q.actual));
+    ruler.innerHTML = '<div class="line"></div>';
+    [["1", 1], ["100", 100], ["10k", 1e4], ["1M", 1e6], ["100M", 1e8]].forEach(function (t) {
+      ruler.insertAdjacentHTML("beforeend", '<div class="tk" style="left:' + P.logPos(t[1]) + '%"></div><div class="tl" style="left:' + P.logPos(t[1]) + '%">' + t[0] + "</div>");
+    });
+    ruler.insertAdjacentHTML("beforeend", '<div class="you" style="left:' + P.logPos(guess) + '%"><small>you</small>✗</div><div class="real" style="left:' + P.logPos(Q.actual) + '%"><small>real</small><i></i></div>');
+    $("stamp").textContent = sc.tier.name; $("quip").textContent = sc.tier.quip; $("pts").textContent = sc.points + " / 100";
+    $("what").textContent = P.compare(Q.actual);
+    $("steps").innerHTML = Q.steps.map(function (s) { return "<li>" + P.esc(s) + "</li>"; }).join("");
+
+    var foil = $("foil"), panel = foil.parentNode, g = foil.getContext("2d"), revealed = false, dpr = Math.min(2, window.devicePixelRatio || 1);
+    function size() { var r = panel.getBoundingClientRect(); foil.width = r.width * dpr; foil.height = r.height * dpr; paint(); }
+    function paint() {
+      var w = foil.width, h = foil.height, gr = g.createLinearGradient(0, 0, w, h);
+      gr.addColorStop(0, "#c9ced6"); gr.addColorStop(.35, "#eef0f4"); gr.addColorStop(.6, "#b9bec8"); gr.addColorStop(1, "#dfe3ea");
+      g.globalCompositeOperation = "source-over"; g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      for (var i = 0; i < 900; i++) { g.fillStyle = "rgba(" + (i % 2 ? "255,255,255" : "90,96,110") + ",.13)"; g.fillRect(Math.random() * w, Math.random() * h, 2 * dpr, 2 * dpr); }
+      g.fillStyle = "#58606f"; g.font = (1.7 * 16 * dpr) + "px 'Patrick Hand', cursive"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText("SCRATCH HERE", w / 2, h / 2);
+    }
+    function scratch(x, y) { g.globalCompositeOperation = "destination-out"; g.beginPath(); g.arc(x * dpr, y * dpr, 24 * dpr, 0, 7); g.fill(); }
+    function cleared() {
+      var d = g.getImageData(0, 0, foil.width, foil.height).data, n = 0, t = 0;
+      for (var i = 3; i < d.length; i += 4 * 61) { t++; if (d[i] < 40) n++; }
+      return n / t;
+    }
+    function finish() {
+      if (revealed) return; revealed = true; foil.classList.add("gone"); $("tools").hidden = true; $("lead").textContent = "There it is.";
+      $("num").classList.add("pop"); P.sfx.ding();
+      $("rv").classList.add("on");
+      at(150, function () { $("what").classList.add("in"); $("ruler").classList.add("in"); });
+      at(550, function () { $("ruler").classList.add("landed"); P.sfx.thud(); });
+      at(1250, function () { $("stamp").classList.add("in"); $("pts").classList.add("in"); P.sfx.thud(); });
+      at(1650, function () { $("quip").classList.add("in"); $("after").classList.add("in"); });
+    }
+    var down = false, last = 0, lastSfx = 0;
+    function pt(e) { var r = foil.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    foil.addEventListener("pointerdown", function (e) { down = true; foil.setPointerCapture(e.pointerId); var p = pt(e); scratch(p[0], p[1]); });
+    foil.addEventListener("pointermove", function (e) {
+      if (!down) return; var p = pt(e); scratch(p[0], p[1]);
+      var now = performance.now(); if (now - lastSfx > 90) { P.sfx.tick(); lastSfx = now; }
+      if (now - last > 160) { last = now; if (cleared() > .5) finish(); }
+    });
+    foil.addEventListener("pointerup", function () { down = false; if (cleared() > .45) finish(); });
+    $("rvbtn").addEventListener("click", finish);
+    $("again").addEventListener("click", function () { location.href = location.pathname; });
+    size(); window.addEventListener("resize", function () { if (!revealed) size(); });
+    if (P.qs.get("end")) { finish(); timers.forEach(clearTimeout); ["what", "ruler", "stamp", "pts", "quip", "after"].forEach(function (i) { $(i).classList.add("in", "landed"); }); }
+  }
+  $("lock").addEventListener("click", function () { P.sfx.thud(); setTimeout(reveal, 300); });
+  if (P.qs.get("demo") || P.qs.get("end")) { pad.value = Q.demo; onPad(); }
+  if (P.qs.get("end")) reveal();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Napkin prototypes</title>
+<style>
+@font-face { font-family: "Patrick Hand"; src: url("../assets/fonts/PatrickHand-Regular.ttf") format("truetype"); font-display: swap; }
+body { margin: 0; background: #e7dcc6; color: #2c2a24; font-family: system-ui, sans-serif; }
+main { max-width: 620px; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
+h1 { font-family: "Patrick Hand", cursive; font-weight: 400; font-size: 2.2rem; margin: 0 0 .3rem; }
+p { color: #5f594d; line-height: 1.5; }
+a.card { display: block; background: #fffdf8; padding: 1rem 1.2rem; margin: 1rem 0; text-decoration: none; color: inherit; outline: 2px dotted rgba(146,120,80,.4); outline-offset: -7px; box-shadow: 0 14px 22px -14px rgba(80,58,24,.5); transition: transform .2s; }
+a.card:hover, a.card:focus-visible { transform: translateY(-2px) rotate(-.3deg); }
+a.card b { font-family: "Patrick Hand", cursive; font-weight: 400; font-size: 1.5rem; display: block; }
+a.card span { color: #5f594d; font-size: .95rem; }
+small { color: #5f594d; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Napkin prototypes</h1>
+  <p>Three takes on the scribble pad and the reveal. All use the same Greggs question. Add <code>?demo=1</code> to prefill the pad, or <code>?end=1</code> to jump to the finished result.</p>
+  <a class="card" href="napkin.html"><b>A2. A real napkin, a tense reveal (redraft of A)</b><span>A proper folded paper napkin on a light oak table: pressed emboss, quarter-fold creases, a wobbly edge, a pencil lying next to it, no ruled lines. The reveal is a countdown: the model writes its working line by line while a dot crawls along the ruler towards your ✗, then the vignette pulses, the total scrambles, lands, gets fact-checked, and the verdict slams down. About 12 seconds, skippable. Add ?fast=1 to see the returning-player pace. Now with a self-drawing doodle and crowd line, and a Share your napkin image showing only the question and your score.</span></a>
+  <a class="card" href="pencil.html"><b>A. Pencil and odometer</b><span>The pad circles each number in red pencil as you write and builds your sum line by line. Reveal: the real answer spins up digit by digit, gets circled, and your guess drops onto a ruler. About 5 seconds.</span></a>
+  <a class="card" href="beermat.html"><b>B. Chips and beer mat</b><span>Green baize, a tilted napkin, and every number becomes a poker chip in a tray. Reveal: a beer mat hides the answer; tap to flip it off and your chip lands on the ruler.</span></a>
+  <a class="card" href="scratchcard.html"><b>C. Live ruler and scratch card</b><span>A log ruler sits above the pad and your guess climbs it as you add numbers. Reveal: a scratch card; rub the foil off to uncover the answer yourself.</span></a>
+  <p><small>In every version the answer stays hidden until the moment, the model's working moves behind "How the model got there", and a Skip option is always there.</small></p>
+</main>
+</body>
+</html>
