@@ -276,7 +276,7 @@
     } else {
       wrap.appendChild(el("div", { class: "daychip" },
         el("span", { class: "chip" }, "Napkin #" + (storage.dayNumber() + 1)),
-        el("span", { class: "muted" }, storage.todayISO())
+        el("span", { class: "muted" }, britishDate(storage.todayISO()))
       ));
       var banner = challengeBanner();
       if (banner) wrap.appendChild(banner);
@@ -463,7 +463,10 @@
       opts.practice ? "See how close I got" : "Lock it in");
     submit.disabled = true;
     submit.addEventListener("click", doLock);
+    // Say why Lock is dimmed, instead of leaving it looking broken.
+    var lockHint = el("p", { class: "lockhint" }, "Write at least one number to lock it in.");
     wrap.appendChild(submit);
+    wrap.appendChild(lockHint);
 
     // Eyeballing stays available, but as a quiet link rather than a tab above the pad.
     var eyeLink = null;
@@ -771,6 +774,7 @@
     function refreshTotal() { renderTotal(); updateSubmit(); updateGutBtn(); }
     function updateSubmit() {
       submit.disabled = mode === "eyeball" ? false : !(effectiveGuess() > 0);
+      if (lockHint) lockHint.hidden = !submit.disabled;
     }
     function updateGutBtn() {
       gutActionBtn.disabled = !(effectiveGuess() > 0);
@@ -894,10 +898,10 @@
     try { played = storage.stats().played; } catch (e) { /* no history */ }
     var calm = prefersReducedMotion();
     var model = buildModelReveal(q, res, played > 3);
-    wrap.appendChild(model.node);
-
+    // Skip sits at the top, where the eye is while the suspense builds.
     var skip = el("button", { class: "btn ghost skip", type: "button" }, "Skip to the score");
     wrap.appendChild(skip);
+    wrap.appendChild(model.node);
 
     var after = el("div", { class: "after" });
     after.hidden = true;
@@ -945,6 +949,14 @@
       if (circleWrap) setTimeout(function () { circleWrap.classList.add("circled"); }, 1050);
     }
     return wrap;
+  }
+
+  // "2026-09-30" -> "Wednesday 30 September"
+  function britishDate(iso) {
+    var p = String(iso).split("-");
+    try {
+      return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
+    } catch (e) { return iso; }
   }
 
   function fmtFull(v) { return v >= 1000 ? util.withCommas(Math.round(v)) : util.humanize(v); }
@@ -1014,13 +1026,16 @@
     var checkW = el("span", { class: "w" }, checkText);
     var check = el("div", { class: "rv-check" }, el("span", { class: "tick" }, "✓"), checkW);
     var vig = el("div", { class: "rv-vig", "aria-hidden": "true" });
+    // Why you scored what you scored, told on the model's napkin once it has been checked.
+    var culpritText = res.rows && res.rows.length ? buildHighlight(scoring.compareRows(res.rows, q.framework)) : null;
+    var culprit = culpritText ? el("p", { class: "rv-culprit" }, culpritText) : null;
 
     var nap = el("div", { class: "nap b" },
       el("div", { class: "sheet" }),
       el("div", { class: "ncontent" },
         el("span", { class: "tag" }, "the model's napkin"),
         el("div", { class: "rv-lines" }, lineEls),
-        totRow, check));
+        totRow, check, culprit));
     if (!rows.length) nap.hidden = true;
     var node = el("div", { class: "rv" }, lead, el("div", { class: "rv-rulerbox" }, ruler), nap, vig);
 
@@ -1034,7 +1049,7 @@
       you.classList.add("in"); dot.classList.add("in"); dot.classList.remove("tense");
       if (total != null) { dot.style.left = pct(total) + "%"; dotLabel.textContent = "model"; num.textContent = fmtFull(total); }
       lineEls.forEach(function (l) { l.classList.add("go", "ring"); });
-      totRow.classList.add("in"); check.classList.add("in");
+      totRow.classList.add("in"); check.classList.add("in"); if (culprit) culprit.classList.add("in");
       realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in");
       vig.classList.remove("on");
     }
@@ -1083,7 +1098,7 @@
         requestAnimationFrame(function () { checkW.style.transition = "clip-path 1.3s steps(24,end)"; checkW.style.clipPath = "inset(-5px 0 -5px 0)"; });
       });
       t += 1900;
-      at(t, function () { realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in"); lead.textContent = "And you said…"; tick(); });
+      at(t, function () { realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in"); if (culprit) culprit.classList.add("in"); lead.textContent = "And you said…"; tick(); });
       t += 1300;
       at(t, function () { lead.textContent = "Here's how you did."; onDone(); });
     }
@@ -1249,7 +1264,6 @@
     var verdict = opts.interview ? VERDICTS[band.key] : null;
     var roast = verdict ? verdict.feedback() : scoring.quip(band, sc.ratio, sc.dir);
 
-    var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
 
     // One napkin holds the whole result: score, verdict, what you said against
     // the real figure, and the quip. No separate cards for each.
@@ -1272,12 +1286,10 @@
       opts.interview ? interviewPromoLine() : null,
       facts,
       el("div", { class: "hero-quip", role: "status" }, opts.interview ? "“" + roast + "”" : roast),
-      (!opts.practice && !opts.interview) ? el("div", { class: "pile-note hand " + pileTone(sc.points) }, pileCaption(sc.points)) : null,
-      source,
+      isDaily ? buildChallengeBlock(q, res, sc) : null,
       vs ? versusRow(vs, sc.points) : null,
       isDaily ? buildCrowdLine(res) : null,
-      highlight ? el("div", { class: "hero-highlight" }, highlight) : null,
-      isDaily ? buildChallengeBlock(q, res, sc) : null,
+      source,
       el("div", { class: "confetti", "aria-hidden": "true" })
     ));
 
@@ -1306,7 +1318,9 @@
   // you most, so the hero can call out *why* you scored what you scored —
   // not just the final ratio.
   function buildHighlight(cmp) {
-    var lc = function (s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; };
+    // Lower-case the first letter of a label mid-sentence, but leave acronyms ("UK adults") alone.
+    var lc = function (s) { return !s || /^[A-Z]{2}/.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1); };
+    var up = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
     var tight = cmp.pairs.filter(function (p) { return p.verdict === "tight"; });
     var misses = cmp.pairs
       .filter(function (p) { return p.verdict === "low" || p.verdict === "high"; })
@@ -1314,11 +1328,11 @@
     var mvp = tight[0], culprit = misses[0];
     if (!mvp && !culprit) return null;
     if (mvp && culprit) {
-      return "🎯 nailed " + lc(mvp.model.label) + " — " + lc(culprit.model.label) +
+      return "You nailed " + lc(mvp.model.label) + ". " + up(culprit.model.label) +
         " was the culprit, " + util.roundFactor(culprit.factor) + "× too " + culprit.verdict + ".";
     }
-    if (mvp) return "🎯 every number you used was spot on — especially " + lc(mvp.model.label) + ".";
-    return lc(culprit.model.label) + " was the culprit — " + util.roundFactor(culprit.factor) + "× too " + culprit.verdict + ".";
+    if (mvp) return "Every number you used was spot on, especially " + lc(mvp.model.label) + ".";
+    return up(culprit.model.label) + " was the culprit, " + util.roundFactor(culprit.factor) + "× too " + culprit.verdict + ".";
   }
 
   function verdictText(p) {
@@ -1391,8 +1405,8 @@
       var others = d.total - 1;
       var p = api.percentile(d.counts, d.total, res.band);
       line.textContent = p == null
-        ? "You're first in today — check back later to see how you stack up."
-        : "Better than " + p + "% of the " + util.withCommas(others) + (others === 1 ? " other player" : " other players") + " today.";
+        ? "First on today's napkin. The crowd will catch up."
+        : "Better than " + p + "% of " + util.withCommas(others) + (others === 1 ? " other player" : " others") + " today.";
     }).catch(function () { line.hidden = true; });
     return line;
   }
@@ -1404,24 +1418,31 @@
 
     var card = el("div", { class: "hero-share" });
 
+    // Sharing is the primary move. The name field only appears once you
+    // reach for "Challenge a friend", so it is not a form under the stamp.
+    var picBtn = el("button", { class: "btn", type: "button" }, "Share your napkin");
+    picBtn.addEventListener("click", function () { shareNapkinImage(q, res, sc, picBtn); });
+
     var nameInput = el("input", {
       type: "text", class: "vs-name", maxlength: "20", autocomplete: "nickname",
       placeholder: "Your name (optional)", "aria-label": "Your name, so they know who to beat"
     });
     nameInput.value = storage.playerName();
     nameInput.addEventListener("input", function () { storage.setPlayerName(cleanName(nameInput.value)); });
-    card.appendChild(nameInput);
+    nameInput.hidden = true;
 
-    var picBtn = el("button", { class: "btn ghost", type: "button" }, "Share your napkin");
-    picBtn.addEventListener("click", function () { shareNapkinImage(q, res, sc, picBtn); });
-    card.appendChild(picBtn);
-
-    var btn = el("button", { class: "btn" }, "Challenge a friend");
+    var btn = el("button", { class: "btn ghost", type: "button" }, "Challenge a friend");
     btn.addEventListener("click", function () {
+      if (nameInput.hidden) {
+        nameInput.hidden = false; nameInput.focus();
+        btn.textContent = "Send the challenge";
+        return;
+      }
       var link = challengeLink(res.napkinNumber, sc.points, nameInput.value);
       shareResult(lines.concat("Beat me: " + link).join("\n"), btn);
     });
-    card.appendChild(btn);
+    card.appendChild(el("div", { class: "hero-share-row" }, picBtn, btn));
+    card.appendChild(nameInput);
     return card;
   }
 
@@ -1735,6 +1756,20 @@
   // Your own band distribution, reusing the same chart the daily reveal
   // uses for "today's players" — here it's your whole history instead,
   // computed locally with no network call.
+  // A pencil doodle per tier, in place of the emoji: a bullseye, a tick, a
+  // star, a wave, a shrug and a scrunched ball.
+  var TIER_MARKS = {
+    bangon: "M12 3a9 9 0 1 0 0.01 0 M12 8a4 4 0 1 0 0.01 0 M12 12h0.01",
+    soclose: "M4 13 L10 19 L21 5",
+    goodshout: "M12 3 L14.6 9.2 L21 9.8 L16.2 14 L17.7 20.5 L12 17 L6.3 20.5 L7.8 14 L3 9.8 L9.4 9.2 Z",
+    ballpark: "M3 9 Q7 4 12 9 T21 9 M3 16 Q7 11 12 16 T21 16",
+    notclose: "M4 17 L9 8 L13 16 L17 7 L20 13",
+    binit: "M6 6 L14 4 L20 9 L19 17 L12 20 L5 16 Z M9 9 L14 11 M11 15 L16 14"
+  };
+  function tierMark(key) {
+    return elNS("svg", { class: "tier-mark", viewBox: "0 0 24 24", "aria-hidden": "true" }, elNS("path", { d: TIER_MARKS[key] || "" }));
+  }
+
   function buildPersonalDistribution(bandCounts) {
     var total = 0;
     scoring.BANDS.forEach(function (b) { total += bandCounts[b.key] || 0; });
@@ -1743,12 +1778,13 @@
       box.appendChild(el("div", { class: "muted" }, "No games yet — go do today's."));
       return box;
     }
-    box.appendChild(el("div", { class: "muted" }, "Your results — " + total + (total === 1 ? " game" : " games")));
+    box.appendChild(el("div", { class: "muted" }, "How your napkins went: " + total + (total === 1 ? " game" : " games")));
     scoring.BANDS.forEach(function (b) {
       var count = bandCounts[b.key] || 0;
+      if (!count) return;                       // an empty tier is just an empty bar
       var pct = Math.round((count / total) * 100);
       box.appendChild(el("div", { class: "distrow " + b.key },
-        el("span", { class: "dist-emoji" }, b.emoji),
+        tierMark(b.key),
         el("span", { class: "dist-label" }, b.label),
         el("div", { class: "distbar-track" }, el("div", { class: "distbar-fill", style: "--p:" + (pct / 100) })),
         el("span", { class: "dist-pct" }, pct + "%")
@@ -1762,6 +1798,7 @@
     var wrap = el("section", { class: "screen stats" });
     wrap.appendChild(el("h2", { class: "hand" }, "Your run"));
 
+    // The wall comes first: the streak as tally gates, then the pile of napkins.
     var grid = el("div", { class: "statgrid" });
     var streakCard = el("div", { class: "stat streakstat" },
       s.streak ? tallyMarks(s.streak) : null,
@@ -1775,9 +1812,8 @@
       " · longest streak " + s.longestStreak +
       (s.bestPoints != null ? " · best " + s.bestPoints + "/100" : "")));
 
-    wrap.appendChild(buildPersonalDistribution(s.bandCounts));
-
     wrap.appendChild(pileBox(s.series));
+    wrap.appendChild(buildPersonalDistribution(s.bandCounts));
 
     var backup = el("div", { class: "backup" });
     backup.appendChild(el("h3", { class: "hand" }, "Backup"));

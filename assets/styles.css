@@ -240,7 +240,7 @@ body {
 /* Shared label column so the Tools and Lifelines rows line up. */
 .helper-label {
   min-width: 4.6rem;
-  font-size: 0.7rem;
+  font-size: .85rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -411,8 +411,8 @@ body {
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 .ribbon-eq { font-family: var(--hand); color: var(--pen); margin-left: 0.2rem; }
-.ribbon-label { font-size: 0.78rem; font-style: italic; margin-right: 0.1rem; }
-.ribbon-hint { margin: 0.3rem 0 0; font-size: 0.8rem; }
+.ribbon-label { font-size: .85rem; font-style: italic; margin-right: 0.1rem; }
+.ribbon-hint { margin: 0.3rem 0 0; font-size: .85rem; }
 
 /* Quiet tier: no underline until you're actually reaching for it. */
 .linkbtn {
@@ -473,7 +473,7 @@ body {
 .total-edit:focus { outline: 0; }
 .total-revert {
   font: inherit;
-  font-size: 0.8rem;
+  font-size: .85rem;
   border: 0;
   background: none;
   color: var(--pen);
@@ -485,7 +485,7 @@ body {
 .chips-h { width: 100%; font-style: italic; }
 .achip {
   font: inherit;
-  font-size: 0.82rem;
+  font-size: .85rem;
   border: 1px dashed var(--rule);
   background: var(--card);
   border-radius: 999px;
@@ -607,7 +607,7 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  font-size: 0.7rem;
+  font-size: .85rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--faint);
@@ -666,7 +666,7 @@ body {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='41' fill='none' stroke='%238a5a2b' stroke-opacity='0.16' stroke-width='5' stroke-dasharray='190 14 40 12'/%3E%3Ccircle cx='51' cy='49' r='37.5' fill='none' stroke='%238a5a2b' stroke-opacity='0.09' stroke-width='2'/%3E%3C/svg%3E") no-repeat center / contain;
   pointer-events: none;
 }
-.hero-kicker { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); }
+.hero-kicker { font-size: .85rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); }
 .hero-points-row { display: flex; justify-content: center; align-items: baseline; gap: 0.15rem; color: var(--band); }
 .hero-points { font-size: 5.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .hero-outof { font-size: 1.5rem; color: var(--faint); }
@@ -712,7 +712,7 @@ body {
   padding: 0.4rem 0;
   min-width: 0;
   text-align: center;
-  font-size: 0.66rem;
+  font-size: .85rem;
   line-height: 1.2;
   color: var(--faint);
   opacity: 0.45;
@@ -776,7 +776,7 @@ body {
 }
 .actualnum-wrap.circled .answer-circle path { animation: circledraw 0.7s ease forwards; }
 @keyframes circledraw { to { stroke-dashoffset: 0; } }
-.source { margin: 0.4rem 0 0; font-style: italic; font-size: 0.82rem; }
+.source { margin: 0.4rem 0 0; font-style: italic; font-size: .85rem; }
 
 /* The number line: a pencil rule with a tick per power of ten. */
 .gbar { margin: 0.4rem 0.6rem 0; }
@@ -800,7 +800,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--hand);
-  font-size: 0.72rem;
+  font-size: .85rem;
   color: var(--faint);
   white-space: nowrap;
 }
@@ -826,7 +826,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--hand);
-  font-size: 0.75rem;
+  font-size: .85rem;
   white-space: nowrap;
 }
 .gbar-mark.actual .gbar-tag { color: var(--green); }
@@ -854,13 +854,13 @@ body {
   align-items: baseline;
   font-size: 0.92rem;
 }
-.cmp-h { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); }
+.cmp-h { font-size: .85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); }
 .cmp-var { grid-column: 1; }
 .cmp-you { display: flex; flex-direction: column; }
 .cmp-model { font-family: var(--hand); }
 .tag {
   display: inline-block;
-  font-size: 0.72rem;
+  font-size: .85rem;
   padding: 0.05rem 0.35rem;
   border-radius: 4px;
   margin-top: 0.1rem;
@@ -884,7 +884,7 @@ body {
   border-top: 2px dotted var(--emboss);
 }
 .hero-share-bar { font-size: 1.15rem; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
-.hero-share-note { margin: 0.6rem 0 0; font-size: 0.8rem; }
+.hero-share-note { margin: 0.6rem 0 0; font-size: .85rem; }
 
 .after { scroll-margin-top: 0.75rem; }
 
@@ -937,7 +937,7 @@ body {
 }
 .hero.scored .vs-row { opacity: 1; }
 .vs-side { display: flex; flex-direction: column; align-items: center; }
-.vs-who { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-who { font-size: .85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vs-pts { font-size: 2rem; line-height: 1.1; color: var(--ink); }
 .vs-row.won .vs-side:first-child .vs-pts { color: var(--green); }
 .vs-row.lost .vs-side:nth-child(3) .vs-pts { color: var(--red); }
@@ -950,7 +950,7 @@ body {
 .rulebox { margin: 1.2rem 0; padding: 1.15rem 1.25rem; }
 .rulebox-title {
   margin: 0 0 0.6rem;
-  font-size: 0.7rem;
+  font-size: .85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -976,7 +976,7 @@ body {
   color: var(--faint);
 }
 .rung-title { font-weight: 600; }
-.rung-who { font-size: 0.78rem; text-align: right; }
+.rung-who { font-size: .85rem; text-align: right; }
 .rung.done { color: var(--pen); }
 .rung.best { color: var(--ink); background: rgba(194, 70, 58, 0.07); outline: 1.5px solid var(--red); outline-offset: -2px; border-radius: 4px; }
 .rung.goal .rung-title { font-family: var(--hand); font-size: 1.1rem; font-weight: 400; color: var(--ink); }
@@ -986,7 +986,7 @@ body {
 }
 
 /* A round: the interviewer's sticky note and the five-round progress pips. */
-.iv-who { display: block; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.iv-who { display: block; font-size: .85rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .iv-pips { display: flex; justify-content: center; gap: 6px; margin: 0 0 1rem; }
 .iv-pips span { width: 34px; height: 8px; border-radius: 4px; background: rgba(58, 59, 64, 0.15); }
 .iv-pips span.on { background: var(--green); }
@@ -1027,7 +1027,7 @@ body {
 .letter-stamp.hired { color: var(--green); }
 .letter-mark { color: var(--red); font-size: 1.05rem; }
 .terms { display: grid; grid-template-columns: 7rem 1fr; gap: 0.2rem 0.6rem; margin: 0.2rem 0; }
-.terms dt { padding-top: 0.15rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.terms dt { padding-top: 0.15rem; font-size: .85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
 .terms dd { margin: 0; }
 .letter-sig { align-self: flex-start; font-size: 1.5rem; color: var(--pen); transform: rotate(-3deg); filter: url(#graphite); }
 
@@ -1047,7 +1047,7 @@ body {
 .qcard:hover { outline-color: var(--pen); transform: translateY(-1px) rotate(-0.3deg); }
 .qnum { grid-row: span 2; font-family: var(--hand); font-size: 1.2rem; color: var(--pen); }
 .qtext { font-weight: 600; }
-.qmeta { font-size: 0.8rem; }
+.qmeta { font-size: .85rem; }
 
 .paywall { text-align: center; padding: 1.5rem 1.2rem; }
 .paywall-lock { font-size: 1.8rem; line-height: 1; }
@@ -1063,7 +1063,7 @@ body {
 }
 .stat { padding: 1.1rem; text-align: center; }
 .stat-val { font-size: 1.7rem; color: var(--pen); }
-.stat-label { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; }
+.stat-label { text-transform: uppercase; letter-spacing: 0.05em; font-size: .85rem; }
 .playedline { margin: -0.4rem 0 1rem; text-align: center; }
 
 
@@ -1074,7 +1074,7 @@ body {
   .question { font-size: 1.35rem; }
   .statgrid { grid-template-columns: 1fr 1fr; }
   .hero-points { font-size: 4.4rem; }
-  .tier-name { font-size: 0.56rem; }
+  .tier-name { font-size: .85rem; }
   .actualnum { font-size: 1.9rem; }
 
   /* Four tabs led by "Challenge" don't fit a phone at full size. */
@@ -1115,7 +1115,7 @@ body {
 .tile-pts { position: relative; font-size: 1.35rem; color: var(--pen); line-height: 1; }
 .tile.scrunched .tile-pts { color: var(--red); font-size: 1.05rem; }
 .tile.pinned .tile-pts { color: var(--pen); }
-.tile-n { position: absolute; left: 0; right: 0; bottom: -0.95rem; text-align: center; font-size: 0.68rem; color: var(--faint); }
+.tile-n { position: absolute; left: 0; right: 0; bottom: -0.95rem; text-align: center; font-size: .85rem; color: var(--faint); }
 .tile-pin {
   position: absolute; top: 0; left: 50%; width: 13px; height: 13px; margin-left: -6px;
   border-radius: 50%;
@@ -1165,10 +1165,6 @@ body::before {
 }
 #app, .foot { position: relative; z-index: 1; }
 
-@media (prefers-reduced-motion: reduce) {
-  .tile, .pile-note { transition: none; }
-  .tab.bump { animation: none; }
-}
 
 /* ---------- critique pass ---------- */
 .youwrote { outline: 1.5px dotted var(--emboss); outline-offset: -5px; }
@@ -1197,7 +1193,7 @@ body::before {
 @keyframes tallydraw { to { stroke-dashoffset: 0; } }
 .sendoff-text { margin: 0.5rem 0 0; font-size: 1.15rem; color: var(--faint); }
 
-.tile-n { font-size: 0.8rem; }
+.tile-n { font-size: .85rem; }
 
 /* Keyboard focus: a graphite ring with air around it, on every control. */
 :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 3px; }
@@ -1329,7 +1325,7 @@ body {
 .rv-ruler { position: relative; height: 138px; }
 .rv-axis { position: absolute; left: 0; right: 0; top: 52px; height: 3px; background: var(--pen); opacity: .8; border-radius: 2px; }
 .rv-tick { position: absolute; top: 46px; width: 2px; height: 15px; background: var(--pen); opacity: .55; }
-.rv-tl { position: absolute; top: 66px; font-size: .68rem; color: var(--faint); transform: translateX(-50%); white-space: nowrap; }
+.rv-tl { position: absolute; top: 66px; font-size: .85rem; color: var(--faint); transform: translateX(-50%); white-space: nowrap; }
 .rv-you { position: absolute; top: -40px; transform: translateX(-50%); font-family: var(--hand); color: var(--red); font-size: 2.4rem; line-height: 1; text-align: center; opacity: 0; transition: top .7s cubic-bezier(.3, 1.5, .4, 1), opacity .3s; }
 .rv-you small { display: block; font-size: .9rem; color: var(--pen); }
 .rv-you.in { opacity: 1; top: 12px; }
@@ -1406,7 +1402,7 @@ body {
 .hero-facts { margin-top: 1.2rem; font-size: 1.4rem; line-height: 1.45; color: var(--ink); }
 .hero-facts b { font-weight: 400; border-bottom: 3px solid rgba(194, 70, 58, .55); }
 .hero-quip { margin-top: .5rem; font-style: normal; font-family: var(--hand); font-size: 1.25rem; color: var(--faint); }
-.hero-source { margin: .8rem auto 0; max-width: 34ch; font-size: .78rem; color: var(--faint); }
+.hero-source { margin: .8rem auto 0; max-width: 34ch; font-size: .85rem; color: var(--faint); }
 .hero-share { border-top: 0; padding-top: .4rem; }
 
 /* the comparison is an optional extra, not a card */
@@ -1436,8 +1432,73 @@ body {
 }
 .napkin .panel::after { inset: 9px; border: 1.5px solid rgba(146, 115, 70, .35); border-radius: 2px; }
 .napkin .pencil { width: 10rem; right: .4rem; bottom: -2.6rem; }
-.napkin .panel > .tag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: #6b6355; }
+.napkin .panel > .tag { font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; color: #6b6355; }
 .napkin .total { padding-top: 1rem; }
 .napkin .total::before { height: 2px; background: rgba(58, 59, 64, .35); }
 .napkin .pill { background: #fff; border-color: rgba(58, 59, 64, .25); }
 .napkin .lockbtn { margin-top: 3.1rem; }
+
+/* ======================================================================
+   Critique pass 2: a calmer result, Stats back on the table, a real logo.
+   ====================================================================== */
+
+/* ---- the result napkin: share is the main move ---- */
+.hero-share-row { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin-top: 1.2rem; }
+.hero-share .vs-name { display: block; width: min(100%, 16rem); margin: .8rem auto 0; text-align: center; }
+.hero-crowd { margin-top: .9rem; }
+.hero-source { margin-top: 1rem; }
+.rv-culprit { font-family: var(--hand); font-size: 1.15rem; line-height: 1.4; color: var(--faint); margin: .7rem 0 0; opacity: 0; transition: opacity .4s; }
+.rv-culprit.in { opacity: 1; }
+
+/* ---- skip lives at the top of the reveal, under the sticky bar ---- */
+.reveal .skip {
+  position: sticky; top: 4.6rem; right: auto; bottom: auto; z-index: 25;
+  display: block; width: fit-content; margin: 0 0 .7rem auto;
+  background: #fffdf8; font-family: var(--hand); font-size: 1.15rem;
+}
+
+/* ---- Stats and the list pages back in the napkin world ---- */
+.distbox, .stat, .rulebox, .paywall {
+  position: relative; isolation: isolate; background: none; outline: 0; box-shadow: none;
+}
+.distbox::before, .stat::before, .rulebox::before, .paywall::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-color: var(--tissue); background-image: var(--sheet-bg); background-size: var(--sheet-size);
+  filter: url(#rough) var(--sheet-shadow); will-change: transform; transform: translateZ(0);
+}
+.distbox::after, .stat::after, .rulebox::after, .paywall::after {
+  content: ""; position: absolute; inset: 9px; z-index: -1; pointer-events: none;
+  border: 2px dotted rgba(146, 115, 70, .4); border-radius: 3px;
+}
+.distbox { transform: rotate(.5deg); padding: 1.6rem 1.5rem 1.4rem; }
+.stat { padding: 1.4rem 1.1rem; }
+.statgrid .stat:first-child { transform: rotate(-.6deg); }
+.statgrid .stat:last-child { transform: rotate(.6deg); }
+/* the list pages: embossed paper without the expensive filter (there are dozens) */
+.qcard { background-image: var(--sheet-bg); background-size: var(--sheet-size); background-color: var(--tissue); }
+.qcard:nth-child(odd) { transform: rotate(-.35deg); }
+.qcard:nth-child(even) { transform: rotate(.3deg); }
+
+/* ---- tiers as pencil hatching, not a traffic light ---- */
+.tier-mark { width: 1.6rem; height: 1.6rem; flex: none; fill: none; stroke: var(--pen); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.distrow.bangon .tier-mark, .distrow.binit .tier-mark { stroke: var(--red); }
+.distbox .distbar-track { background: none; border: 1.5px dotted rgba(58, 59, 64, .45); border-radius: 4px; height: .7rem; }
+.distbox .distrow .distbar-fill { border-radius: 2px; background: repeating-linear-gradient(135deg, var(--pen) 0 2px, transparent 2px 6px); }
+.distbox .distrow.bangon .distbar-fill { background: repeating-linear-gradient(135deg, var(--red) 0 2px, transparent 2px 6px); }
+.dist-label { width: 7.5rem; font-family: var(--hand); font-size: 1.1rem; color: var(--ink); }
+.dist-pct { font-family: var(--hand); font-size: 1.1rem; color: var(--ink); }
+
+/* ---- a proper logo: a folded napkin with a scribble on it ---- */
+.brand::before {
+  width: 1.35em; height: 1.35em; margin-right: .4rem; vertical-align: -.22em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4 H17 L21 8 V20 H3 Z' fill='%23fffdf8' stroke='%2392734a' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M17 4 V8 H21' fill='%23ebe3d0' stroke='%2392734a' stroke-width='1.2' stroke-linejoin='round'/%3E%3Cpath d='M6 11 H14 M6 14 H11' stroke='%233a3b40' stroke-width='1.4' stroke-linecap='round'/%3E%3Cellipse cx='15' cy='14.5' rx='3.4' ry='2.6' fill='none' stroke='%23c2463a' stroke-width='1.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  border-radius: 0; outline: 0; box-shadow: none; transform: rotate(-7deg);
+  filter: drop-shadow(0 2px 2px rgba(80, 58, 24, .35));
+}
+
+.rv-ml { overflow-wrap: anywhere; }
+.reveal-head .muted { color: var(--ink); font-size: .95rem; }
+.lockhint { margin: .6rem 0 0; text-align: center; font-family: var(--hand); font-size: 1.05rem; color: var(--faint); }
+
+/* A working line is a full-width block, so a long line that wraps is revealed whole. */
+.rv-ml .w { display: block; }
