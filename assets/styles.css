@@ -1374,3 +1374,45 @@ body {
 .sharecard img { width: 100%; height: auto; border-radius: 6px; display: block; box-shadow: 0 8px 18px -8px rgba(40, 25, 8, .6); }
 .sharerow { display: flex; gap: .6rem; justify-content: center; margin-top: .8rem; }
 .hero-share .btn.ghost { margin-right: .4rem; }
+
+/* ---------- one result napkin (replaces the score, real-figure and compare cards) ---------- */
+.after { gap: 1.4rem; }
+.hero {
+  isolation: isolate; overflow: visible; background: none; outline: 0; box-shadow: none;
+  padding: 2rem 1.4rem 1.6rem;
+}
+.hero::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-color: var(--tissue); background-image: var(--sheet-bg); background-size: var(--sheet-size);
+  filter: url(#rough) var(--sheet-shadow);
+}
+/* the coffee ring becomes the pressed dotted border */
+.hero::after {
+  inset: 11px; width: auto; height: auto; right: 11px; top: 11px; z-index: -1;
+  background: none; border: 2.5px dotted rgba(146, 115, 70, .5); border-radius: 3px;
+}
+.hero.in { transform: rotate(-1deg); }
+.hero-points-row { position: relative; width: fit-content; margin: 0 auto; color: var(--pen); }
+.hero-points { font-size: clamp(5rem, 22vw, 6.6rem); color: var(--pen); }
+.hero-points-row::after {
+  content: ""; position: absolute; left: -4%; right: -4%; bottom: .05em; height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12' preserveAspectRatio='none' viewBox='0 0 200 12'%3E%3Cpath d='M2 4 Q60 0 120 4 T198 3 M8 10 Q70 6 130 10 T192 9' fill='none' stroke='%23c2463a' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat; background-size: 100% 100%;
+}
+.band-stamp {
+  margin: 1.1rem 0 0; padding: .1rem 1.2rem; border: 0; border-radius: 10px;
+  background: var(--red); color: #fff8e8; font-size: clamp(1.8rem, 8vw, 2.7rem);
+  box-shadow: 0 6px 0 #7d2219, 0 14px 18px rgba(40, 25, 8, .35);
+}
+.hero-facts { margin-top: 1.2rem; font-size: 1.4rem; line-height: 1.45; color: var(--ink); }
+.hero-facts b { font-weight: 400; border-bottom: 3px solid rgba(194, 70, 58, .55); }
+.hero-quip { margin-top: .5rem; font-style: normal; font-family: var(--hand); font-size: 1.25rem; color: var(--faint); }
+.hero-source { margin: .8rem auto 0; max-width: 34ch; font-size: .78rem; color: var(--faint); }
+.hero-share { border-top: 0; padding-top: .4rem; }
+
+/* the comparison is an optional extra, not a card */
+.after .compare { background: none; outline: 0; box-shadow: none; padding: 0; text-align: center; }
+.after .compare > summary { display: inline-block; font-size: 1rem; color: var(--faint); text-decoration: underline dotted; text-underline-offset: 4px; }
+.after .compare[open] { text-align: left; background: rgba(251, 248, 241, .92); padding: 1rem 1.2rem; border-radius: 6px; }
+
+/* the ruler label no longer crowds the tick numbers */
+.rv-dot small { top: 44px; }

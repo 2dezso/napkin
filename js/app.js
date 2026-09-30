@@ -989,6 +989,7 @@
     realMark.style.left = rx + "%";
     var gap = el("div", { class: "rv-gap" });
     gap.style.left = Math.min(gx, rx) + "%"; gap.style.width = Math.abs(gx - rx) + "%";
+    if (Math.abs(gx - rx) < 6) gap.style.display = "none";   // a bracket that small is just a smudge
     var gapLabel = el("div", { class: "rv-gaplabel" }, util.humanize(guess) + " vs " + util.humanize(real) + " · " + scoreLine(sc));
     gapLabel.style.left = (gx + rx) / 2 + "%";
     [you, dot, realMark, gap, gapLabel].forEach(function (n) { ruler.appendChild(n); });
@@ -1243,36 +1244,29 @@
 
     var highlight = buildHighlight(scoring.compareRows(res.rows, q.framework));
 
-    // Every tier, worst to best, with yours circled in red pencil once the score lands.
-    var ladder = el("div", { class: "tier-ladder" });
-    scoring.BANDS.slice().reverse().forEach(function (b) {
-      var here = b.key === band.key;
-      var shown = opts.interview ? VERDICTS[b.key] : b;
-      ladder.appendChild(el("div", { class: "tier " + b.key + (here ? " here" : "") },
-        el("span", { class: "tier-emoji" }, shown.emoji),
-        el("span", { class: "tier-name" }, shown.short),
-        here ? elNS("svg", { class: "tier-circle", viewBox: "0 0 100 90", preserveAspectRatio: "none" },
-          elNS("path", { d: "M10,48 C8,22 30,6 52,6 C78,6 94,24 92,46 C90,70 70,84 48,84 C24,84 8,68 10,50 C11,44 14,42 18,44" })
-        ) : null
-      ));
-    });
+    // One napkin holds the whole result: score, verdict, what you said against
+    // the real figure, and the quip. No separate cards for each.
+    var ansLabel = q.answer_type === "measured" ? "The real figure is " : "The accepted estimate is ";
+    var facts = el("div", { class: "hero-facts hand" },
+      "You said ", el("b", {}, util.humanize(res.guess)), ". " + ansLabel,
+      el("b", {}, util.humanize(q.actual_answer)), ". " + ratioLine + ".");
+    var source = el("p", { class: "hero-source" }, q.source + (q.as_of ? " (" + q.as_of + ")" : ""));
 
     var isDaily = !opts.practice && !opts.interview;
     var vs = isDaily ? todaysChallenge() : null;
     if (vs && vs.n !== res.napkinNumber) vs = null;
 
     container.appendChild(el("div", { class: "hero " + band.key },
-      el("div", { class: "hero-kicker" }, opts.interview ? "Panel verdict" : "Your score"),
       el("div", { class: "hero-points-row hand", role: "img", "aria-label": sc.points + " out of 100" },
         el("span", { class: "hero-points", "data-points": sc.points }, "0"),
         el("span", { class: "hero-outof" }, "/100")
       ),
       el("div", { class: "band-stamp" + (verdict && verdict.outcome === "up" ? " good" : "") }, verdict ? verdict.name : band.short),
       opts.interview ? interviewPromoLine() : null,
-      el("div", { class: "hero-ratio" }, ratioLine),
+      facts,
       el("div", { class: "hero-quip", role: "status" }, opts.interview ? "“" + roast + "”" : roast),
       (!opts.practice && !opts.interview) ? el("div", { class: "pile-note hand " + pileTone(sc.points) }, pileCaption(sc.points)) : null,
-      ladder,
+      source,
       vs ? versusRow(vs, sc.points) : null,
       isDaily ? buildCrowdLine(res) : null,
       highlight ? el("div", { class: "hero-highlight" }, highlight) : null,
@@ -1283,16 +1277,6 @@
     // The interview's next step comes straight after the verdict: the next
     // round, another go, or the letter that ends the run.
     if (opts.interview) container.appendChild(buildInterviewOutcome(q, res, sc));
-
-    var ansType = q.answer_type === "measured" ? "The real figure" : "The accepted estimate";
-    var actualnumEl = el("div", { class: "hand actualnum", "aria-hidden": "true" }, "0");
-    container.appendChild(el("div", { class: "answerbox" },
-      el("div", { class: "muted" }, ansType + (q.as_of ? " · as of " + q.as_of : "")),
-      el("span", { class: "sr-only" }, util.humanize(q.actual_answer)),
-      circleWrap(actualnumEl),
-      guessBar(res.guess, q.actual_answer),
-      el("p", { class: "source muted" }, q.source)
-    ));
 
     if (opts.interview) {
       container.appendChild(buildComparison(q, res));
@@ -1309,48 +1293,6 @@
         el("p", { class: "hand sendoff-text" },
           "Day " + st.streak + " on the wall. Napkin #" + (res.napkinNumber + 1) + " is tomorrow.")));
     }
-  }
-
-  // A hand-drawn log-scale number line: a tick at every power of ten, your
-  // guess crossed in red, the real answer ringed. On a log scale the gap
-  // between the two marks IS the miss, whichever direction it went.
-  function guessBar(guess, actual) {
-    var lo = Math.max(1, Math.min(guess, actual));
-    var hi = Math.max(1, guess, actual);
-    var minE = Math.floor(Math.log10(lo)), maxE = Math.ceil(Math.log10(hi));
-    if (maxE - minE < 2) { minE -= 1; maxE += 1; }
-    var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
-    function pct(v) {
-      v = Math.max(min, Math.min(max, v));
-      return (Math.log(v / min) / Math.log(max / min)) * 100;
-    }
-    var gp = pct(guess), ap = pct(actual);
-
-    var line = el("div", { class: "gline" });
-    var every = Math.ceil((maxE - minE + 1) / 7);
-    for (var e = minE; e <= maxE; e++) {
-      var labelled = (e - minE) % every === 0;
-      var tick = el("div", { class: "gtick" + (labelled ? "" : " minor") },
-        labelled ? el("span", { class: "gtick-label" }, util.humanize(Math.pow(10, e))) : null);
-      tick.style.left = pct(Math.pow(10, e)) + "%";
-      line.appendChild(tick);
-    }
-
-    var span = el("div", { class: "gbar-span" });
-    span.style.left = Math.min(gp, ap) + "%";
-    span.style.width = Math.abs(gp - ap) + "%";
-    line.appendChild(span);
-
-    var mAct = el("div", { class: "gbar-mark actual" }, el("span", { class: "gbar-tag" }, "actual"));
-    mAct.style.left = ap + "%";
-    // Too close to share a row: lift "you" above "actual".
-    var mYou = el("div", { class: "gbar-mark you" + (Math.abs(gp - ap) < 14 ? " stack" : "") },
-      el("span", { class: "gbar-x" }, "✗"), el("span", { class: "gbar-tag" }, "you"));
-    mYou.style.left = gp + "%";
-    line.appendChild(mAct);
-    line.appendChild(mYou);
-
-    return el("div", { class: "gbar" }, line);
   }
 
   // Pick out the single number you nailed and the single number that hurt
@@ -1454,7 +1396,6 @@
     var lines = resultShareLines(q, res, sc);
 
     var card = el("div", { class: "hero-share" });
-    card.appendChild(el("div", { class: "hand hero-share-bar", "aria-hidden": "true" }, scoreBar(sc)));
 
     var nameInput = el("input", {
       type: "text", class: "vs-name", maxlength: "20", autocomplete: "nickname",
@@ -1474,8 +1415,6 @@
       shareResult(lines.concat("Beat me: " + link).join("\n"), btn);
     });
     card.appendChild(btn);
-    card.appendChild(el("p", { class: "muted hero-share-note" },
-      "They'll see your " + sc.points + " before they start, and who won when they finish."));
     return card;
   }
 
