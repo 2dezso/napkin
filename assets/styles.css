@@ -1416,3 +1416,28 @@ body {
 
 /* the ruler label no longer crowds the tick numbers */
 .rv-dot small { top: 44px; }
+
+/* Lag fix: a number's circle only animates the first time it appears, and the
+   big filtered paper sheets live on their own compositor layers, so typing
+   into the pad no longer repaints the displacement filter. */
+.pad-highlight mark.hl.hl-old { animation: none; }
+.napkin .panel::before, .nap .sheet, .hero::before { will-change: transform; transform: translateZ(0); }
+
+/* ---------- the pad: a clean sheet ----------
+   Plain tissue with a fine emboss, a straight pressed border and a lighter
+   shadow; the paper is calm so the writing is the thing you look at. */
+.napkin .panel { transform: none; padding: 1.9rem 1.6rem 1.3rem; }
+.napkin .panel::before {
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(130, 100, 60, .09) 0 1.2px, transparent 1.7px),
+    radial-gradient(circle at 75% 75%, rgba(130, 100, 60, .09) 0 1.2px, transparent 1.7px);
+  background-size: 18px 18px;
+  filter: drop-shadow(0 1px 1px rgba(50, 30, 10, .25)) drop-shadow(0 10px 10px rgba(50, 30, 10, .18));
+}
+.napkin .panel::after { inset: 9px; border: 1.5px solid rgba(146, 115, 70, .35); border-radius: 2px; }
+.napkin .pencil { width: 10rem; right: .4rem; bottom: -2.6rem; }
+.napkin .panel > .tag { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: #6b6355; }
+.napkin .total { padding-top: 1rem; }
+.napkin .total::before { height: 2px; background: rgba(58, 59, 64, .35); }
+.napkin .pill { background: #fff; border-color: rgba(58, 59, 64, .25); }
+.napkin .lockbtn { margin-top: 3.1rem; }

@@ -563,19 +563,26 @@
     // Each line becomes its own box; a soft-wrapped line still wraps inside
     // its box exactly as it does in the textarea, which is what keeps the
     // two layers aligned.
+    var seenMarks = {};         // "sig#n" -> true once its circle has been drawn
     function renderPadHighlight() {
       var text = pad.value;
       var fs = scan();
 
-      var html = "", pos = 0;
+      var html = "", pos = 0, occ = {};
+      if (!text.trim()) seenMarks = {};
       fs.forEach(function (f) {
         if (f.start < pos) return;
         var end = f.end;
         while (end > f.start && /\s/.test(text.charAt(end - 1))) end--;
         var finished = end < text.length && /[ \n\t]/.test(text.charAt(end));
         if (!finished) return;
+        // Only a number's first appearance gets the circle-draw pop; every
+        // re-render after that leaves it alone instead of re-animating it.
+        occ[f.sig] = (occ[f.sig] || 0) + 1;
+        var markKey = f.sig + "#" + occ[f.sig], seen = !!seenMarks[markKey];
+        seenMarks[markKey] = true;
         html += escapeHtml(text.slice(pos, f.start));
-        html += '<mark class="hl' + (muted[f.sig] ? " hl-muted" : "") +
+        html += '<mark class="hl' + (seen ? " hl-old" : "") + (muted[f.sig] ? " hl-muted" : "") +
           '" data-sig="' + escapeHtml(f.sig) + '">' +
           escapeHtml(text.slice(f.start, end)) + "</mark>";
         pos = end;
