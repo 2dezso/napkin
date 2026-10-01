@@ -1591,3 +1591,7 @@ body:has(.screen.napkin) #app { padding: 0.9rem 1.1rem 1rem; }
 .napkin .needhand { margin-top: 0.4rem; }
 .napkin .eyerow { margin-top: 0; }
 .napkin .eyelink { padding: 0.2rem 0; }
+
+/* The pad takes whatever height the screen has left, so it is as roomy as it
+   can be without pushing the page to scroll. */
+.pad { height: clamp(7.4rem, calc(100dvh - 34.2rem), 20rem); }
