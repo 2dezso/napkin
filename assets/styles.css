@@ -1595,3 +1595,8 @@ body:has(.screen.napkin) #app { padding: 0.9rem 1.1rem 1rem; }
 /* The pad takes whatever height the screen has left, so it is as roomy as it
    can be without pushing the page to scroll. */
 .pad { height: clamp(7.4rem, calc(100dvh - 34.2rem), 20rem); }
+.pad { height: auto; min-height: clamp(7.4rem, calc(100dvh - 34.2rem), 20rem); overflow: hidden; resize: none; }
+/* the demo's note sits where the label is, so it adds no height */
+.napkin .demo-note { position: absolute; top: 0.7rem; left: 1.4rem; right: 1.4rem; margin: 0; font-size: 0.92rem; }
+.napkin .demo-run > .tag { visibility: hidden; }
+.demo-run .ribbon { min-height: 2.4rem; }

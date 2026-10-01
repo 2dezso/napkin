@@ -12,7 +12,7 @@
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
   var PAD_HINT =
-    "One thought per line — numbers get picked up as you write.\n\n" +
+    "Jot one thought per line:\n" +
     "3 million people\n" +
     "1 in 4 of them\n" +
     "÷ 7 days";
@@ -315,7 +315,7 @@
     // right on what you typed, that the pad is actually reading it.
     var padHighlight = el("div", { class: "pad-highlight hand", "aria-hidden": "true" });
     var pad = el("textarea", {
-      class: "pad hand", rows: "6", spellcheck: "false", autocapitalize: "off", autocomplete: "off",
+      class: "pad hand", rows: "1", spellcheck: "false", autocapitalize: "off", autocomplete: "off",
       placeholder: PAD_HINT
     });
     pad.setAttribute("autocorrect", "off");
@@ -327,7 +327,7 @@
     padWrap.appendChild(stamp);
     napkinPanel.appendChild(padWrap);
 
-    var demoNote = el("p", { class: "muted demo-note" }, "Numbers get picked up automatically — watch.");
+    var demoNote = el("p", { class: "muted demo-note" }, "Numbers get picked up as you type.");
     demoNote.hidden = true;
     napkinPanel.insertBefore(demoNote, padWrap);
 
@@ -544,7 +544,17 @@
       return totalOverride != null ? totalOverride : computeTotal();
     }
 
+    // The pad grows as you write, so it never needs its own scrollbar.
+    function fitPad() {
+      // Empty, the pad is as tall as its example, so that is never cut off.
+      var empty = !pad.value;
+      if (empty) pad.value = PAD_HINT;
+      pad.style.height = "auto"; pad.style.height = pad.scrollHeight + "px";
+      if (empty) pad.value = "";
+    }
+
     function onPad() {
+      fitPad();
       var live = {};
       scan().forEach(function (f) { live[f.sig] = true; });
       Object.keys(muted).forEach(function (s) { if (!live[s]) delete muted[s]; });
@@ -874,6 +884,9 @@
     }
 
     onPad();
+    // Sizing needs the pad on the page, so fit it again once it is there and when the window changes.
+    requestAnimationFrame(fitPad);
+    window.addEventListener("resize", function () { if (pad.isConnected) fitPad(); });
     refreshTotal();
     startPadDemo();
     return wrap;
