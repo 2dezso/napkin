@@ -282,7 +282,7 @@
       if (banner) wrap.appendChild(banner);
     }
 
-    wrap.appendChild(el("h1", { class: "question hand" }, q.question));
+    wrap.appendChild(el("h1", { class: "question" }, q.question));
     if (!opts.practice && !opts.interview) wrap.appendChild(buildHook());
 
     if (q.clarifications && q.clarifications.length) {
@@ -879,7 +879,10 @@
     return wrap;
   }
 
-  /* ---------- the reveal screen ---------- */
+  /* ---------- the reveal screen ----------
+     One napkin at a time. "You said X" lands first, the model builds its
+     working on the front of the napkin, then the napkin turns over and your
+     score is on the back. Nothing is given away until the turn. */
   function revealScreen(q, res, opts) {
     opts = opts || {};
     var chipLabel = opts.interview ? "Round " + res.round + " of 5" : opts.practice ? "Practice" : ("Napkin #" + res.napkinNumber);
@@ -890,63 +893,59 @@
       el("span", { class: "muted" }, q.question)
     ));
 
-    // Nothing is given away up front: your ✗ lands on a ruler, the model
-    // writes its working line by line while a dot crawls towards you, then
-    // the total scrambles, lands and gets fact-checked. Only then the score.
     // Regulars get a brisker pace; a first-timer gets the full build-up.
     var played = 0;
     try { played = storage.stats().played; } catch (e) { /* no history */ }
     var calm = prefersReducedMotion();
     var model = buildModelReveal(q, res, played > 3);
-    // Skip sits at the top, where the eye is while the suspense builds.
-    var skip = el("button", { class: "btn ghost skip", type: "button" }, "Skip to the score");
-    wrap.appendChild(skip);
     wrap.appendChild(model.node);
 
+    // The score napkin is the back of the model's napkin; everything else
+    // (the comparison, what happens next) waits underneath.
     var after = el("div", { class: "after" });
     after.hidden = true;
     buildAfter(after, q, res, opts);
+    var hero = after.querySelector(".hero");
+    model.setBack(hero);
     wrap.appendChild(after);
 
-    if (opts.instant || calm) {
-      // Revisiting a finished Napkin (or no motion wanted): everything already written out.
-      model.finish();
-      reveal();
-    } else {
-      model.play(reveal);
-      skip.addEventListener("click", function () { model.stop(); model.finish(); reveal(); });
+    var pts = hero.querySelector(".hero-points");
+    var target = +pts.getAttribute("data-points");
+    var landed = false;
+
+    function land(instant) {
+      if (landed) return;
+      landed = true;
+      after.hidden = false;
+      if (instant) {
+        pts.textContent = util.withCommas(target);
+        hero.classList.add("in", "scored", "instant");
+        return;
+      }
+      hero.classList.add("in");
+      countUp(pts, target);
+      setTimeout(function () {
+        hero.classList.add("scored");
+        var beatFriend = !!hero.querySelector(".vs-row.won");
+        if (target >= 86 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 95 || beatFriend ? 34 : 18);
+        if (!opts.practice && !opts.interview) {
+          var note = hero.querySelector(".pile-note");
+          if (note) note.classList.add("in");
+          setTimeout(function () { dropIntoPile(hero.querySelector(".hero-points"), target); }, 900);
+        }
+      }, 1000);
     }
 
-    function reveal() {
-      if (skip.parentNode) skip.remove();
-      after.hidden = false;
-      if (!opts.instant) {
-        try { after.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" }); } catch (e) { after.scrollIntoView(); }
-      }
-      var hero = after.querySelector(".hero");
-      if (hero) {
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () { hero.classList.add("in"); });
-        });
-        var pts = hero.querySelector(".hero-points");
-        var target = +pts.getAttribute("data-points");
-        setTimeout(function () { countUp(pts, target); }, 250);
-        setTimeout(function () {
-          hero.classList.add("scored");
-          var beatFriend = !!hero.querySelector(".vs-row.won");
-          if (target >= 86 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 95 || beatFriend ? 34 : 18);
-          if (!opts.practice && !opts.interview) {
-            var note = hero.querySelector(".pile-note");
-            if (note) note.classList.add("in");
-            setTimeout(function () { dropIntoPile(hero.querySelector(".hero-points"), target); }, 900);
-          }
-        }, 1150);
-      }
-      var num = after.querySelector(".actualnum");
-      countUp(num, q.actual_answer);
-      if (num) setTimeout(function () { num.classList.add("pop"); }, 850);
-      var circleWrap = after.querySelector(".actualnum-wrap");
-      if (circleWrap) setTimeout(function () { circleWrap.classList.add("circled"); }, 1050);
+    if (opts.instant || calm) {
+      // Revisiting a finished Napkin (or no motion wanted): already turned over.
+      model.showEnd();
+      land(true);
+    } else {
+      model.play(function () { land(false); });
+      model.skipBtn.addEventListener("click", function () {
+        model.stop(); model.finish();
+        model.turnOver(function () { land(false); }, true);
+      });
     }
     return wrap;
   }
@@ -961,8 +960,57 @@
 
   function fmtFull(v) { return v >= 1000 ? util.withCommas(Math.round(v)) : util.humanize(v); }
 
-  // The model's turn. Returns { node, play(onDone), stop(), finish() }.
-  // play() runs the tense version; finish() jumps straight to the end state.
+  // A log-scale ruler holding every number in play: the model's running
+  // totals, your guess (a red ✗) and the real figure (a red circle). The
+  // front of the napkin crawls a dot along it; the back shows it finished.
+  function makeRuler(steps, guess, real, withDot) {
+    var vals = steps.concat(guess, real).filter(function (v) { return v > 0; });
+    var minE = Math.floor(Math.log10(Math.min.apply(null, vals))), maxE = Math.ceil(Math.log10(Math.max.apply(null, vals)));
+    if (maxE - minE < 2) { minE -= 1; maxE += 1; }
+    var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
+    function pct(v) {
+      v = Math.max(min, Math.min(max, v));
+      return (Math.log(v / min) / Math.log(max / min)) * 100;
+    }
+    var node = el("div", { class: "rv-ruler", "aria-hidden": "true" }, el("div", { class: "rv-axis" }));
+    var every = Math.ceil((maxE - minE + 1) / 5);
+    for (var e = minE; e <= maxE; e++) {
+      var tk = el("div", { class: "rv-tick" });
+      tk.style.left = pct(Math.pow(10, e)) + "%";
+      node.appendChild(tk);
+      if ((e - minE) % every === 0) {
+        var tl = el("div", { class: "rv-tl" }, util.humanize(Math.pow(10, e)));
+        tl.style.left = pct(Math.pow(10, e)) + "%";
+        node.appendChild(tl);
+      }
+    }
+    var gx = pct(guess), rx = pct(real);
+    var band = el("div", { class: "rv-band" });
+    band.style.left = Math.min(gx, rx) + "%"; band.style.width = Math.abs(gx - rx) + "%";
+    if (Math.abs(gx - rx) < 2) band.style.display = "none";
+    var you = el("div", { class: "rv-you" }, el("small", {}, "you"), "✗");
+    you.style.left = gx + "%";
+    if (Math.abs(gx - rx) * 3 < 46) you.classList.add("stack");   // keep the two labels apart
+    var realMark = el("div", { class: "rv-real" }, el("small", {}, "real"));
+    realMark.style.left = rx + "%";
+    [band, you, realMark].forEach(function (n) { node.appendChild(n); });
+    var dot = null;
+    if (withDot) {
+      dot = el("div", { class: "rv-dot" });
+      dot.style.left = pct(steps[0] || guess) + "%";
+      node.appendChild(dot);
+    }
+    return {
+      node: node, you: you, real: realMark, band: band, dot: dot,
+      moveDot: function (v) { if (dot) dot.style.left = pct(v) + "%"; },
+      showEnd: function () { you.classList.add("in"); realMark.classList.add("in"); band.classList.add("in"); }
+    };
+  }
+
+  // The model's turn, on the front of a napkin that turns over to your score.
+  // Returns { node, skipBtn, setBack(hero), play(onScore), turnOver(onScore, quick),
+  // showEnd(), finish(), stop() }. play() runs the tense build; finish() jumps
+  // the front straight to its end state.
   function buildModelReveal(q, res, fast) {
     var F = fast ? 0.62 : 1, rows = q.framework || [], steps = [], acc = null;
     rows.forEach(function (r) {
@@ -974,135 +1022,159 @@
       steps.push(acc);
     });
     var total = acc, guess = res.guess, real = q.actual_answer;
-    var sc = scoring.score(guess, q);
 
-    // An adaptive log ruler that holds every number in play.
-    var vals = steps.concat(guess, real).filter(function (v) { return v > 0; });
-    var minE = Math.floor(Math.log10(Math.min.apply(null, vals))), maxE = Math.ceil(Math.log10(Math.max.apply(null, vals)));
-    if (maxE - minE < 2) { minE -= 1; maxE += 1; }
-    var min = Math.pow(10, minE - 0.2), max = Math.pow(10, maxE + 0.2);
-    function pct(v) {
-      v = Math.max(min, Math.min(max, v));
-      return (Math.log(v / min) / Math.log(max / min)) * 100;
-    }
+    var ruler = makeRuler(steps, guess, real, true);
+    var lead = el("p", { class: "rv-lead", "aria-live": "polite" }, "You said " + util.humanize(guess) + ".");
+    var skipBtn = el("button", { class: "btn ghost skip", type: "button" }, "Skip ▸");
+    var topline = el("div", { class: "rv-top" }, lead, skipBtn);
 
-    var ruler = el("div", { class: "rv-ruler", "aria-hidden": "true" }, el("div", { class: "rv-axis" }));
-    var every = Math.ceil((maxE - minE + 1) / 6);
-    for (var e = minE; e <= maxE; e++) {
-      var tk = el("div", { class: "rv-tick" });
-      tk.style.left = pct(Math.pow(10, e)) + "%";
-      ruler.appendChild(tk);
-      if ((e - minE) % every === 0) {
-        var tl = el("div", { class: "rv-tl" }, util.humanize(Math.pow(10, e)));
-        tl.style.left = pct(Math.pow(10, e)) + "%";
-        ruler.appendChild(tl);
-      }
-    }
-    var gx = pct(guess), rx = pct(real);
-    var you = el("div", { class: "rv-you" }, el("small", {}, "you"), "✗");
-    you.style.left = gx + "%";
-    var dotLabel = el("small", {});
-    var dot = el("div", { class: "rv-dot" }, dotLabel);
-    dot.style.left = pct(steps[0] || guess) + "%";
-    var realMark = el("div", { class: "rv-real" }, el("small", {}, "real"), el("i", {}));
-    realMark.style.left = rx + "%";
-    var gap = el("div", { class: "rv-gap" });
-    gap.style.left = Math.min(gx, rx) + "%"; gap.style.width = Math.abs(gx - rx) + "%";
-    if (Math.abs(gx - rx) < 6) gap.style.display = "none";   // a bracket that small is just a smudge
-    var gapLabel = el("div", { class: "rv-gaplabel" }, util.humanize(guess) + " vs " + util.humanize(real) + " · " + scoreLine(sc));
-    gapLabel.style.left = (gx + rx) / 2 + "%";
-    [you, dot, realMark, gap, gapLabel].forEach(function (n) { ruler.appendChild(n); });
-
-    var lead = el("p", { class: "rv-lead" }, "Locked in. Now let's see how the model gets there…");
-    var lineEls = rows.map(function (r, i) {
+    var rowEls = rows.map(function (r, i) {
       var v = r.model_value, asPct = r.unit === "fraction" && v > 0 && v < 1;
       var show = asPct ? (Math.round(v * 1000) / 10) + "%" : util.humanize(v);
-      var sym = i === 0 ? null : el("span", { class: "rv-op" }, (r.op === "/" ? "÷" : r.op === "+" ? "+" : "×") + " ");
-      return el("div", { class: "rv-ml" }, el("span", { class: "w" }, sym, el("span", { class: "n" }, show), " " + r.label));
+      var sym = i === 0 ? null : el("i", {}, r.op === "/" ? "÷" : r.op === "+" ? "+" : "×");
+      return el("div", { class: "rv-row" },
+        el("span", { class: "n" }, sym, el("span", { class: "circ" }, show)),
+        el("span", { class: "t" }, r.label));
     });
+    var sum = el("hr", { class: "rv-sum" });
     var num = el("span", { class: "num" }, "?");
     var totRow = el("div", { class: "rv-tot" }, el("span", { class: "eqs" }, "="), num);
     var checkText = q.sanity_check || q.narrative[q.narrative.length - 1] || "";
     var checkW = el("span", { class: "w" }, checkText);
-    var check = el("div", { class: "rv-check" }, el("span", { class: "tick" }, "✓"), checkW);
+    var check = el("div", { class: "rv-check" }, el("b", {}, "✓"), checkW);
     var vig = el("div", { class: "rv-vig", "aria-hidden": "true" });
-    // Why you scored what you scored, told on the model's napkin once it has been checked.
+    // Why you scored what you scored, written on the napkin once it has been checked.
     var culpritText = res.rows && res.rows.length ? buildHighlight(scoring.compareRows(res.rows, q.framework)) : null;
     var culprit = culpritText ? el("p", { class: "rv-culprit" }, culpritText) : null;
+    var source = el("p", { class: "rv-source" }, q.source + (q.as_of ? " (" + q.as_of + ")" : ""));
 
-    var nap = el("div", { class: "nap b" },
-      el("div", { class: "sheet" }),
-      el("div", { class: "ncontent" },
-        el("span", { class: "tag" }, "the model's napkin"),
-        el("div", { class: "rv-lines" }, lineEls),
-        totRow, check, culprit));
-    if (!rows.length) nap.hidden = true;
-    var node = el("div", { class: "rv" }, lead, el("div", { class: "rv-rulerbox" }, ruler), nap, vig);
+    var over = el("div", { class: "rv-over", "aria-hidden": "true" }, "Turning it over…");
+    var backBtn = el("button", { class: "linkbtn rv-backbtn", type: "button" }, "↻ Back to your score");
+    var front = el("section", { class: "face front" },
+      el("span", { class: "rv-lab" }, "The model's napkin"),
+      ruler.node,
+      el("div", { class: "rv-rows" }, rowEls),
+      sum, totRow, check, culprit, source,
+      el("div", { class: "rv-foot" }, over, backBtn));
+    var flipIn = el("div", { class: "flip-in" }, front);
+    var flip = el("div", { class: "flip" }, flipIn);
+    var node = el("div", { class: "rv" }, topline, flip, vig);
 
-    var timers = [];
+    var timers = [], backRuler = null, flipBtn = null;
     function at(ms, fn) { timers.push(setTimeout(fn, ms * F)); }
     function stop() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); timers = []; }
     function tick() { try { sfxTick(); } catch (x) { /* audio is optional */ } }
+    function say(t) { lead.textContent = t; lead.classList.remove("pop"); void lead.offsetWidth; lead.classList.add("pop"); }
+    function setNum(v) { num.textContent = fmtFull(v); num.classList.remove("settle"); void num.offsetWidth; num.classList.add("settle"); }
+
+    // The score napkin becomes the back face, with its own finished ruler and a
+    // way to turn back to the working.
+    function setBack(hero) {
+      hero.classList.add("face", "back");
+      backRuler = makeRuler(steps, guess, real, false);
+      backRuler.showEnd();
+      var anchor = hero.querySelector(".band-stamp");
+      anchor.insertAdjacentElement("afterend", backRuler.node);
+      flipBtn = el("button", { class: "linkbtn rv-flipbtn", type: "button" }, "↺ Turn it over to see the working");
+      var crowd = hero.querySelector(".hero-crowd");
+      if (crowd) crowd.insertAdjacentElement("afterend", flipBtn); else hero.appendChild(flipBtn);
+      flipIn.appendChild(hero);
+      // Each face carries its own button, since a face is hidden while the other shows.
+      flipBtn.addEventListener("click", function () { flip.classList.remove("turned"); backBtn.classList.add("in"); });
+      backBtn.addEventListener("click", function () { flip.classList.add("turned"); });
+    }
+
+    function collapseTop() { topline.classList.add("gone"); skipBtn.style.visibility = "hidden"; }
+
+    function scrollToTop() {
+      var s = node.parentNode;
+      if (!s || !s.scrollIntoView) return;
+      try { s.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" }); } catch (e) { s.scrollIntoView(); }
+    }
 
     function finish() {
-      lead.textContent = "Here's how the model got there.";
-      you.classList.add("in"); dot.classList.add("in"); dot.classList.remove("tense");
-      if (total != null) { dot.style.left = pct(total) + "%"; dotLabel.textContent = "model"; num.textContent = fmtFull(total); }
-      lineEls.forEach(function (l) { l.classList.add("go", "ring"); });
-      totRow.classList.add("in"); check.classList.add("in"); if (culprit) culprit.classList.add("in");
-      realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in");
+      stop();
+      say("Here's how you did.");
+      ruler.you.classList.add("in");
+      if (ruler.dot) { ruler.dot.classList.add("in"); ruler.dot.classList.remove("tense"); if (total != null) ruler.moveDot(total); }
+      rowEls.forEach(function (r) { r.classList.add("go", "ring"); });
+      sum.classList.add("in"); totRow.classList.add("in");
+      if (total != null) num.textContent = fmtFull(total);
+      check.classList.add("in"); checkW.style.transition = "none"; checkW.style.clipPath = "none";
+      ruler.real.classList.add("in"); ruler.band.classList.add("in");
+      if (culprit) culprit.classList.add("in");
       vig.classList.remove("on");
     }
 
-    function play(onDone) {
-      if (!rows.length) { finish(); setTimeout(onDone, 400); return; }
-      var t = 350;
-      at(t, function () { you.classList.add("in"); try { sfxLock(); } catch (x) { /* audio */ } });
-      t += 900;
-      at(t, function () { lead.textContent = "The model has a go…"; });
+    // The payoff: the napkin turns over and your score is on the back.
+    function turnOver(onScore, quick) {
+      var k = quick ? 0.5 : 1;
+      over.classList.add("in");
+      timers.push(setTimeout(function () {
+        flip.classList.add("turned"); collapseTop(); over.classList.remove("in");
+        timers.push(setTimeout(scrollToTop, 480));
+      }, 700 * F * k));
+      timers.push(setTimeout(function () { onScore(); }, 1250 * F * k));
+      timers.push(setTimeout(function () { backBtn.classList.add("in"); }, 2900 * F * k));
+    }
+
+    // Straight to the finished, turned-over state (a revisit, or reduced motion).
+    function showEnd() {
+      node.classList.add("snap");
+      finish(); flip.classList.add("turned"); collapseTop(); backBtn.classList.add("in");
+      requestAnimationFrame(function () { requestAnimationFrame(function () { node.classList.remove("snap"); }); });
+    }
+
+    function play(onScore) {
+      if (!rows.length) { finish(); turnOver(onScore, true); return; }
+      var t = 300;
+      at(t, function () { ruler.you.classList.add("in"); try { sfxLock(); } catch (x) { /* audio */ } });
+      t = 1000;
+      at(t, function () { say("Now watch the model…"); });
       rows.forEach(function (r, i) {
-        var last = i === rows.length - 1, el2 = lineEls[i], val = steps[i];
+        var last = i === rows.length - 1, row = rowEls[i], val = steps[i];
         at(t, function () {
-          el2.classList.add("go");
-          var n = 0, iv = setInterval(function () { tick(); if (++n > 5) clearInterval(iv); }, 130);
+          row.classList.add("go");
+          var n = 0, iv = setInterval(function () { tick(); if (++n > 4) clearInterval(iv); }, 120);
           timers.push(iv);
         });
-        at(t + 800, function () { el2.classList.add("ring"); tick(); });
-        if (!last) at(t + 900, function () {
-          dot.classList.add("in"); dot.style.left = pct(val) + "%"; dotLabel.textContent = util.humanize(val);
-          totRow.classList.add("in"); num.textContent = fmtFull(val);
-          num.classList.remove("settle"); void num.offsetWidth; num.classList.add("settle");
+        at(t + 600, function () { row.classList.add("ring"); tick(); });
+        if (!last) at(t + 700, function () {
+          ruler.dot.classList.add("in"); ruler.moveDot(val);
+          totRow.classList.add("in"); setNum(val);
         });
-        t += last ? 1300 : 1250;
+        t += 900;
       });
       // the last multiplication: scramble, heartbeat, land it
       var finalText = fmtFull(total);
-      at(t, function () { vig.classList.add("on"); dot.classList.add("in", "tense"); totRow.classList.add("in"); lead.textContent = "Multiplying it all out…"; dotLabel.textContent = "?"; });
+      at(t, function () { vig.classList.add("on"); sum.classList.add("in"); totRow.classList.add("in"); ruler.dot.classList.add("in", "tense"); say("Multiplying it all out…"); });
       at(t + 100, function () {
         var iv = setInterval(function () {
           var s = ""; for (var k = 0; k < finalText.length; k++) s += /\d/.test(finalText.charAt(k)) ? Math.floor(Math.random() * 10) : finalText.charAt(k);
           num.textContent = s; if (Math.random() < 0.3) tick();
         }, 70);
-        timers.push(iv); timers.push(setTimeout(function () { clearInterval(iv); }, 1550 * F));
+        timers.push(iv); timers.push(setTimeout(function () { clearInterval(iv); }, 1150 * F));
       });
-      t += 1700;
-      at(t, function () {
-        num.textContent = finalText; num.classList.add("settle"); dot.classList.remove("tense");
-        dot.style.left = pct(total) + "%"; dotLabel.textContent = "model"; vig.classList.remove("on");
-        lead.textContent = "That's the model's answer."; try { sfxLock(); } catch (x) { /* audio */ }
-      });
-      t += 1100;
-      at(t, function () { check.classList.add("in"); lead.textContent = "Does that sound right?"; try { sfxDing(); } catch (x) { /* audio */ } });
-      at(t + 200, function () {
-        checkW.style.display = "inline-block"; checkW.style.clipPath = "inset(-5px 100% -5px 0)";
-        requestAnimationFrame(function () { checkW.style.transition = "clip-path 1.3s steps(24,end)"; checkW.style.clipPath = "inset(-5px 0 -5px 0)"; });
-      });
-      t += 1900;
-      at(t, function () { realMark.classList.add("in"); gap.classList.add("in"); gapLabel.classList.add("in"); if (culprit) culprit.classList.add("in"); lead.textContent = "And you said…"; tick(); });
       t += 1300;
-      at(t, function () { lead.textContent = "Here's how you did."; onDone(); });
+      at(t, function () {
+        setNum(total); ruler.dot.classList.remove("tense"); ruler.moveDot(total); vig.classList.remove("on");
+        say("That's the model's answer."); try { sfxLock(); } catch (x) { /* audio */ }
+      });
+      t += 700;
+      at(t, function () {
+        check.classList.add("in"); say("Does that sound right?"); try { sfxDing(); } catch (x) { /* audio */ }
+        checkW.style.transition = "none"; checkW.style.clipPath = "inset(-5px 100% -5px 0)"; void checkW.offsetWidth;
+        checkW.style.transition = "clip-path " + (1.0 * F) + "s steps(22,end)"; checkW.style.clipPath = "inset(-5px 0 -5px 0)";
+      });
+      t += 1250;
+      at(t, function () {
+        ruler.real.classList.add("in"); ruler.band.classList.add("in"); if (culprit) culprit.classList.add("in");
+        say("The real figure is " + util.humanize(real) + "."); tick();
+      });
+      t += 900;
+      at(t, function () { say("Here's how you did."); turnOver(onScore, false); });
     }
-    return { node: node, play: play, stop: stop, finish: finish };
+    return { node: node, skipBtn: skipBtn, setBack: setBack, play: play, turnOver: turnOver, showEnd: showEnd, finish: finish, stop: stop };
   }
 
   // Close misses read better as a percentage ("14% away") than a multiplier;
@@ -1270,14 +1342,15 @@
     var ansLabel = q.answer_type === "measured" ? "The real figure is " : "The accepted estimate is ";
     var facts = el("div", { class: "hero-facts hand" },
       "You said ", el("b", {}, util.humanize(res.guess)), ". " + ansLabel,
-      el("b", {}, util.humanize(q.actual_answer)), ". " + ratioLine + ".");
-    var source = el("p", { class: "hero-source" }, q.source + (q.as_of ? " (" + q.as_of + ")" : ""));
-
+      el("b", {}, util.humanize(q.actual_answer)), ". " + ratioLine.charAt(0).toUpperCase() + ratioLine.slice(1) + ".");
     var isDaily = !opts.practice && !opts.interview;
     var vs = isDaily ? todaysChallenge() : null;
     if (vs && vs.n !== res.napkinNumber) vs = null;
 
+    // The hero is the back of the model's napkin (see revealScreen), so it is
+    // kept to what fits on one screen: score, stamp, facts, share, crowd.
     container.appendChild(el("div", { class: "hero " + band.key },
+      el("div", { class: "hero-kicker" }, "Your score"),
       el("div", { class: "hero-points-row hand", role: "img", "aria-label": sc.points + " out of 100" },
         el("span", { class: "hero-points", "data-points": sc.points }, "0"),
         el("span", { class: "hero-outof" }, "/100")
@@ -1289,7 +1362,6 @@
       isDaily ? buildChallengeBlock(q, res, sc) : null,
       vs ? versusRow(vs, sc.points) : null,
       isDaily ? buildCrowdLine(res) : null,
-      source,
       el("div", { class: "confetti", "aria-hidden": "true" })
     ));
 

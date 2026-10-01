@@ -1214,291 +1214,342 @@ body::before {
 }
 
 /* ======================================================================
-   A napkin on a café table.
-   Light oak planks; every writing surface is a folded paper napkin with a
-   pressed emboss, quarter-fold creases and an edge that is never straight.
+   The clean sheet.
+   A calm grey page; every surface is a flat sheet of tissue with a pressed
+   dotted border. Two voices: printed sans (Atkinson Hyperlegible) is what
+   the app says; pencil handwriting (Patrick Hand) is what is written on a
+   napkin: your working, the model's working, the score. Red pencil is the
+   app's marking: ✗, circles, the stamp, the ring on a tab.
    ====================================================================== */
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("fonts/AtkinsonHyperlegible-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  src: url("fonts/AtkinsonHyperlegible-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
 :root {
-  --faint: #524c40;
-  --tissue: #fbf8f1;
-  --crease: rgba(120, 95, 55, 0.2);
-  --sheet-bg:
-    linear-gradient(90deg, transparent calc(50% - 2px), var(--crease) calc(50% - 1px), rgba(255,255,255,.85) 50%, transparent calc(50% + 2px)),
-    linear-gradient(0deg, transparent calc(50% - 2px), var(--crease) calc(50% - 1px), rgba(255,255,255,.85) 50%, transparent calc(50% + 2px)),
-    linear-gradient(135deg, rgba(120,95,55,.07), transparent 40%),
-    radial-gradient(circle at 25% 25%, rgba(130,100,60,.13) 0 1.3px, transparent 1.9px),
-    radial-gradient(circle at 75% 75%, rgba(130,100,60,.13) 0 1.3px, transparent 1.9px),
-    radial-gradient(circle at 27% 27%, rgba(255,255,255,.95) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 77% 77%, rgba(255,255,255,.95) 0 1px, transparent 1.6px);
-  --sheet-size: 100% 100%, 100% 100%, 100% 100%, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
-  --sheet-shadow: drop-shadow(0 2px 1.5px rgba(50, 30, 10, .35)) drop-shadow(0 22px 16px rgba(50, 30, 10, .3));
+  --table: #eeece6;
+  --card: #fffefb;
+  --paper: #fffefb;
+  --tissue: none;
+  --ink: #24221d;
+  --faint: #58534a;
+  --pen: #34353a;
+  --pen-soft: #ecebe6;
+  --rule: rgba(80, 66, 40, 0.26);
+  --edge: rgba(80, 66, 40, 0.22);
+  --emboss: rgba(146, 115, 74, 0.45);
+  --red: #c2463a;
+  --red-text: #b03a2f;
+  --green: #3d7d45;
+  --sans: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-sm: 6px;
+  --radius-lg: 6px;
+  --napkin-shadow: 0 1px 2px rgba(60, 45, 20, 0.10), 0 16px 30px -18px rgba(60, 45, 20, 0.40);
 }
+html { font-size: 106.25%; }
 body {
-  background-color: #d9bb8d;
-  background-image:
-    radial-gradient(ellipse 85% 50% at 50% 0%, rgba(255, 248, 228, .6), transparent 70%),
-    repeating-linear-gradient(90deg, transparent 0 118px, rgba(110, 70, 25, .2) 118px 120px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .18' numOctaves='3' seed='3'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 .35 0 0 0 0 .2 0 0 0 0 .07 0 0 0 -1.6 1.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.4'/%3E%3C/svg%3E");
+  background-color: #eeece6;
+  background-image: radial-gradient(120% 40% at 50% 0%, rgba(255, 255, 255, 0.75), transparent 70%);
   background-attachment: fixed;
+  line-height: 1.5;
 }
-.topbar { background-color: rgba(251, 248, 241, .9); }
+body::before { display: none; }
 
-/* ---- the pad: the panel itself becomes the napkin ---- */
-.napkin .panel {
-  position: relative;
-  isolation: isolate;
+/* Handwriting stays crisp: no pencil-grain filter on anything you read. */
+.question, .guessnum, .hero-points, .band-stamp, .actualnum, .answer-circle,
+.tier-circle, .tally-formula, .tally-total, .stat-val, .gbar-x,
+.letter-stamp, .letter-sig, .tally-marks path { filter: none; }
+
+.muted { color: var(--faint); font-size: 0.95rem; }
+h2.hand, h3.hand { font-family: var(--sans); font-weight: 700; }
+.lede { font-size: 1.05rem; }
+
+/* ---- every surface is one sheet ---- */
+.panel, .hero, .answerbox, .compare, .distbox, .stat, .paywall, .tally,
+.sparkbox, .qcard, .rulebox, .demo-modal, .letter, .pilebox, .career, .face {
+  background-color: var(--card);
+  background-image: none;
+  border-radius: 6px;
+  outline: 2px dotted var(--emboss);
+  outline-offset: -7px;
+  box-shadow: var(--napkin-shadow);
+  transform: none;
+}
+.distbox, .stat, .rulebox, .paywall { isolation: auto; }
+.distbox::before, .stat::before, .rulebox::before, .paywall::before,
+.distbox::after, .stat::after, .rulebox::after, .paywall::after { content: none; }
+.qcard:nth-child(odd), .qcard:nth-child(even), .statgrid .stat:first-child, .statgrid .stat:last-child { transform: none; }
+.qcard:hover { transform: translateY(-1px); }
+
+/* ---- top bar: the wavy red underline marks where you are ---- */
+.topbar {
+  background: rgba(238, 236, 230, 0.94);
+  background-image: none;
+  border-bottom: 1px solid rgba(80, 66, 40, 0.16);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.brand { font-weight: 400; font-size: 1.75rem; line-height: 1; }
+.tab { border: 0; border-radius: 0; padding: 0.4rem 0.6rem; color: var(--faint); font-size: 0.95rem; }
+.tab:hover { color: var(--ink); }
+.tab.active {
   background: none;
-  outline: 0;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline wavy var(--red) 2px;
+  text-underline-offset: 7px;
+}
+.foot { color: var(--faint); font-size: 0.95rem; }
+.feedback-trigger { font-size: 0.95rem; }
+
+/* ---- type ---- */
+.question {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  margin: 0.3rem 0 0.9rem;
+}
+.chip {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  transform: none;
+  padding: 0.2rem 0.6rem;
+}
+.reveal-head .muted, .daychip .muted { color: var(--ink); font-size: 0.95rem; }
+.linkbtn { font-size: 0.95rem; }
+.fineprint summary, .needhand > summary { font-size: 0.95rem; }
+
+/* ---- buttons ---- */
+.btn {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 6px;
   box-shadow: none;
-  transform: rotate(-1deg);
-  padding: 1.8rem 1.5rem 1.2rem;
 }
-.napkin .panel::before {
-  content: "";
-  position: absolute; inset: 0; z-index: -1;
-  background-color: var(--tissue);
-  background-image: var(--sheet-bg);
-  background-size: var(--sheet-size);
-  filter: url(#rough) var(--sheet-shadow);
+.btn:hover:not(:disabled) { transform: none; box-shadow: none; background: #3d3a31; border-color: #3d3a31; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover:not(:disabled) { background: rgba(36, 34, 29, 0.07); border-color: var(--ink); }
+.tbtn, .feedback-chip, .achip { border-radius: 6px; font-size: 0.92rem; }
+
+/* ---- the pad: your working, in pencil on the sheet ---- */
+.napkin .panel { padding: 2.5rem 1.4rem 1.2rem; position: relative; }
+.napkin .panel > .tag {
+  position: absolute; top: 1rem; left: 1.4rem;
+  font: 700 0.78rem var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint);
 }
-.napkin .panel::after {
-  content: "";
-  position: absolute; inset: 11px; z-index: -1;
-  border: 2.5px dotted rgba(146, 115, 70, .5); border-radius: 3px;
-  pointer-events: none;
-}
-.napkin .panel > .tag, .nap .tag { position: absolute; top: .65rem; left: 1.7rem; font-family: var(--hand); font-size: .92rem; color: var(--faint); }
-.pad, .pad-highlight {
-  font-size: 1.4rem; line-height: 2.15rem; padding: .2rem .2rem .5rem; border: 0; border-radius: 0;
-}
+.napkin .pencil { display: none; }
+.napkin .lockbtn { margin-top: 1rem; }
+.pad, .pad-highlight { font-size: 1.4rem; line-height: 2.15rem; padding: 0.2rem 0.2rem 0.5rem; border: 0; border-radius: 0; }
 .pad { min-height: 11.5rem; caret-color: var(--red); }
-.pad-highlight { background-image: none; }
+.pad-highlight {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(2.15rem - 1px), rgba(146, 115, 74, 0.2) calc(2.15rem - 1px), rgba(146, 115, 74, 0.2) 2.15rem);
+  background-position: 0 0.2rem;
+  background-attachment: local;
+}
 .pad:focus { border-color: transparent; }
 .padwrap:focus-within { outline: 0; }
+.pad::placeholder, .padline-ghost { color: #6f695c; }
 /* Each number you write gets circled in red pencil. */
 .pad-highlight mark.hl {
   background: none; box-shadow: none; color: transparent;
   outline: 2.5px solid var(--red); outline-offset: 1px;
   border-radius: 48% 52% 46% 54% / 62% 58% 42% 40%;
-  animation: hlring .35s cubic-bezier(.22, 1, .36, 1);
+  animation: hlring 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.pad-highlight mark.hl.hl-muted { outline: 2px dashed rgba(194, 70, 58, .35); }
-.pad-highlight mark.hl.hl-linked { background: rgba(194, 70, 58, .12); }
+.pad-highlight mark.hl.hl-muted { outline: 2px dashed rgba(194, 70, 58, 0.35); }
+.pad-highlight mark.hl.hl-linked { background: rgba(194, 70, 58, 0.12); }
+.pad-highlight mark.hl.hl-old { animation: none; }
 @keyframes hlring { from { outline-color: transparent; transform: scale(1.3); } }
-
 .napkin .total { border-top: 0; position: relative; padding-top: 1rem; }
 .napkin .total::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 8px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='8'%3E%3Cpath d='M0 4 Q10 0 20 4 T40 4 T60 4 T80 4 T100 4 T120 4' fill='none' stroke='%233b3c41' stroke-width='1.6' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E") repeat-x;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='8'%3E%3Cpath d='M0 4 Q10 0 20 4 T40 4 T60 4 T80 4 T100 4 T120 4' fill='none' stroke='%2334353a' stroke-width='1.6' stroke-linecap='round' opacity='.5'/%3E%3C/svg%3E") repeat-x;
 }
 .napkin .total-approx { font-size: 2.6rem; text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 3px; text-underline-offset: 7px; }
-
-/* A pencil left on the table. */
-.napkin .pencil {
-  position: absolute; right: -1.1rem; bottom: -3.3rem; width: 13.5rem; height: 1.15rem;
-  transform: rotate(-16deg); pointer-events: none; z-index: 2;
-  filter: drop-shadow(0 6px 3px rgba(50, 30, 10, .4));
-  background: linear-gradient(90deg, #e98a8a 0 7%, #c9ccd2 7% 10%, #f0b92e 10% 88%, #f2d9a8 88% 94%, #3b3c41 94%);
-  clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%);
+.napkin .pill { background: #fff; border-color: rgba(58, 59, 64, 0.28); font-size: 1rem; }
+.pill-op, .ribbon-label, .ribbon-hint { font-size: 0.9rem; }
+.eyerow { margin-top: 0.9rem; }
+.lockhint { margin: 0.6rem 0 0; text-align: center; font-size: 0.95rem; color: var(--faint); }
+.stamp {
+  font-family: var(--hand); color: var(--red-text); background: rgba(255, 254, 251, 0.8);
+  border-width: 3px; border-radius: 8px;
 }
-.napkin .lockbtn { margin-top: 3.6rem; }
-.napkin .eyerow { margin-top: .9rem; }
 
 /* ---- the hook under the question ---- */
-.hook { display: flex; align-items: center; gap: .9rem; margin: -.3rem 0 1.2rem; }
-.doodle { width: 3.4rem; height: 3.4rem; flex: none; }
-.doodle path { fill: none; stroke: #3a2a16; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: doodledraw 1.6s .3s cubic-bezier(.22, 1, .36, 1) forwards; }
+.hook { display: flex; align-items: center; gap: 0.9rem; margin: -0.3rem 0 1.2rem; }
+.doodle { width: 3.2rem; height: 3.2rem; flex: none; }
+.doodle path { fill: none; stroke: var(--pen); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: doodledraw 1.6s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .doodle path.r { stroke: var(--red); animation-delay: 1.2s; }
 @keyframes doodledraw { to { stroke-dashoffset: 0; } }
-.crowd { font-family: var(--hand); font-size: 1.15rem; color: #3a2a16; line-height: 1.25; }
-
-/* ---- a napkin as its own block (the model's) ---- */
-.nap { position: relative; transform: rotate(1.1deg); filter: drop-shadow(0 2px 1.5px rgba(50,30,10,.35)) drop-shadow(0 22px 16px rgba(50,30,10,.3)); }
-.nap .sheet { position: absolute; inset: 0; background-color: var(--tissue); background-image: var(--sheet-bg); background-size: var(--sheet-size); filter: url(#rough); }
-.nap .sheet::after { content: ""; position: absolute; inset: 11px; border: 2.5px dotted rgba(146,115,70,.5); border-radius: 3px; }
-.nap .ncontent { position: relative; padding: 1.8rem 1.6rem 1.3rem; }
-
-/* ---- the reveal: ruler, the model's working, the landing ---- */
-.rv { margin-top: .4rem; }
-.rv-lead { font-family: var(--hand); font-size: 1.2rem; color: #4a3820; text-align: center; margin: 0 0 .5rem; }
-.rv-rulerbox { background: rgba(255, 248, 232, .94); border-radius: 10px; padding: .5rem 1rem .3rem; margin-bottom: 1.4rem; box-shadow: 0 10px 18px -10px rgba(40, 25, 8, .55); }
-.rv-ruler { position: relative; height: 138px; }
-.rv-axis { position: absolute; left: 0; right: 0; top: 52px; height: 3px; background: var(--pen); opacity: .8; border-radius: 2px; }
-.rv-tick { position: absolute; top: 46px; width: 2px; height: 15px; background: var(--pen); opacity: .55; }
-.rv-tl { position: absolute; top: 66px; font-size: .85rem; color: var(--faint); transform: translateX(-50%); white-space: nowrap; }
-.rv-you { position: absolute; top: -40px; transform: translateX(-50%); font-family: var(--hand); color: var(--red); font-size: 2.4rem; line-height: 1; text-align: center; opacity: 0; transition: top .7s cubic-bezier(.3, 1.5, .4, 1), opacity .3s; }
-.rv-you small { display: block; font-size: .9rem; color: var(--pen); }
-.rv-you.in { opacity: 1; top: 12px; }
-.rv-dot { position: absolute; top: 43px; width: 21px; height: 21px; margin-left: -10px; border-radius: 50%; background: var(--pen); opacity: 0; transition: left .85s cubic-bezier(.5, 0, .2, 1), opacity .3s; }
-.rv-dot.in { opacity: 1; }
-.rv-dot.tense { animation: rvtense .5s ease-in-out infinite; }
-@keyframes rvtense { 0%, 100% { box-shadow: 0 0 0 0 rgba(194, 70, 58, .55); transform: scale(1); } 50% { box-shadow: 0 0 0 14px rgba(194, 70, 58, 0); transform: scale(1.25); } }
-.rv-dot small { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); font-family: var(--hand); font-size: .9rem; color: var(--faint); white-space: nowrap; }
-.rv-real { position: absolute; top: 37px; transform: translateX(-50%); opacity: 0; transition: opacity .4s; }
-.rv-real i { display: block; width: 33px; height: 33px; margin: 0 auto; border-radius: 50%; border: 3px solid var(--red); }
-.rv-real small { position: absolute; top: -1.3rem; left: 50%; transform: translateX(-50%); font-family: var(--hand); font-size: .9rem; color: var(--red); }
-.rv-real.in { opacity: 1; }
-.rv-gap { position: absolute; top: 98px; height: 14px; min-width: 6px; border: 2px solid var(--red); border-top: 0; border-radius: 0 0 6px 6px; opacity: 0; transition: opacity .4s; }
-.rv-gaplabel { position: absolute; top: 116px; transform: translateX(-50%); font-family: var(--hand); font-size: 1rem; color: #a23a2e; white-space: nowrap; opacity: 0; transition: opacity .4s; }
-.rv-gap.in, .rv-gaplabel.in { opacity: 1; }
-
-.rv-lines { margin-top: .6rem; }
-.rv-ml { font-family: var(--hand); font-size: 1.4rem; line-height: 1.5; margin: .15rem 0; min-height: 2.1rem; }
-.rv-ml .w { display: inline-block; clip-path: inset(-10px 100% -10px 0); }
-.rv-ml.go .w { transition: clip-path .75s steps(16, end); clip-path: inset(-10px 0 -10px 0); }
-.rv-op { color: var(--red); }
-.rv-ml .n { position: relative; }
-.rv-ml .n::after { content: ""; position: absolute; inset: -3px -6px; border: 2.5px solid var(--red); border-radius: 48% 52% 46% 54% / 62% 58% 42% 40%; opacity: 0; transform: scale(1.3); }
-.rv-ml.ring .n::after { opacity: 1; transform: none; transition: opacity .2s, transform .35s cubic-bezier(.22, 1, .36, 1); }
-.rv-tot { display: flex; align-items: baseline; gap: .6rem; margin-top: .5rem; padding-top: .9rem; position: relative; font-family: var(--hand); opacity: 0; transition: opacity .3s; }
-.rv-tot.in { opacity: 1; }
-.rv-tot::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--pen); border-radius: 2px; opacity: .7; }
-.rv-tot .eqs { font-size: 1.6rem; color: var(--faint); }
-.rv-tot .num { font-size: clamp(2.6rem, 11vw, 4rem); line-height: 1.05; min-width: 3ch; font-variant-numeric: tabular-nums; }
-.rv-tot .num.settle { animation: rvsettle .45s cubic-bezier(.2, 1.5, .35, 1); }
-@keyframes rvsettle { from { transform: scale(1.25); } }
-.rv-check { font-family: var(--hand); font-size: 1.18rem; color: var(--faint); margin-top: .8rem; min-height: 3.4rem; opacity: 0; transition: opacity .3s; }
-.rv-check.in { opacity: 1; }
-.rv-check .tick { color: #3d7d45; font-size: 1.6rem; margin-right: .3rem; display: inline-block; }
-.rv-vig { position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(20, 10, 0, .6)); transition: opacity .6s; }
-.rv-vig.on { opacity: 1; animation: rvbeat .9s ease-in-out infinite; }
-@keyframes rvbeat { 50% { opacity: .55; } }
-.reveal .skip { position: fixed; right: 1rem; bottom: 1rem; z-index: 30; margin: 0; }
-
-/* share picture preview */
-.sharecard { background: #fff8e8; border-radius: 12px; padding: .9rem; max-width: 420px; width: 100%; max-height: 94vh; overflow: auto; text-align: center; }
-.sharecard img { width: 100%; height: auto; border-radius: 6px; display: block; box-shadow: 0 8px 18px -8px rgba(40, 25, 8, .6); }
-.sharerow { display: flex; gap: .6rem; justify-content: center; margin-top: .8rem; }
-.hero-share .btn.ghost { margin-right: .4rem; }
-
-/* ---------- one result napkin (replaces the score, real-figure and compare cards) ---------- */
-.after { gap: 1.4rem; }
-.hero {
-  isolation: isolate; overflow: visible; background: none; outline: 0; box-shadow: none;
-  padding: 2rem 1.4rem 1.6rem;
-}
-.hero::before {
-  content: ""; position: absolute; inset: 0; z-index: -1;
-  background-color: var(--tissue); background-image: var(--sheet-bg); background-size: var(--sheet-size);
-  filter: url(#rough) var(--sheet-shadow);
-}
-/* the coffee ring becomes the pressed dotted border */
-.hero::after {
-  inset: 11px; width: auto; height: auto; right: 11px; top: 11px; z-index: -1;
-  background: none; border: 2.5px dotted rgba(146, 115, 70, .5); border-radius: 3px;
-}
-.hero.in { transform: rotate(-1deg); }
-.hero-points-row { position: relative; width: fit-content; margin: 0 auto; color: var(--pen); }
-.hero-points { font-size: clamp(5rem, 22vw, 6.6rem); color: var(--pen); }
-.hero-points-row::after {
-  content: ""; position: absolute; left: -4%; right: -4%; bottom: .05em; height: 12px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12' preserveAspectRatio='none' viewBox='0 0 200 12'%3E%3Cpath d='M2 4 Q60 0 120 4 T198 3 M8 10 Q70 6 130 10 T192 9' fill='none' stroke='%23c2463a' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat; background-size: 100% 100%;
-}
-.band-stamp {
-  margin: 1.1rem 0 0; padding: .1rem 1.2rem; border: 0; border-radius: 10px;
-  background: var(--red); color: #fff8e8; font-size: clamp(1.8rem, 8vw, 2.7rem);
-  box-shadow: 0 6px 0 #7d2219, 0 14px 18px rgba(40, 25, 8, .35);
-}
-.hero-facts { margin-top: 1.2rem; font-size: 1.4rem; line-height: 1.45; color: var(--ink); }
-.hero-facts b { font-weight: 400; border-bottom: 3px solid rgba(194, 70, 58, .55); }
-.hero-quip { margin-top: .5rem; font-style: normal; font-family: var(--hand); font-size: 1.25rem; color: var(--faint); }
-.hero-source { margin: .8rem auto 0; max-width: 34ch; font-size: .85rem; color: var(--faint); }
-.hero-share { border-top: 0; padding-top: .4rem; }
-
-/* the comparison is an optional extra, not a card */
-.after .compare { background: none; outline: 0; box-shadow: none; padding: 0; text-align: center; }
-.after .compare > summary { display: inline-block; font-size: 1rem; color: var(--faint); text-decoration: underline dotted; text-underline-offset: 4px; }
-.after .compare[open] { text-align: left; background: rgba(251, 248, 241, .92); padding: 1rem 1.2rem; border-radius: 6px; }
-
-/* the ruler label no longer crowds the tick numbers */
-.rv-dot small { top: 44px; }
-
-/* Lag fix: a number's circle only animates the first time it appears, and the
-   big filtered paper sheets live on their own compositor layers, so typing
-   into the pad no longer repaints the displacement filter. */
-.pad-highlight mark.hl.hl-old { animation: none; }
-.napkin .panel::before, .nap .sheet, .hero::before { will-change: transform; transform: translateZ(0); }
-
-/* ---------- the pad: a clean sheet ----------
-   Plain tissue with a fine emboss, a straight pressed border and a lighter
-   shadow; the paper is calm so the writing is the thing you look at. */
-.napkin .panel { transform: none; padding: 1.9rem 1.6rem 1.3rem; }
-.napkin .panel::before {
-  background-image:
-    radial-gradient(circle at 25% 25%, rgba(130, 100, 60, .09) 0 1.2px, transparent 1.7px),
-    radial-gradient(circle at 75% 75%, rgba(130, 100, 60, .09) 0 1.2px, transparent 1.7px);
-  background-size: 18px 18px;
-  filter: drop-shadow(0 1px 1px rgba(50, 30, 10, .25)) drop-shadow(0 10px 10px rgba(50, 30, 10, .18));
-}
-.napkin .panel::after { inset: 9px; border: 1.5px solid rgba(146, 115, 70, .35); border-radius: 2px; }
-.napkin .pencil { width: 10rem; right: .4rem; bottom: -2.6rem; }
-.napkin .panel > .tag { font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; color: #6b6355; }
-.napkin .total { padding-top: 1rem; }
-.napkin .total::before { height: 2px; background: rgba(58, 59, 64, .35); }
-.napkin .pill { background: #fff; border-color: rgba(58, 59, 64, .25); }
-.napkin .lockbtn { margin-top: 3.1rem; }
+.hook .crowd { font-family: var(--sans); font-size: 0.98rem; color: var(--faint); line-height: 1.3; }
 
 /* ======================================================================
-   Critique pass 2: a calmer result, Stats back on the table, a real logo.
+   The reveal: one napkin at a time. The model works on the front; when it
+   has landed, the napkin turns over and your score is on the back.
    ====================================================================== */
+.reveal { scroll-margin-top: 4.2rem; }
+.rv { position: relative; margin-top: 0.3rem; }
+.rv-top {
+  display: flex; align-items: center; gap: 10px; height: 62px; margin-bottom: 0.6rem; overflow: hidden;
+  transition: height 0.45s ease, opacity 0.3s, margin 0.45s;
+}
+.rv-top.gone { height: 0; opacity: 0; margin-bottom: 0; }
+.rv-lead { flex: 1; margin: 0; font: 400 1.6rem/1.15 var(--hand); color: var(--pen); }
+.rv-lead.pop { animation: leadin 0.35s ease; }
+@keyframes leadin { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.rv-top .skip { flex: none; margin: 0; padding: 0.45rem 0.85rem; font-size: 0.92rem; }
 
-/* ---- the result napkin: share is the main move ---- */
-.hero-share-row { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin-top: 1.2rem; }
-.hero-share .vs-name { display: block; width: min(100%, 16rem); margin: .8rem auto 0; text-align: center; }
-.hero-crowd { margin-top: .9rem; }
-.hero-source { margin-top: 1rem; }
-.rv-culprit { font-family: var(--hand); font-size: 1.15rem; line-height: 1.4; color: var(--faint); margin: .7rem 0 0; opacity: 0; transition: opacity .4s; }
+.flip { perspective: 1600px; }
+.flip-in { display: grid; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.3, 0.8, 0.25, 1); }
+.flip.turned .flip-in { transform: rotateY(180deg); }
+.face { position: relative; grid-area: 1 / 1; padding: 1.1rem 1rem; outline: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.face::after { content: ""; position: absolute; inset: 7px; border: 2px dotted var(--emboss); border-radius: 4px; pointer-events: none; }
+.face.back, .hero.face.back { transform: rotateY(180deg); }
+.face .rv-lab { display: block; font: 700 0.78rem var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+
+/* the ruler */
+.rv-ruler { position: relative; height: 84px; margin: 14px 8px 0; }
+.rv-axis { position: absolute; left: -8px; right: -8px; top: 48px; height: 2px; border-radius: 2px; background: var(--pen); opacity: 0.85; }
+.rv-tick { position: absolute; top: 42px; width: 2px; height: 14px; background: var(--pen); opacity: 0.75; transform: translateX(-1px); }
+.rv-tl { position: absolute; top: 60px; transform: translateX(-50%); font: 400 1.1rem/1 var(--hand); color: var(--faint); white-space: nowrap; }
+.rv-band { position: absolute; top: 43px; height: 12px; border-radius: 6px; background: rgba(194, 70, 58, 0.16); opacity: 0; transition: opacity 0.5s; }
+.rv-band.in { opacity: 1; }
+.rv-you { position: absolute; top: 49px; transform: translate(-50%, -50%) scale(2.3); opacity: 0; color: var(--red); font: 400 2.1rem/1 var(--hand); transition: transform 0.38s cubic-bezier(0.2, 1.5, 0.3, 1), opacity 0.2s; }
+.rv-you.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.rv-you small, .rv-real small { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font: 400 1.15rem/1 var(--hand); color: var(--red-text); margin-bottom: 1px; }
+.rv-you.stack small { bottom: calc(100% + 19px); }
+.rv-dot { position: absolute; top: 49px; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; border-radius: 50%; background: var(--pen); box-shadow: 0 0 0 3px var(--card); opacity: 0; transition: left 0.65s cubic-bezier(0.3, 1.2, 0.4, 1), opacity 0.3s; }
+.rv-dot.in { opacity: 1; }
+.rv-dot.tense { animation: wob 0.22s linear infinite; }
+@keyframes wob { 0%, 100% { margin-top: -7.5px; } 50% { margin-top: -11px; } }
+.rv-real { position: absolute; top: 49px; width: 24px; height: 24px; margin: -12px 0 0 -12px; border: 3px solid var(--red); border-radius: 50%; opacity: 0; transform: scale(2); transition: transform 0.4s cubic-bezier(0.2, 1.5, 0.3, 1), opacity 0.25s; }
+.rv-real.in { opacity: 1; transform: scale(1); }
+
+/* the model's working */
+.rv-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.rv-row { display: grid; grid-template-columns: minmax(96px, 34%) 1fr; gap: 10px; align-items: baseline; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; }
+.rv-row.go { opacity: 1; transform: none; }
+.rv-row .n { font: 400 1.7rem/1.2 var(--hand); text-align: right; white-space: nowrap; color: var(--pen); }
+.rv-row .n i { font-style: normal; color: var(--red-text); font-size: 1.35rem; margin-right: 6px; }
+.rv-row .t { font: 400 1.3rem/1.25 var(--hand); color: var(--pen); clip-path: inset(0 100% 0 0); transition: clip-path 0.6s steps(14, end); }
+.rv-row.go .t { clip-path: inset(0 0 0 0); }
+.circ { display: inline-block; padding: 0 0.32em; border: 2px solid transparent; border-radius: 50% / 62%; transform: rotate(-1.5deg); line-height: 1.15; transition: border-color 0.25s; }
+.rv-row.ring .circ { border-color: var(--red); }
+.rv-sum { border: 0; border-top: 2.5px solid var(--pen); margin: 10px 0 2px; opacity: 0; transition: opacity 0.3s; }
+.rv-sum.in { opacity: 1; }
+.rv-tot { display: flex; align-items: baseline; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+.rv-tot.in { opacity: 1; }
+.rv-tot .eqs { font: 400 2.1rem/1 var(--hand); color: var(--faint); }
+.rv-tot .num { font: 400 3.2rem/1.05 var(--hand); color: var(--pen); font-variant-numeric: tabular-nums; }
+.rv-tot .num.settle { animation: settle 0.5s cubic-bezier(0.2, 1.6, 0.3, 1); }
+@keyframes settle { 0% { transform: scale(1); } 45% { transform: scale(1.14); } 100% { transform: scale(1); } }
+.rv-check { display: grid; grid-template-columns: 26px 1fr; gap: 6px; margin-top: 6px; font: 400 1.25rem/1.3 var(--hand); color: var(--pen); opacity: 0; transition: opacity 0.3s; }
+.rv-check.in { opacity: 1; }
+.rv-check b { font-weight: 400; color: var(--green); font-size: 1.55rem; line-height: 1; }
+.rv-check .w { display: inline-block; }
+.rv-culprit { margin: 8px 0 0; font: 400 1.2rem/1.35 var(--hand); color: var(--faint); opacity: 0; transition: opacity 0.4s; }
 .rv-culprit.in { opacity: 1; }
+.rv-source { margin: 10px 0 0; font-size: 0.88rem; color: var(--faint); }
+.rv-foot { position: relative; min-height: 2.4rem; margin-top: 4px; text-align: center; }
+.rv-over { position: absolute; inset: 0; display: grid; place-items: center; font: 400 1.4rem var(--hand); color: var(--red-text); opacity: 0; transition: opacity 0.3s; }
+.rv-over.in { opacity: 1; }
+.rv-backbtn { position: absolute; inset: 0; margin: auto; width: max-content; height: max-content; display: none; }
+.rv-backbtn.in { display: block; }
+.rv-flipbtn, .rv-backbtn { color: var(--ink); font-weight: 700; text-decoration: underline dotted; text-underline-offset: 4px; }
+.rv-flipbtn { display: block; margin: 0.2rem auto 0; }
 
-/* ---- skip lives at the top of the reveal, under the sticky bar ---- */
-.reveal .skip {
-  position: sticky; top: 4.6rem; right: auto; bottom: auto; z-index: 25;
-  display: block; width: fit-content; margin: 0 0 .7rem auto;
-  background: #fffdf8; font-family: var(--hand); font-size: 1.15rem;
-}
+.rv-vig { position: fixed; inset: 0; pointer-events: none; z-index: 20; opacity: 0; background: radial-gradient(ellipse at center, transparent 50%, rgba(30, 20, 5, 0.45)); transition: opacity 0.6s; }
+.rv-vig.on { opacity: 1; animation: rvbeat 0.9s ease-in-out infinite; }
+@keyframes rvbeat { 50% { opacity: 0.55; } }
 
-/* ---- Stats and the list pages back in the napkin world ---- */
-.distbox, .stat, .rulebox, .paywall {
-  position: relative; isolation: isolate; background: none; outline: 0; box-shadow: none;
-}
-.distbox::before, .stat::before, .rulebox::before, .paywall::before {
-  content: ""; position: absolute; inset: 0; z-index: -1;
-  background-color: var(--tissue); background-image: var(--sheet-bg); background-size: var(--sheet-size);
-  filter: url(#rough) var(--sheet-shadow); will-change: transform; transform: translateZ(0);
-}
-.distbox::after, .stat::after, .rulebox::after, .paywall::after {
-  content: ""; position: absolute; inset: 9px; z-index: -1; pointer-events: none;
-  border: 2px dotted rgba(146, 115, 70, .4); border-radius: 3px;
-}
-.distbox { transform: rotate(.5deg); padding: 1.6rem 1.5rem 1.4rem; }
-.stat { padding: 1.4rem 1.1rem; }
-.statgrid .stat:first-child { transform: rotate(-.6deg); }
-.statgrid .stat:last-child { transform: rotate(.6deg); }
-/* the list pages: embossed paper without the expensive filter (there are dozens) */
-.qcard { background-image: var(--sheet-bg); background-size: var(--sheet-size); background-color: var(--tissue); }
-.qcard:nth-child(odd) { transform: rotate(-.35deg); }
-.qcard:nth-child(even) { transform: rotate(.3deg); }
+.snap, .snap * { transition: none !important; animation: none !important; }
 
-/* ---- tiers as pencil hatching, not a traffic light ---- */
+/* ---- the back of the napkin: your score ---- */
+.hero { --band: var(--red); text-align: center; padding: 1.1rem 1rem; overflow: visible; opacity: 1; transition: none; }
+.hero::after { content: ""; position: absolute; inset: 7px; right: 7px; top: 7px; width: auto; height: auto; background: none; border: 2px dotted var(--emboss); border-radius: 4px; pointer-events: none; }
+.hero-kicker { font: 700 0.78rem var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+.hero-points-row { display: flex; justify-content: center; align-items: baseline; gap: 0.15rem; margin: 0 auto; color: var(--pen); }
+.hero-points { font-size: 5.4rem; line-height: 1; color: var(--pen); font-variant-numeric: tabular-nums; text-decoration: underline wavy transparent 3px; text-underline-offset: 10px; transition: text-decoration-color 0.3s; }
+.hero.scored .hero-points { text-decoration-color: var(--red); }
+.hero-points-row::after { content: none; }
+.hero-outof { font-size: 1.75rem; color: var(--faint); margin-left: 2px; }
+.band-stamp {
+  display: inline-block; margin: 0.5rem 0 0.1rem; padding: 0.15rem 1rem 0;
+  font: 400 1.6rem/1.2 var(--hand); letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
+  color: var(--band); background: none; border: 3px solid var(--band); border-radius: 8px;
+  box-shadow: inset 0 0 0 2px var(--card), inset 0 0 0 3.5px var(--band);
+  opacity: 0; transform: rotate(-3.5deg) scale(2.3);
+}
+.hero.scored .band-stamp { animation: slam 0.42s cubic-bezier(0.2, 1.4, 0.3, 1) forwards; }
+@keyframes slam { 55% { opacity: 1; } to { opacity: 1; transform: rotate(-3.5deg) scale(1); } }
+.hero.instant .band-stamp { animation: none; opacity: 1; transform: rotate(-3.5deg); }
+.hero .rv-ruler { margin-top: 10px; }
+.hero-facts { margin-top: 0.4rem; font-size: 1.3rem; line-height: 1.3; color: var(--ink); }
+.hero-facts b { font-weight: 400; text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.hero-quip { margin-top: 0.4rem; font: 400 1.35rem/1.25 var(--hand); font-style: normal; color: var(--pen); }
+.iv-promo { font-size: 0.98rem; margin: 0.1rem 0 0.2rem; }
+.hero-share { border-top: 0; margin-top: 0.8rem; padding-top: 0; }
+.hero-share-row { display: flex; gap: 0.5rem; margin-top: 0; }
+.hero-share-row .btn { flex: 1; padding: 0.7rem 0.4rem; font-size: 0.95rem; }
+.hero-share .vs-name { margin: 0.7rem auto 0; width: min(100%, 16rem); }
+.hero-crowd { margin-top: 0.7rem; font-size: 0.95rem; color: var(--faint); }
+.vs-row { margin-top: 0.7rem; }
+
+.after { margin-top: 1rem; gap: 1rem; }
+.compare summary.hand { font-family: var(--sans); font-weight: 700; font-size: 1rem; }
+.compare { padding: 1rem 1.2rem; }
+.cmp-grid, .notes { font-size: 0.95rem; }
+.cmp-h { font-size: 0.8rem; }
+
+/* ---- stats: tiers as pencil hatching, not a traffic light ---- */
 .tier-mark { width: 1.6rem; height: 1.6rem; flex: none; fill: none; stroke: var(--pen); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .distrow.bangon .tier-mark, .distrow.binit .tier-mark { stroke: var(--red); }
-.distbox .distbar-track { background: none; border: 1.5px dotted rgba(58, 59, 64, .45); border-radius: 4px; height: .7rem; }
+.distbox .distbar-track { background: none; border: 1.5px dotted rgba(52, 53, 58, 0.45); border-radius: 4px; height: 0.7rem; }
 .distbox .distrow .distbar-fill { border-radius: 2px; background: repeating-linear-gradient(135deg, var(--pen) 0 2px, transparent 2px 6px); }
 .distbox .distrow.bangon .distbar-fill { background: repeating-linear-gradient(135deg, var(--red) 0 2px, transparent 2px 6px); }
-.dist-label { width: 7.5rem; font-family: var(--hand); font-size: 1.1rem; color: var(--ink); }
-.dist-pct { font-family: var(--hand); font-size: 1.1rem; color: var(--ink); }
+.dist-label { width: 7.5rem; font-family: var(--hand); font-size: 1.15rem; color: var(--ink); }
+.dist-pct { font-family: var(--hand); font-size: 1.15rem; color: var(--ink); }
+.distbox, .stat { padding: 1.3rem 1.3rem 1.2rem; }
+.distrow { font-size: 0.95rem; }
+.stat-label, .tile-n, .qmeta { font-size: 0.85rem; }
+.vs-note { transform: none; }
 
-/* ---- a proper logo: a folded napkin with a scribble on it ---- */
+/* share picture preview */
+.sharecard { background: var(--card); border-radius: 8px; padding: 0.9rem; max-width: 420px; width: 100%; max-height: 94vh; overflow: auto; text-align: center; }
+.sharecard img { width: 100%; height: auto; border-radius: 6px; display: block; box-shadow: var(--napkin-shadow); }
+.sharerow { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; }
+
+/* ---- the logo: a folded napkin with a scribble on it ---- */
 .brand::before {
-  width: 1.35em; height: 1.35em; margin-right: .4rem; vertical-align: -.22em;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4 H17 L21 8 V20 H3 Z' fill='%23fffdf8' stroke='%2392734a' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M17 4 V8 H21' fill='%23ebe3d0' stroke='%2392734a' stroke-width='1.2' stroke-linejoin='round'/%3E%3Cpath d='M6 11 H14 M6 14 H11' stroke='%233a3b40' stroke-width='1.4' stroke-linecap='round'/%3E%3Cellipse cx='15' cy='14.5' rx='3.4' ry='2.6' fill='none' stroke='%23c2463a' stroke-width='1.4'/%3E%3C/svg%3E") center / contain no-repeat;
-  border-radius: 0; outline: 0; box-shadow: none; transform: rotate(-7deg);
-  filter: drop-shadow(0 2px 2px rgba(80, 58, 24, .35));
+  width: 1.2em; height: 1.2em; margin-right: 0.4rem; vertical-align: -0.2em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 30'%3E%3Cpath d='M3 6.5 24 3l7 4-2 17-22 3.5Z' fill='%23fffdf8' stroke='%2334353a' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M4.5 15 29.5 13' stroke='%2334353a' stroke-width='1.1' stroke-opacity='.45'/%3E%3Cpath d='M9 21c2.2-3.6 3.4 2.2 5.4-1.2s3.2 1.6 6.4-2' stroke='%23c2463a' stroke-width='1.9' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  border-radius: 0; outline: 0; box-shadow: none; transform: none;
+  filter: none;
 }
 
-.rv-ml { overflow-wrap: anywhere; }
-.reveal-head .muted { color: var(--ink); font-size: .95rem; }
-.lockhint { margin: .6rem 0 0; text-align: center; font-family: var(--hand); font-size: 1.05rem; color: var(--faint); }
+@media (max-width: 480px) {
+  .question { font-size: 1.4rem; }
+  .hero-points { font-size: 4.8rem; }
+  .brand { font-size: 1.5rem; }
+  .tab { padding: 0.4rem 0.4rem; font-size: 0.9rem; }
+  .rv-row { grid-template-columns: minmax(84px, 32%) 1fr; }
+  .rv-row .n { font-size: 1.55rem; }
+}
 
-/* A working line is a full-width block, so a long line that wraps is revealed whole. */
-.rv-ml .w { display: block; }
+/* ---- polish ---- */
+.band-stamp { margin-top: 0.9rem; }
+.hero-share-row .btn { font-size: 0.9rem; padding: 0.7rem 0.3rem; }
+.rung.goal .rung-title { font-family: var(--sans); font-weight: 700; font-size: 1rem; }
+.paywall-title.hand { font-size: 1.15rem; }
+.rung-n { font-size: 1.1rem; }
