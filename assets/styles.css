@@ -1553,3 +1553,41 @@ h2.hand, h3.hand { font-family: var(--sans); font-weight: 700; }
 .rung.goal .rung-title { font-family: var(--sans); font-weight: 700; font-size: 1rem; }
 .paywall-title.hand { font-size: 1.15rem; }
 .rung-n { font-size: 1.1rem; }
+
+/* ---- the daily pad fits one screen: nothing to scroll while you work ---- */
+.napkin .hook { margin: -0.4rem 0 0.7rem; }
+.napkin .hook .doodle { display: none; }
+.napkin .hook .crowd { font-size: 0.92rem; }
+.napkin .daychip { margin-bottom: 0.5rem; }
+.napkin .question { margin: 0.2rem 0 0.7rem; }
+.napkin .panel { padding: 2.2rem 1.4rem 1rem; }
+.napkin .panel > .tag { top: 0.8rem; }
+.pad { min-height: 8.8rem; }
+.napkin .ribbon-hint { display: none; }
+.napkin .ribbon { margin-top: 0.5rem; }
+.napkin .total { margin-top: 0.5rem; }
+.napkin .total-approx { font-size: 2.3rem; }
+.napkin .needhand { margin-top: 0.6rem; }
+.napkin .lockbtn { margin-top: 0.8rem; position: sticky; bottom: 0.75rem; z-index: 5; width: 100%; }
+.napkin .lockhint { margin-top: 0.4rem; }
+.napkin .eyerow { margin-top: 0.3rem; }
+@media (max-height: 820px) {
+  body:has(.screen.napkin) .foot { display: none; }
+  body:has(.screen.napkin) #app { padding-bottom: 1rem; }
+}
+.napkin .lockbtn { position: static; }
+.pad { height: 7.4rem; min-height: 0; }
+.napkin .question { font-size: 1.4rem; }
+@media (max-height: 760px) {
+  .napkin .hook { display: none; }
+  .napkin .panel > .tag { display: none; }
+  .napkin .panel { padding-top: 1rem; }
+  .napkin .lockhint { display: none; }
+}
+body:has(.screen.napkin) .foot { display: none; }
+body:has(.screen.napkin) #app { padding: 0.9rem 1.1rem 1rem; }
+.napkin .fineprint { margin-bottom: 0.5rem; }
+.napkin .total { padding-top: 0.8rem; }
+.napkin .needhand { margin-top: 0.4rem; }
+.napkin .eyerow { margin-top: 0; }
+.napkin .eyelink { padding: 0.2rem 0; }
