@@ -5,6 +5,7 @@
   var util = window.NAPKIN.util;
   var scoring = window.NAPKIN.scoring;
   var storage = window.NAPKIN.storage;
+  var native = window.NAPKIN.native;   // iOS-app-only extras; every call is a no-op on the web
   var QUESTIONS = window.NAPKIN.questions;
 
   var STATE = { view: "daily", practiceQ: null, interview: null };
@@ -234,12 +235,7 @@
   // number is real (the same store the scorecard reads), or quietly absent.
   function buildHook() {
     var crowd = el("div", { class: "crowd" }, "Today's napkin is on the table.");
-    var doodle = elNS("svg", { class: "doodle", viewBox: "0 0 64 64", "aria-hidden": "true" },
-      elNS("path", { d: "M14 22 L50 22 L46 56 L18 56 Z" }),
-      elNS("path", { d: "M14 22 C18 14 46 14 50 22" }),
-      elNS("path", { class: "r", d: "M24 38 C28 34 36 34 40 38" }),
-      elNS("path", { class: "r", d: "M26 46 L38 46" }));
-    var box = el("div", { class: "hook" }, doodle, crowd);
+    var box = el("div", { class: "hook" }, crowd);
     var api = window.NAPKIN.results;
     if (api) api.distribution(storage.todayISO()).then(function (d) {
       if (d && d.total > 0) crowd.textContent = util.withCommas(d.total) + (d.total === 1 ? " person has" : " people have") + " had a go today. Be next.";
@@ -518,6 +514,7 @@
         stamp.hidden = false;
         stamp.classList.add("go");
         sfxLock();
+        native.haptic("thud");
         setTimeout(finish, 480);
       } else {
         finish();
@@ -939,6 +936,7 @@
       countUp(pts, target);
       setTimeout(function () {
         hero.classList.add("scored");
+        native.haptic(target >= 86 ? "good" : target < 23 ? "bad" : "thud");
         var beatFriend = !!hero.querySelector(".vs-row.won");
         if (target >= 86 || beatFriend) burstConfetti(hero.querySelector(".confetti"), target >= 95 || beatFriend ? 34 : 18);
         if (!opts.practice && !opts.interview) {
@@ -1235,19 +1233,6 @@
     return out;
   }
 
-  /* ---------- share as a picture ----------
-     A napkin with the question and your score on it, and nothing else: no
-     working, so it gives nothing away to whoever hasn't played yet. */
-  function wobblePath(ctx, x, y, w, h, j) {
-    var pts = [], steps = 26, i, r = function () { return (Math.random() - 0.5) * j; };
-    for (i = 0; i <= steps; i++) pts.push([x + w * i / steps + r(), y + r()]);
-    for (i = 1; i <= steps; i++) pts.push([x + w + r(), y + h * i / steps + r()]);
-    for (i = 1; i <= steps; i++) pts.push([x + w - w * i / steps + r(), y + h + r()]);
-    for (i = 1; i < steps; i++) pts.push([x + r(), y + h - h * i / steps + r()]);
-    ctx.beginPath();
-    pts.forEach(function (p, k) { if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
-    ctx.closePath();
-  }
   function wrapCanvasText(ctx, text, maxW) {
     var words = text.split(" "), lines = [], cur = "";
     words.forEach(function (w) {
@@ -1257,88 +1242,180 @@
     if (cur) lines.push(cur);
     return lines;
   }
-  function napkinImage(q, res, sc) {
-    var W = 1080, H = 1350, c = document.createElement("canvas"), i;
+
+  /* ---------- the share picture ----------
+     The clean sheet, as a picture: the question, your score and stamp, and
+     who's asking. No working, so it gives nothing away to whoever hasn't
+     played yet. Drawn at 1080x1350 (a 4:5 post). */
+  function napkinImage(q, res, sc, name) {
+    var W = 1080, H = 1350, c = document.createElement("canvas");
     c.width = W; c.height = H;
     var x = c.getContext("2d");
-    var font = function (px) { return px + "px 'Patrick Hand', 'Segoe Print', cursive"; };
-    x.fillStyle = "#d9bb8d"; x.fillRect(0, 0, W, H);
-    for (i = 0; i < W; i += 180) { x.fillStyle = "rgba(110,70,25,.2)"; x.fillRect(i, 0, 3, H); }
-    for (i = 0; i < 1400; i++) { x.fillStyle = "rgba(90,55,15," + Math.random() * 0.07 + ")"; x.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 160, 1.5); }
-    x.save(); x.translate(W / 2, 640); x.rotate(-0.022); x.translate(-W / 2, -640);
-    var nx = 70, ny = 120, nw = 940, nh = 1040;
-    x.shadowColor = "rgba(60,35,10,.45)"; x.shadowBlur = 40; x.shadowOffsetY = 26;
-    wobblePath(x, nx, ny, nw, nh, 9); x.fillStyle = "#fbf8f1"; x.fill(); x.shadowColor = "transparent";
-    x.save(); wobblePath(x, nx, ny, nw, nh, 0); x.clip();
-    for (var yy = ny; yy < ny + nh; yy += 22) for (var xx = nx + ((yy / 22) % 2 ? 11 : 0); xx < nx + nw; xx += 22) {
-      x.fillStyle = "rgba(130,100,60,.13)"; x.beginPath(); x.arc(xx, yy, 2.1, 0, 7); x.fill();
-      x.fillStyle = "rgba(255,255,255,.9)"; x.beginPath(); x.arc(xx + 2, yy + 2, 1.5, 0, 7); x.fill();
-    }
-    x.fillStyle = "rgba(120,95,55,.2)"; x.fillRect(nx + nw / 2 - 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 - 1, nw, 2);
-    x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(nx + nw / 2 + 1, ny, 2, nh); x.fillRect(nx, ny + nh / 2 + 1, nw, 2);
-    x.restore();
-    x.setLineDash([2, 10]); x.lineCap = "round"; x.lineWidth = 4; x.strokeStyle = "rgba(146,115,70,.55)";
-    x.strokeRect(nx + 22, ny + 22, nw - 44, nh - 44); x.setLineDash([]);
+    var hand = function (px) { return px + "px 'Patrick Hand', 'Segoe Print', cursive"; };
+    var sans = function (px, bold) { return (bold ? "700 " : "400 ") + px + "px 'Atkinson Hyperlegible', system-ui, sans-serif"; };
+    var INK = "#24221d", SOFT = "#58534a", PEN = "#34353a", RED = "#c2463a";
+
+    // the table, with a soft light from above
+    x.fillStyle = "#eeece6"; x.fillRect(0, 0, W, H);
+    var glow = x.createRadialGradient(W / 2, 0, 50, W / 2, 0, 900);
+    glow.addColorStop(0, "rgba(255,255,255,.8)"); glow.addColorStop(1, "rgba(255,255,255,0)");
+    x.fillStyle = glow; x.fillRect(0, 0, W, H);
+
+    // the sheet: flat, a soft shadow, the pressed dotted border
+    var nx = 80, ny = 90, nw = 920, nh = 1050;
+    x.save();
+    x.shadowColor = "rgba(60,45,20,.28)"; x.shadowBlur = 50; x.shadowOffsetY = 24;
+    x.fillStyle = "#fffefb"; x.beginPath();
+    if (x.roundRect) x.roundRect(nx, ny, nw, nh, 14); else x.rect(nx, ny, nw, nh);
+    x.fill(); x.restore();
+    x.setLineDash([3, 11]); x.lineCap = "round"; x.lineWidth = 4; x.strokeStyle = "rgba(146,115,74,.55)";
+    x.strokeRect(nx + 20, ny + 20, nw - 40, nh - 40); x.setLineDash([]);
 
     var cx = nx + nw / 2;
-    x.textBaseline = "alphabetic"; x.textAlign = "center";
-    x.fillStyle = "#6b655a"; x.font = font(38);
-    x.fillText(res.napkinNumber ? "NAPKIN #" + res.napkinNumber : "NAPKIN", cx, ny + 110);
-    x.fillStyle = "#2b2925"; x.font = font(72);
-    var qy = ny + 240;
-    wrapCanvasText(x, q.question, nw - 170).forEach(function (l) { x.fillText(l, cx, qy); qy += 86; });
-    var sy = Math.max(qy + 190, ny + 640);
-    x.fillStyle = "#3b3c41"; x.font = font(300); x.fillText(String(sc.points), cx - 70, sy);
-    var pw = x.measureText(String(sc.points)).width;
-    x.font = font(92); x.fillStyle = "#6b655a"; x.fillText("/100", cx - 70 + pw / 2 + 120, sy);
-    x.strokeStyle = "#c2463a"; x.lineWidth = 8; x.beginPath();
-    x.moveTo(cx - pw / 2 - 100, sy + 34); x.quadraticCurveTo(cx - 60, sy + 22, cx + pw / 2 + 200, sy + 32);
-    x.moveTo(cx - pw / 2 - 80, sy + 62); x.quadraticCurveTo(cx - 40, sy + 54, cx + pw / 2 + 170, sy + 60); x.stroke();
-    x.save(); x.translate(cx, sy + 200); x.rotate(-0.06);
-    x.font = font(110);
+    x.textAlign = "center"; x.textBaseline = "alphabetic";
+    x.fillStyle = SOFT; x.font = sans(32, true);
+    x.fillText(res.napkinNumber ? "NAPKIN #" + res.napkinNumber : "NAPKIN", cx, ny + 120);
+
+    x.fillStyle = INK; x.font = sans(56, true);
+    var qy = ny + 215;
+    wrapCanvasText(x, q.question, nw - 180).forEach(function (l) { x.fillText(l, cx, qy); qy += 70; });
+
+    // the score, in pencil, with a red wavy line under it
+    var sy = Math.max(qy + 220, ny + 560);
+    var pts = String(sc.points);
+    x.font = hand(280); var pw = x.measureText(pts).width;
+    x.font = hand(84); var ow = x.measureText("/100").width;
+    var left = cx - (pw + 12 + ow) / 2;
+    x.textAlign = "left";
+    x.fillStyle = PEN; x.font = hand(280); x.fillText(pts, left, sy);
+    x.fillStyle = SOFT; x.font = hand(84); x.fillText("/100", left + pw + 12, sy);
+    // a soft pencil wave under the score
+    x.strokeStyle = RED; x.lineWidth = 6; x.lineCap = "round"; x.beginPath();
+    var waves = 6, step = pw / waves;
+    x.moveTo(left, sy + 28);
+    for (var i = 0; i < waves; i++) {
+      x.quadraticCurveTo(left + step * (i + 0.25), sy + 16, left + step * (i + 0.5), sy + 28);
+      x.quadraticCurveTo(left + step * (i + 0.75), sy + 40, left + step * (i + 1), sy + 28);
+    }
+    x.stroke();
+
+    // the stamp: red pencil outline, a little crooked
+    x.save(); x.translate(cx, sy + 140); x.rotate(-0.06);
+    x.textAlign = "center"; x.font = hand(92);
     var label = sc.band.short.toUpperCase(), sw = x.measureText(label).width + 90;
-    x.shadowColor = "rgba(60,15,10,.45)"; x.shadowBlur = 16; x.shadowOffsetY = 8; x.fillStyle = "#c2463a"; x.beginPath();
-    if (x.roundRect) x.roundRect(-sw / 2, -92, sw, 140, 18); else x.rect(-sw / 2, -92, sw, 140);
-    x.fill(); x.shadowColor = "transparent";
-    x.fillStyle = "#fff8e8"; x.fillText(label, 0, 18); x.restore();
+    x.strokeStyle = RED; x.lineWidth = 7;
+    x.beginPath(); if (x.roundRect) x.roundRect(-sw / 2, -84, sw, 124, 16); else x.rect(-sw / 2, -84, sw, 124); x.stroke();
+    x.lineWidth = 3;
+    x.beginPath(); if (x.roundRect) x.roundRect(-sw / 2 + 11, -73, sw - 22, 102, 10); else x.rect(-sw / 2 + 11, -73, sw - 22, 102); x.stroke();
+    x.fillStyle = RED; x.fillText(label, 0, 6);
     x.restore();
-    x.textAlign = "center"; x.fillStyle = "#2f2212"; x.font = font(64); x.fillText("Can you beat me?", W / 2, 1250);
-    x.font = font(38); x.fillStyle = "#5a4526"; x.fillText("One question a day", W / 2, 1310);
+
+    // who is asking
+    x.textAlign = "center";
+    // shrinks to fit, so a long name never runs off the napkin
+    var ask = name ? name + " wants to know: can you beat it?" : "Can you beat it?", fs = 62;
+    x.font = hand(fs);
+    while (fs > 36 && x.measureText(ask).width > nw - 140) { fs -= 2; x.font = hand(fs); }
+    x.fillStyle = PEN;
+    x.fillText(ask, cx, ny + nh - 75);
+
+    x.fillStyle = SOFT; x.font = sans(34, true);
+    x.fillText("napkinmath.co.uk · one question a day", W / 2, H - 70);
     return c;
   }
 
-  function shareNapkinImage(q, res, sc, btn) {
-    function go() {
-      var c = napkinImage(q, res, sc), url = c.toDataURL("image/png");
-      var img = el("img", { src: url, alt: "Your napkin: the question and your score of " + sc.points + " out of 100" });
-      var send = el("button", { class: "btn", type: "button" }, "Share");
-      var close = el("button", { class: "btn ghost", type: "button" }, "Close");
-      var overlay = el("div", { class: "demo-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Share your napkin" },
-        el("div", { class: "sharecard" }, img, el("div", { class: "sharerow" }, send, close)));
-      function shut() { if (overlay.parentNode) overlay.remove(); }
-      close.addEventListener("click", shut);
-      overlay.addEventListener("click", function (e) { if (e.target === overlay) shut(); });
-      send.addEventListener("click", function () {
-        c.toBlob(function (b) {
-          var file = new File([b], "my-napkin.png", { type: "image/png" });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: "Napkin " + (res.napkinNumber || "") + ": " + sc.band.short + ", " + sc.points + "/100. Can you beat me?" }).catch(function () {});
-          } else {
-            var a = el("a", { href: url, download: file.name });
-            document.body.appendChild(a); a.click(); a.remove();
-          }
-        });
-      });
-      document.body.appendChild(overlay);
-      send.focus();
-    }
-    var ready = document.fonts && document.fonts.load ? document.fonts.load("40px 'Patrick Hand'") : Promise.resolve();
-    ready.then(go, go);
-  }
-
+  // Shares text the best way the device allows: the share sheet, else the clipboard.
   function shareResult(text, btn) {
     if (navigator.share) { navigator.share({ text: text }).catch(function () {}); }
     else { copyText(text, btn); }
+  }
+
+  /* ---------- share & challenge ----------
+     One sheet for both: a preview of the picture, an optional name to sign it
+     with, and one Send that carries the picture, the score and the challenge
+     link together, so whoever gets it can tap straight in and play. Where a
+     device can't send pictures (most laptops), Send copies the message and
+     the picture can be saved separately. */
+  function openShareSheet(q, res, sc) {
+    var lines = resultShareLines(q, res, sc);
+    var canvas = null;
+
+    var img = el("img", { class: "share-preview", alt: "Your napkin: the question and your score of " + sc.points + " out of 100" });
+    var nameInput = el("input", {
+      type: "text", class: "share-name", maxlength: "20", autocomplete: "nickname",
+      placeholder: "Your name (optional)", "aria-label": "Sign it with your name, so they know who to beat"
+    });
+    nameInput.value = storage.playerName();
+    var send = el("button", { class: "btn share-send", type: "button" }, "Send");
+    var copyBtn = el("button", { class: "linkbtn", type: "button" }, "Copy message");
+    var saveBtn = el("button", { class: "linkbtn", type: "button" }, "Save picture");
+    var close = el("button", { class: "share-close", type: "button", "aria-label": "Close" }, "✕");
+    var status = el("p", { class: "share-status muted", role: "status" });
+
+    var sheet = el("div", { class: "sharecard" },
+      close,
+      el("h2", { class: "share-title" }, "Challenge a friend"),
+      img,
+      el("label", { class: "share-label" }, "Sign it", nameInput),
+      send,
+      el("div", { class: "share-extras" }, copyBtn, saveBtn),
+      status);
+    var overlay = el("div", { class: "demo-overlay share-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Challenge a friend" }, sheet);
+
+    function message() {
+      var link = challengeLink(res.napkinNumber, sc.points, nameInput.value);
+      return lines.concat("Beat me: " + link).join("\n");
+    }
+    function draw() {
+      canvas = napkinImage(q, res, sc, cleanName(nameInput.value));
+      img.src = canvas.toDataURL("image/png");
+    }
+    var redraw = null;
+    nameInput.addEventListener("input", function () {
+      storage.setPlayerName(cleanName(nameInput.value));
+      clearTimeout(redraw); redraw = setTimeout(draw, 250);
+    });
+
+    function shut() { if (overlay.parentNode) overlay.remove(); document.removeEventListener("keydown", onKey); }
+    function onKey(e) { if (e.key === "Escape") shut(); }
+    close.addEventListener("click", shut);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) shut(); });
+    document.addEventListener("keydown", onKey);
+
+    function copied() { status.textContent = "Copied. Paste it into a chat."; }
+    copyBtn.addEventListener("click", function () { copyText(message(), copyBtn); copied(); });
+    saveBtn.addEventListener("click", function () {
+      var a = el("a", { href: canvas.toDataURL("image/png"), download: "my-napkin.png" });
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+
+    send.addEventListener("click", function () {
+      var text = message();
+      canvas.toBlob(function (b) {
+        var file = b ? new File([b], "my-napkin.png", { type: "image/png" }) : null;
+        if (file && navigator.canShare && navigator.canShare({ files: [file], text: text })) {
+          navigator.share({ files: [file], text: text }).then(shut).catch(function () { /* closed the sheet */ });
+        } else if (navigator.share) {
+          navigator.share({ text: text }).then(shut).catch(function () {});
+        } else {
+          copyText(text, send); copied();
+        }
+      }, "image/png");
+    });
+
+    var ready = document.fonts && document.fonts.load
+      ? Promise.all([document.fonts.load("40px 'Patrick Hand'"), document.fonts.load("700 40px 'Atkinson Hyperlegible'")])
+      : Promise.resolve();
+    ready.then(draw, draw);
+    document.body.appendChild(overlay);
+    send.focus();
+  }
+
+  // The scorecard's share block: one button, one sheet.
+  function buildChallengeBlock(q, res, sc) {
+    var btn = el("button", { class: "btn", type: "button" }, "Share & challenge a friend");
+    btn.addEventListener("click", function () { openShareSheet(q, res, sc); });
+    return el("div", { class: "hero-share" }, btn);
   }
 
   function buildAfter(container, q, res, opts) {
@@ -1362,8 +1439,8 @@
 
     // The hero is the back of the model's napkin (see revealScreen), so it is
     // kept to what fits on one screen: score, stamp, facts, share, crowd.
+    // The score and its stamp are the winner; Share is the one filled button.
     container.appendChild(el("div", { class: "hero " + band.key },
-      el("div", { class: "hero-kicker" }, "Your score"),
       el("div", { class: "hero-points-row hand", role: "img", "aria-label": sc.points + " out of 100" },
         el("span", { class: "hero-points", "data-points": sc.points }, "0"),
         el("span", { class: "hero-outof" }, "/100")
@@ -1395,7 +1472,8 @@
       container.appendChild(el("div", { class: "sendoff" },
         tallyMarks(st.streak),
         el("p", { class: "hand sendoff-text" },
-          "Day " + st.streak + " on the wall. Napkin #" + (res.napkinNumber + 1) + " is tomorrow.")));
+          "Day " + st.streak + " on the wall. Napkin #" + (res.napkinNumber + 1) + " is tomorrow."),
+        native.isNative() && native.reminderHour() == null ? reminderCard(true) : null));
     }
   }
 
@@ -1494,41 +1572,6 @@
         : "Better than " + p + "% of " + util.withCommas(others) + (others === 1 ? " other player" : " others") + " today.";
     }).catch(function () { line.hidden = true; });
     return line;
-  }
-
-  // The foot of the scorecard: your result as a friend will see it, and the
-  // button that sends it as a challenge.
-  function buildChallengeBlock(q, res, sc) {
-    var lines = resultShareLines(q, res, sc);
-
-    var card = el("div", { class: "hero-share" });
-
-    // Sharing is the primary move. The name field only appears once you
-    // reach for "Challenge a friend", so it is not a form under the stamp.
-    var picBtn = el("button", { class: "btn", type: "button" }, "Share your napkin");
-    picBtn.addEventListener("click", function () { shareNapkinImage(q, res, sc, picBtn); });
-
-    var nameInput = el("input", {
-      type: "text", class: "vs-name", maxlength: "20", autocomplete: "nickname",
-      placeholder: "Your name (optional)", "aria-label": "Your name, so they know who to beat"
-    });
-    nameInput.value = storage.playerName();
-    nameInput.addEventListener("input", function () { storage.setPlayerName(cleanName(nameInput.value)); });
-    nameInput.hidden = true;
-
-    var btn = el("button", { class: "btn ghost", type: "button" }, "Challenge a friend");
-    btn.addEventListener("click", function () {
-      if (nameInput.hidden) {
-        nameInput.hidden = false; nameInput.focus();
-        btn.textContent = "Send the challenge";
-        return;
-      }
-      var link = challengeLink(res.napkinNumber, sc.points, nameInput.value);
-      shareResult(lines.concat("Beat me: " + link).join("\n"), btn);
-    });
-    card.appendChild(el("div", { class: "hero-share-row" }, picBtn, btn));
-    card.appendChild(nameInput);
-    return card;
   }
 
   /* ---------- interview mode ----------
@@ -1786,15 +1829,17 @@
   // A handful of free questions spanning different categories — Greggs and
   // the coastline are the two that best show off the game, plus one each
   // from sport, transport, everyday-life and the product-flavoured set.
+  // "physical-estimation" -> "Physical estimation"
+  function categoryLabel(c) {
+    var t = String(c || "").replace(/-/g, " ");
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
   var PRACTICE_FREE_IDS = ["q0006", "q0001", "q0005", "q0007", "q0019", "q0003"];
 
   function viewPracticeList() {
     var wrap = el("section", { class: "screen practice" });
-    wrap.appendChild(el("h2", { class: "hand" }, "Practice — any question, any time"));
-    wrap.appendChild(el("p", { class: "muted" }, "Untimed, retries allowed, nothing recorded."));
-
-    var played = {};
-    storage.load().results.forEach(function (r) { played[r.questionId] = 1; });
+    wrap.appendChild(el("h2", { class: "hand" }, "Practice"));
+    wrap.appendChild(el("p", { class: "muted" }, "Any question, any time. Untimed, retries allowed, nothing recorded."));
 
     var order = (window.NAPKIN.dailyOrder || []).map(byId).filter(Boolean);
     QUESTIONS.forEach(function (q) { if (order.indexOf(q) === -1) order.push(q); });
@@ -1804,32 +1849,79 @@
     free.forEach(function (q) { freeIds[q.id] = 1; });
     var locked = order.filter(function (q) { return !freeIds[q.id]; });
 
+    // Your best score on each napkin you have already played.
+    var best = {};
+    storage.load().results.forEach(function (r) {
+      var q = byId(r.questionId);
+      if (!q) return;
+      var pts = scoring.score(r.guess, q).points;
+      if (best[r.questionId] == null || pts > best[r.questionId]) best[r.questionId] = pts;
+    });
+
     var list = el("div", { class: "qlist" });
-    function addCard(q, i) {
+    function addCard(q) {
+      var meta = el("span", { class: "qmeta muted" }, categoryLabel(q.category));
+      if (q.difficulty === "hard") meta.appendChild(el("span", { class: "qhard" }, "hard"));
       var item = el("button", { class: "qcard" },
-        el("span", { class: "qnum" }, "#" + (i + 1)),
         el("span", { class: "qtext" }, q.question),
-        el("span", { class: "qmeta muted" }, q.category + " · " + q.difficulty + (played[q.id] ? " · ✓ done" : ""))
+        meta,
+        best[q.id] != null
+          ? el("span", { class: "qscore " + pileTone(best[q.id]), "aria-label": "Your best: " + best[q.id] + " out of 100" },
+              el("b", {}, String(best[q.id])), el("small", {}, "best"))
+          : null
       );
       item.addEventListener("click", function () { STATE.practiceQ = q; renderApp(); });
       list.appendChild(item);
     }
-    free.forEach(function (q, i) { addCard(q, i); });
+    free.forEach(addCard);
 
-    if (locked.length) {
-      // No real paywall yet — this is a placeholder for the idea. Clicking
-      // it just reveals the rest of the list in place.
-      var unlockBtn = el("button", { class: "btn" }, "Unlock — £1.99");
+    var inApp = native.isNative();
+    if (inApp && native.isUnlocked()) {
+      locked.forEach(addCard);   // already bought on this Apple ID
+    } else if (locked.length) {
+      // On the web this is only a placeholder for the idea: clicking it just
+      // reveals the rest of the list in place. In the iOS app it is a real
+      // one-off purchase (StoreKit via RevenueCat) with a Restore link.
+      var cats = [];
+      locked.forEach(function (q) { var c = categoryLabel(q.category).toLowerCase(); if (cats.indexOf(c) === -1) cats.push(c); });
+      var shown = cats.slice(0, 4);
+      var more = cats.length - shown.length;
+      var unlockBtn = el("button", { class: "btn" }, "Unlock for £1.99");
       var paywall = el("div", { class: "paywall" },
-        el("div", { class: "paywall-lock" }, "🔒"),
-        el("div", { class: "hand paywall-title" }, locked.length + " more questions"),
-        el("p", { class: "muted" }, "Unlock the full practice library."),
+        el("div", { class: "paywall-stack", "aria-hidden": "true" },
+          el("i"), el("i"), el("i", {}, "+" + locked.length)),
+        el("div", { class: "paywall-title hand" }, locked.length + " more napkins"),
+        el("p", { class: "muted" }, "Plenty on " + shown.join(", ") + (more > 0 ? " and " + more + " more topics" : "") + "."),
         unlockBtn
       );
-      unlockBtn.addEventListener("click", function () {
-        paywall.remove();
-        locked.forEach(function (q, i) { addCard(q, free.length + i); });
-      });
+      function open() { paywall.remove(); locked.forEach(addCard); }
+      if (!inApp) {
+        unlockBtn.addEventListener("click", open);
+      } else {
+        // The price comes from Apple, so the button waits for it.
+        var offer = null;
+        unlockBtn.disabled = true;
+        unlockBtn.textContent = "Unlock";
+        var restoreBtn = el("button", { class: "linkbtn", type: "button" }, "Restore purchase");
+        var fail = function () { showNotice("That didn't go through. You haven't been charged. Try again in a moment."); };
+        native.unlockOffer().then(function (o) {
+          offer = o;
+          if (o) { unlockBtn.disabled = false; unlockBtn.textContent = "Unlock for " + o.price; }
+          else unlockBtn.textContent = "Unavailable right now";
+        });
+        unlockBtn.addEventListener("click", function () {
+          if (!offer) return;
+          unlockBtn.disabled = true;
+          native.buyUnlock(offer).then(function (bought) { if (bought) open(); else unlockBtn.disabled = false; })
+            .catch(function () { unlockBtn.disabled = false; fail(); });
+        });
+        restoreBtn.addEventListener("click", function () {
+          native.restoreUnlock().then(function (found) {
+            if (found) open(); else showNotice("No earlier purchase found for this Apple ID.");
+          }).catch(fail);
+        });
+        paywall.appendChild(restoreBtn);
+      }
       list.appendChild(paywall);
     }
 
@@ -1899,6 +1991,7 @@
 
     wrap.appendChild(pileBox(s.series));
     wrap.appendChild(buildPersonalDistribution(s.bandCounts));
+    if (native.isNative()) wrap.appendChild(reminderCard());
 
     var backup = el("div", { class: "backup" });
     backup.appendChild(el("h3", { class: "hand" }, "Backup"));
@@ -1916,6 +2009,42 @@
     wrap.appendChild(backup);
 
     return wrap;
+  }
+
+  // The daily reminder: one notification at a time you pick. Only offered in the
+  // app, and only asks iOS for permission once you tap a time.
+  var REMINDER_HOURS = [{ h: 8, label: "Morning" }, { h: 13, label: "Lunch" }, { h: 18, label: "Evening" }];
+  function reminderCard(compact) {
+    var card = el("div", { class: "reminder" + (compact ? " compact" : "") });
+    var note = el("p", { class: "muted reminder-note", role: "status" });
+    var row = el("div", { class: "reminder-row" });
+
+    function paint() {
+      var on = native.reminderHour();
+      row.innerHTML = "";
+      REMINDER_HOURS.forEach(function (o) {
+        var b = el("button", { class: "tbtn" + (on === o.h ? " on" : ""), type: "button", "aria-pressed": on === o.h ? "true" : "false" },
+          o.label + " · " + (o.h % 12 || 12) + (o.h < 12 ? "am" : "pm"));
+        b.addEventListener("click", function () {
+          native.enableReminder(o.h).then(function (h) {
+            note.textContent = h == null ? "Notifications are off for Napkin. You can turn them on in Settings." : "";
+            paint();
+          });
+        });
+        row.appendChild(b);
+      });
+      if (on != null) {
+        var off = el("button", { class: "linkbtn", type: "button" }, "Turn off");
+        off.addEventListener("click", function () { native.disableReminder().then(paint); });
+        row.appendChild(off);
+      }
+    }
+    paint();
+    card.appendChild(el("h3", { class: "reminder-title" }, compact ? "Want a nudge tomorrow?" : "Daily reminder"));
+    if (!compact) card.appendChild(el("p", { class: "muted" }, "One quiet notification a day, when you'd like to do today's napkin."));
+    card.appendChild(row);
+    card.appendChild(note);
+    return card;
   }
 
   function stat(label, value) {
@@ -2232,6 +2361,7 @@
     if (feedbackBtn) feedbackBtn.addEventListener("click", openFeedbackModal);
     takeChallengeFromUrl();
     renderApp();
+    native.refreshUnlock();   // in the app: re-check the purchase with Apple, quietly
 
     // Best-effort cloud backup: re-render only if it actually pulled in
     // history this device didn't already have (e.g. first load after a

@@ -1,0 +1,9 @@
+{
+  "appId": "com.napkin.daily",
+  "appName": "Napkin",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#eeece6"
+  }
+}
