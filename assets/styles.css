@@ -803,3 +803,39 @@ body:has(.screen.napkin) .foot { display: none; }
 .share-extras { display: flex; justify-content: center; gap: 1.4rem; margin-top: 0.5rem; }
 .share-status { margin: 0.4rem 0 0; }
 .share-status:empty { display: none; }
+
+/* ---- Napkin Pro paywall ---- */
+.paywall-modal { max-width: 21rem; }
+.pro-list { margin: 0.4rem 0 1.1rem; padding: 0; list-style: none; text-align: left; font-size: 0.98rem; }
+.pro-list li { padding: 0.5rem 0 0.5rem 1.6rem; position: relative; border-top: 1px dotted var(--emboss); }
+.pro-list li:first-child { border-top: 0; }
+.pro-list li::before { content: "✓"; position: absolute; left: 0.2rem; color: var(--green); font-weight: 700; }
+.paywall-modal .btn { width: 100%; }
+.paywall-modal .linkbtn { display: block; margin: 0.6rem auto 0; }
+.paywall-status { margin: 0.6rem 0 0; min-height: 0; }
+.paywall-status:empty { display: none; }
+
+/* ---- the "want another?" card, after the daily ---- */
+.morecard { position: relative; padding: 1.2rem 1.3rem; text-align: center; background: var(--card); border-radius: 6px; outline: 2px dotted var(--emboss); outline-offset: -7px; box-shadow: var(--napkin-shadow); }
+.more-title { margin: 0 0 0.3rem; font-size: 1.1rem; }
+.morecard p { margin: 0 auto 0.9rem; max-width: 24rem; }
+.morecard .btn { width: 100%; }
+
+/* ---- Guided breakdown ---- */
+.guided-pips { margin: 0 0 0.9rem; }
+.guided-card { padding: 2.3rem 1.3rem 1.2rem; position: relative; }
+.guided-card > .tag { position: absolute; top: 0.9rem; left: 1.3rem; font: 700 0.78rem var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+.guided-head { margin: 0 0 0.2rem; font-size: 1.25rem; }
+.guided-help { margin: 0 0 0.8rem; }
+.guided-input { display: block; width: 100%; padding: 0.4rem 0.2rem; font-size: 1.5rem; color: var(--pen); background: transparent; border: 0; border-bottom: 2px solid var(--pen); border-radius: 0; }
+.guided-input:focus { outline: 0; border-bottom-color: var(--red); }
+.guided-input::placeholder { color: #6f695c; }
+.guided-reading { margin: 0.5rem 0 0; min-height: 1.4em; }
+.guided-hint { margin: 0.4rem 0 0; font: 400 1.2rem var(--hand); color: var(--red-text); }
+.guided-hint:empty { display: none; }
+.guided-card .linkbtn { margin-top: 0.3rem; }
+.guided-running { margin-top: 0.9rem; text-align: center; }
+.guided-sofar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 0.6rem; font-size: 1.15rem; color: var(--faint); }
+.guided-total { margin-top: 0.3rem; font-size: 2.2rem; line-height: 1.1; color: var(--pen); }
+.guided-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+.guided-actions .btn { flex: 1; }

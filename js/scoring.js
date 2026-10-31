@@ -517,15 +517,17 @@ window.NAPKIN.scoring = (function () {
     var users = (userRows || [])
       .map(function (r) {
         var pq = util.parseQuantity(r.value);
-        return { label: r.label || pq.label || "", value: pq.value, op: r.op };
+        return { label: r.label || pq.label || "", value: pq.value, op: r.op, step: r.step };
       })
       .filter(function (r) { return isFinite(r.value); });
     var used = {};
 
-    var pairs = modelRows.map(function (m) {
+    var pairs = modelRows.map(function (m, mi) {
       var bestIdx = -1, best = 0;
       users.forEach(function (u, i) {
         if (used[i]) return;
+        // Guided breakdown knows which step each answer was for.
+        if (u.step != null) { if (u.step === mi) { bestIdx = i; best = 1; } return; }
         var s = overlap(m.label, u.label);
         if (s > best) { best = s; bestIdx = i; }
       });

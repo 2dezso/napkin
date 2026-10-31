@@ -6,9 +6,10 @@
   var scoring = window.NAPKIN.scoring;
   var storage = window.NAPKIN.storage;
   var native = window.NAPKIN.native;   // iOS-app-only extras; every call is a no-op on the web
+  var track = window.NAPKIN.track || function () {};
   var QUESTIONS = window.NAPKIN.questions;
 
-  var STATE = { view: "daily", practiceQ: null, interview: null };
+  var STATE = { view: "daily", practiceQ: null, guidedQ: null, interview: null };
 
   // The scribble-pad placeholder — always this generic "type out your thinking"
   // template, so it never looks like an answer to the day's question.
@@ -141,7 +142,7 @@
     }
     var node;
     if (STATE.view === "daily") node = viewDaily();
-    else if (STATE.view === "practice") node = STATE.practiceQ ? napkinScreen(STATE.practiceQ, { practice: true }) : viewPracticeList();
+    else if (STATE.view === "practice") node = STATE.guidedQ ? guidedScreen(STATE.guidedQ) : STATE.practiceQ ? napkinScreen(STATE.practiceQ, { practice: true }) : viewPracticeList();
     else if (STATE.view === "interview") {
       node = (STATE.interview && !STATE.interview.over)
         ? napkinScreen(byId(STATE.interview.lastId), { interview: true })
@@ -190,6 +191,7 @@
     if (!m) return;
     var vs = { n: +m[1], p: Math.min(100, +m[2]), name: cleanName(m[3]) };
     storage.saveFriendChallenge(vs);
+    track("challenge_opened", {});
     if (vs.n !== storage.dayNumber() + 1) STATE.staleChallenge = vs;
   }
 
@@ -249,7 +251,7 @@
 
     if (opts.practice) {
       var back = el("button", { class: "linkbtn" }, "‹ Back to list");
-      back.addEventListener("click", function () { STATE.practiceQ = null; renderApp(); });
+      back.addEventListener("click", function () { STATE.practiceQ = null; STATE.guidedQ = null; renderApp(); });
       wrap.appendChild(back);
     } else if (opts.interview) {
       var iv = STATE.interview, round = LADDER[iv.level + 1];
@@ -439,21 +441,7 @@
       needHand.appendChild(stuckPeekNote);
     }
 
-    /* eyeball escape hatch */
-    var eyePanel = el("div", { class: "panel" });
-    eyePanel.hidden = true;
-    eyePanel.appendChild(el("p", { class: "muted" }, "Skip the scribble and just drag to your gut number."));
-    var slider = el("input", { type: "range", min: "0", max: "1000", value: "250", class: "slider" });
-    var eyeVal = el("div", { class: "hand big eyeval" }, util.humanize(sliderValue()));
-    slider.addEventListener("input", function () {
-      eyeVal.textContent = util.humanize(sliderValue());
-      updateSubmit();
-    });
-    eyePanel.appendChild(slider);
-    eyePanel.appendChild(eyeVal);
-
     wrap.appendChild(napkinPanel);
-    wrap.appendChild(eyePanel);
 
     var submit = el("button", { class: "btn submit lockbtn", type: "button" },
       opts.practice ? "See how close I got" : "Lock it in");
@@ -464,33 +452,28 @@
     wrap.appendChild(submit);
     wrap.appendChild(lockHint);
 
-    // Eyeballing stays available, but as a quiet link rather than a tab above the pad.
-    var eyeLink = null;
-    if (!opts.interview) {
-      eyeLink = el("button", { class: "linkbtn eyelink", type: "button" }, "Can't work it out? Just eyeball it");
-      eyeLink.addEventListener("click", function () { setMode(mode === "napkin" ? "eyeball" : "napkin"); });
-      wrap.appendChild(el("div", { class: "eyerow" }, eyeLink));
+    // Stuck in practice? Be walked through it, one step at a time.
+    if (opts.practice) {
+      var guideLink = el("button", { class: "linkbtn eyelink", type: "button" }, "Can't work it out? Guide me through it");
+      guideLink.addEventListener("click", function () { startGuided(q); });
+      wrap.appendChild(el("div", { class: "eyerow" }, guideLink));
     }
 
     function doLock() {
       if (submit.disabled) return;
       var guess, rowsSnap = null, adjusted = false;
-      if (mode === "eyeball") {
-        guess = sliderValue();
-      } else {
-        guess = effectiveGuess();
-        if (guess == null) return;
-        adjusted = totalOverride != null;
-        rowsSnap = activeFactors().map(function (f) {
-          return { op: flipped[f.sig] || f.op, label: f.label, value: String(f.value) };
-        });
-      }
+      guess = effectiveGuess();
+      if (guess == null) return;
+      adjusted = totalOverride != null;
+      rowsSnap = activeFactors().map(function (f) {
+        return { op: flipped[f.sig] || f.op, label: f.label, value: String(f.value) };
+      });
       if (!(guess > 0) || !isFinite(guess)) return;
 
       var sc = scoring.score(guess, q);
       var rec = {
         questionId: q.id, guess: guess, rows: rowsSnap,
-        pad: mode === "eyeball" ? "" : pad.value,
+        pad: pad.value,
         assisted: assisted, adjusted: adjusted,
         ratio: sc.ratio, band: sc.band.key, inRange: sc.inRange, mode: mode
       };
@@ -504,6 +487,7 @@
           mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true }));
         } else {
           var full = storage.recordResult(rec);
+          track("daily_complete", { band: rec.band, streak: storage.streak() });
           if (window.NAPKIN.results) window.NAPKIN.results.submit(full.date, full.band).catch(function () {});
           mount(revealScreen(q, full, { practice: false }));
         }
@@ -780,20 +764,12 @@
 
     function refreshTotal() { renderTotal(); updateSubmit(); updateGutBtn(); }
     function updateSubmit() {
-      submit.disabled = mode === "eyeball" ? false : !(effectiveGuess() > 0);
+      submit.disabled = !(effectiveGuess() > 0);
       if (lockHint) lockHint.hidden = !submit.disabled;
     }
     function updateGutBtn() {
       gutActionBtn.disabled = !(effectiveGuess() > 0);
     }
-    function setMode(m) {
-      mode = m;
-      if (eyeLink) eyeLink.textContent = m === "napkin" ? "Can't work it out? Just eyeball it" : "‹ Back to the napkin";
-      napkinPanel.hidden = m !== "napkin";
-      eyePanel.hidden = m !== "eyeball";
-      updateSubmit();
-    }
-    function sliderValue() { return Math.round(Math.pow(10, (Number(slider.value) / 1000) * 12)); }
     function inputNumber(v) { return Number.isInteger(v) ? util.withCommas(v) : String(v); }
 
     function insertText(str) {
@@ -1391,6 +1367,7 @@
 
     send.addEventListener("click", function () {
       var text = message();
+      track("share_sent", { named: nameInput.value ? "1" : "0" });
       canvas.toBlob(function (b) {
         var file = b ? new File([b], "my-napkin.png", { type: "image/png" }) : null;
         if (file && navigator.canShare && navigator.canShare({ files: [file], text: text })) {
@@ -1462,12 +1439,20 @@
     if (opts.interview) {
       container.appendChild(buildComparison(q, res));
     } else if (opts.practice) {
-      container.appendChild(buildComparison(q, res));
-      var again = el("button", { class: "btn" }, "Try another question");
-      again.addEventListener("click", function () { STATE.practiceQ = null; STATE.view = "practice"; renderApp(); });
+      var cmp = buildComparison(q, res);
+      if (opts.guided) cmp.open = true;   // the step-by-step comparison is the point
+      container.appendChild(cmp);
+      if (opts.guided) {
+        var more = el("button", { class: "btn" }, "Another guided question");
+        more.addEventListener("click", function () { STATE.guidedQ = null; startGuided(); });
+        container.appendChild(more);
+      }
+      var again = el("button", { class: "btn" + (opts.guided ? " ghost" : "") }, "Try another question");
+      again.addEventListener("click", function () { STATE.practiceQ = null; STATE.guidedQ = null; STATE.view = "practice"; renderApp(); });
       container.appendChild(again);
     } else {
       container.appendChild(buildComparison(q, res));
+      container.appendChild(buildMoreCard());
       var st = storage.stats();
       container.appendChild(el("div", { class: "sendoff" },
         tallyMarks(st.streak),
@@ -1475,6 +1460,17 @@
           "Day " + st.streak + " on the wall. Napkin #" + (res.napkinNumber + 1) + " is tomorrow."),
         native.isNative() && native.reminderHour() == null ? reminderCard(true) : null));
     }
+  }
+
+  // Straight after the daily: the natural moment to offer the method.
+  function buildMoreCard() {
+    var go = el("button", { class: "btn", type: "button" }, "Try a guided question");
+    go.addEventListener("click", function () { track("more_card_click", { pro: isPro() ? "1" : "0" }); startGuided(); });
+    return el("div", { class: "morecard" },
+      el("h3", { class: "more-title" }, "Want another?"),
+      el("p", { class: "muted" }, "Learn the method: break a question into small parts, one step at a time." +
+        (isPro() ? "" : " Your first " + FREE_GUIDED + " are free.")),
+      go);
   }
 
   // Pick out the single number you nailed and the single number that hurt
@@ -1825,6 +1821,220 @@
     return wrap;
   }
 
+  /* ---------- Napkin Pro ----------
+     One purchase unlocks the whole of the paid side. In the iOS app it is a
+     real StoreKit purchase through RevenueCat (see native.js); on the website
+     it stays a placeholder that just flips the switch, because there is no way
+     to take payment there yet. Everything that is gated asks isPro(). */
+  var PRO_PRICE = "£4.99";
+  var WEBPRO_KEY = "napkin.webpro";
+  var FREE_GUIDED = 3;
+  var GUIDED_KEY = "napkin.guidedDone";
+
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* full / blocked */ } }
+
+  function isPro() { return native.isNative() ? native.isUnlocked() : lsGet(WEBPRO_KEY) === "1"; }
+  function guidedDone() { return +(lsGet(GUIDED_KEY) || 0); }
+  function guidedLeft() { return Math.max(0, FREE_GUIDED - guidedDone()); }
+  function guidedAllowed() { return isPro() || guidedLeft() > 0; }
+
+  // The paywall: what Pro is, what it costs, one button. `where` says which
+  // door the person came through (it only goes to the anonymous counts).
+  function openPaywall(where, onUnlocked) {
+    track("paywall_view", { where: where });
+    var inApp = native.isNative();
+    var buy = el("button", { class: "btn paywall-buy", type: "button" }, inApp ? "Unlock Pro" : "Unlock for " + PRO_PRICE);
+    var restore = inApp ? el("button", { class: "linkbtn", type: "button" }, "Restore purchase") : null;
+    var later = el("button", { class: "linkbtn", type: "button" }, "Not now");
+    var status = el("p", { class: "muted paywall-status", role: "status" });
+    var offer = null;
+
+    var card = el("div", { class: "demo-modal paywall-modal", role: "dialog", "aria-modal": "true", "aria-label": "Napkin Pro" },
+      el("div", { class: "hand big" }, "Napkin Pro"),
+      el("ul", { class: "pro-list" },
+        el("li", {}, el("b", {}, "Guided breakdown"), " on every question, as many as you like"),
+        el("li", {}, el("b", {}, "The whole practice library"), ", all " + QUESTIONS.length + " questions"),
+        el("li", {}, "One payment. No subscription.")),
+      buy, restore, later, status);
+    var overlay = el("div", { class: "demo-overlay" }, card);
+    function close() { if (overlay.parentNode) overlay.remove(); }
+    function unlocked() { close(); track("purchase", { where: where }); if (onUnlocked) onUnlocked(); }
+    later.addEventListener("click", close);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+
+    if (!inApp) {
+      buy.addEventListener("click", function () { lsSet(WEBPRO_KEY, "1"); unlocked(); });
+    } else {
+      // The price comes from Apple, so the button waits for it.
+      buy.disabled = true;
+      native.unlockOffer().then(function (o) {
+        offer = o;
+        if (o) { buy.disabled = false; buy.textContent = "Unlock for " + o.price; }
+        else buy.textContent = "Unavailable right now";
+      });
+      var fail = function () { status.textContent = "That didn't go through. You haven't been charged."; buy.disabled = !offer; };
+      buy.addEventListener("click", function () {
+        if (!offer) return;
+        buy.disabled = true; status.textContent = "";
+        native.buyUnlock(offer).then(function (bought) { if (bought) unlocked(); else buy.disabled = false; }).catch(fail);
+      });
+      restore.addEventListener("click", function () {
+        status.textContent = "";
+        native.restoreUnlock().then(function (found) {
+          if (found) { track("restore", { where: where }); close(); if (onUnlocked) onUnlocked(); }
+          else status.textContent = "No earlier purchase found for this Apple ID.";
+        }).catch(fail);
+      });
+    }
+    document.body.appendChild(overlay);
+    buy.focus();
+  }
+
+  /* ---------- Guided breakdown ----------
+     The method, one step at a time. Instead of a blank pad you are walked
+     through the same chain a good answer has: a big starting number, then the
+     cuts and rates that bring it down to the answer. One step a screen; each
+     step is a line you type the way you would on a napkin ("20 clubs",
+     "1 in 4", "÷ 7 days"). Afterwards the reveal lines your steps up against
+     the model's, step for step. */
+  function guidedPrompt(row, i, n) {
+    if (i === 0) return { head: "Start with a big number", help: "What is the first thing you could count? Pick something you can picture.", ph: "e.g. 3 million people" };
+    if (row.op === "/") return { head: "Now divide it up", help: "What do you split it by? Think per day, per person, per team.", ph: "e.g. 7 days" };
+    if (row.unit === "fraction") return { head: "What share of that counts?", help: "Not all of them will. Give a percentage, or a fraction like 1 in 4.", ph: "e.g. 1 in 4, or 30%" };
+    return { head: i === n - 1 ? "One more: how many each?" : "Multiply by something", help: "How many, how often, how big? Whatever turns your count into more of the answer.", ph: "e.g. 2 cups a day" };
+  }
+
+  // A fresh question for "Want another?": one you haven't played, else any but today's.
+  function pickGuidedQuestion() {
+    var played = {};
+    storage.load().results.forEach(function (r) { played[r.questionId] = 1; });
+    var today = storage.currentQuestion(QUESTIONS);
+    var pool = QUESTIONS.filter(function (x) { return (x.framework || []).length >= 3 && !played[x.id] && x.id !== (today && today.id); });
+    if (!pool.length) pool = QUESTIONS.filter(function (x) { return (x.framework || []).length >= 3 && x.id !== (today && today.id); });
+    return pickOne(pool.length ? pool : QUESTIONS);
+  }
+
+  function startGuided(q) {
+    q = q || pickGuidedQuestion();
+    if (!guidedAllowed()) { openPaywall("guided_limit", function () { startGuided(q); }); return; }
+    track("guided_start", { free_left: isPro() ? "pro" : guidedLeft() });
+    STATE.view = "practice";
+    STATE.practiceQ = null;
+    STATE.guidedQ = q;
+    renderApp();
+  }
+
+  function guidedScreen(q) {
+    var rows = q.framework || [], n = rows.length;
+    var entries = [];              // { value, label, line, op }
+    var step = 0, hints = 0, hintShown = false;
+    var wrap = el("section", { class: "screen guided" });
+
+    var leave = el("button", { class: "linkbtn", type: "button" }, "‹ Back to practice");
+    leave.addEventListener("click", function () { STATE.guidedQ = null; renderApp(); });
+    wrap.appendChild(leave);
+    wrap.appendChild(el("div", { class: "daychip" },
+      el("span", { class: "chip" }, "Guided"),
+      el("span", { class: "muted" }, isPro() ? "Pro" : guidedLeft() + " free " + (guidedLeft() === 1 ? "guide" : "guides") + " left")));
+    wrap.appendChild(el("h1", { class: "question" }, q.question));
+    var pips = el("div", { class: "iv-pips guided-pips", "aria-hidden": "true" });
+    wrap.appendChild(pips);
+    var body = el("div", { class: "guided-body" });
+    wrap.appendChild(body);
+
+    function opSym(op) { return op === "/" ? "÷" : op === "+" ? "+" : "×"; }
+    function runningTotal() {
+      var acc = null;
+      entries.forEach(function (e) {
+        if (acc == null) acc = e.op === "/" ? 1 / e.value : e.value;
+        else if (e.op === "/") acc /= e.value;
+        else if (e.op === "+") acc += e.value;
+        else acc *= e.value;
+      });
+      return acc;
+    }
+
+    function paint() {
+      pips.innerHTML = "";
+      for (var k = 0; k < n; k++) pips.appendChild(el("span", { class: k < step ? "on" : k === step ? "hold" : "" }));
+      body.innerHTML = "";
+      if (step >= n) return;
+
+      var row = rows[step], p = guidedPrompt(row, step, n);
+      var op = step === 0 ? "x" : row.op;
+      var input = el("input", { type: "text", class: "guided-input hand", placeholder: p.ph, autocomplete: "off", spellcheck: "false", "aria-label": p.head });
+      var reading = el("p", { class: "guided-reading muted", role: "status" }, "Type it the way you'd write it on a napkin.");
+      var hintBtn = el("button", { class: "linkbtn", type: "button" }, hintShown ? "" : "Show a hint");
+      var hintLine = el("p", { class: "guided-hint" });
+      var next = el("button", { class: "btn", type: "button" }, step === n - 1 ? "Multiply it up" : "Next step");
+      next.disabled = true;
+      var back = step > 0 ? el("button", { class: "btn ghost", type: "button" }, "Back") : null;
+      var parsed = null;
+      if (entries[step]) input.value = entries[step].line;
+
+      function showHint() { hintLine.textContent = "Think about: " + row.label.toLowerCase() + "."; hintBtn.hidden = true; }
+      if (hintShown) showHint();
+      hintBtn.addEventListener("click", function () { hintShown = true; hints++; showHint(); input.focus(); });
+
+      function read() {
+        var f = util.scanFactors(input.value)[0];
+        parsed = f || null;
+        next.disabled = !f;
+        reading.textContent = f ? "Reading: " + util.humanize(f.value) + (f.label ? " (" + f.label + ")" : "") : "Type it the way you'd write it on a napkin.";
+      }
+      function go() {
+        if (!parsed) return;
+        entries[step] = { value: parsed.value, label: parsed.label || row.label, line: input.value.trim(), op: op };
+        hintShown = false;
+        step++;
+        if (step >= n) finishGuided(); else paint();
+      }
+      input.addEventListener("input", read);
+      if (input.value) read();
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
+      next.addEventListener("click", go);
+      if (back) back.addEventListener("click", function () { step--; hintShown = false; paint(); });
+
+      // the steps so far, as a growing line of working
+      var sofar = el("div", { class: "guided-sofar" });
+      entries.slice(0, step).forEach(function (e, k) {
+        sofar.appendChild(el("span", { class: "guided-chip hand" }, (k ? opSym(e.op) + " " : "") + util.humanize(e.value) + (e.label ? " " + e.label : "")));
+      });
+      var tot = runningTotal();
+
+      var card = el("div", { class: "panel guided-card" },
+        el("span", { class: "tag" }, "Step " + (step + 1) + " of " + n),
+        el("h2", { class: "guided-head" }, p.head),
+        el("p", { class: "muted guided-help" }, p.help),
+        input, reading, hintBtn, hintLine);
+      body.appendChild(card);
+      if (step > 0) body.appendChild(el("div", { class: "guided-running" }, sofar,
+        tot != null ? el("div", { class: "guided-total hand" }, "≈ " + util.humanize(tot)) : null));
+      body.appendChild(el("div", { class: "guided-actions" }, back, next));
+      try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+    }
+
+    function finishGuided() {
+      var guess = runningTotal();
+      if (!(guess > 0) || !isFinite(guess)) { step = 0; entries = []; paint(); return; }
+      var sc = scoring.score(guess, q);
+      var rec = {
+        questionId: q.id, guess: guess,
+        rows: entries.map(function (e, i) { return { op: e.op, label: e.label, value: String(e.value), step: i }; }),
+        pad: entries.map(function (e) { return e.line; }).join("\n"),
+        assisted: hints > 0, adjusted: false,
+        ratio: sc.ratio, band: sc.band.key, inRange: sc.inRange, mode: "guided"
+      };
+      if (!isPro()) lsSet(GUIDED_KEY, String(guidedDone() + 1));
+      track("guided_complete", { band: sc.band.key, hints: hints });
+      mount(revealScreen(q, Object.assign({ date: storage.todayISO(), napkinNumber: null }, rec), { practice: true, guided: true }));
+    }
+
+    paint();
+    return wrap;
+  }
+
   /* ---------- practice list ---------- */
   // A handful of free questions spanning different categories — Greggs and
   // the coastline are the two that best show off the game, plus one each
@@ -1875,18 +2085,15 @@
     }
     free.forEach(addCard);
 
-    var inApp = native.isNative();
-    if (inApp && native.isUnlocked()) {
-      locked.forEach(addCard);   // already bought on this Apple ID
+    if (isPro()) {
+      locked.forEach(addCard);   // Pro: the whole library
     } else if (locked.length) {
-      // On the web this is only a placeholder for the idea: clicking it just
-      // reveals the rest of the list in place. In the iOS app it is a real
-      // one-off purchase (StoreKit via RevenueCat) with a Restore link.
+      // The rest of the library is part of Napkin Pro.
       var cats = [];
       locked.forEach(function (q) { var c = categoryLabel(q.category).toLowerCase(); if (cats.indexOf(c) === -1) cats.push(c); });
       var shown = cats.slice(0, 4);
       var more = cats.length - shown.length;
-      var unlockBtn = el("button", { class: "btn" }, "Unlock for £1.99");
+      var unlockBtn = el("button", { class: "btn" }, "Unlock with Pro");
       var paywall = el("div", { class: "paywall" },
         el("div", { class: "paywall-stack", "aria-hidden": "true" },
           el("i"), el("i"), el("i", {}, "+" + locked.length)),
@@ -1894,34 +2101,9 @@
         el("p", { class: "muted" }, "Plenty on " + shown.join(", ") + (more > 0 ? " and " + more + " more topics" : "") + "."),
         unlockBtn
       );
-      function open() { paywall.remove(); locked.forEach(addCard); }
-      if (!inApp) {
-        unlockBtn.addEventListener("click", open);
-      } else {
-        // The price comes from Apple, so the button waits for it.
-        var offer = null;
-        unlockBtn.disabled = true;
-        unlockBtn.textContent = "Unlock";
-        var restoreBtn = el("button", { class: "linkbtn", type: "button" }, "Restore purchase");
-        var fail = function () { showNotice("That didn't go through. You haven't been charged. Try again in a moment."); };
-        native.unlockOffer().then(function (o) {
-          offer = o;
-          if (o) { unlockBtn.disabled = false; unlockBtn.textContent = "Unlock for " + o.price; }
-          else unlockBtn.textContent = "Unavailable right now";
-        });
-        unlockBtn.addEventListener("click", function () {
-          if (!offer) return;
-          unlockBtn.disabled = true;
-          native.buyUnlock(offer).then(function (bought) { if (bought) open(); else unlockBtn.disabled = false; })
-            .catch(function () { unlockBtn.disabled = false; fail(); });
-        });
-        restoreBtn.addEventListener("click", function () {
-          native.restoreUnlock().then(function (found) {
-            if (found) open(); else showNotice("No earlier purchase found for this Apple ID.");
-          }).catch(fail);
-        });
-        paywall.appendChild(restoreBtn);
-      }
+      unlockBtn.addEventListener("click", function () {
+        openPaywall("practice", function () { paywall.remove(); locked.forEach(addCard); });
+      });
       list.appendChild(paywall);
     }
 
@@ -2353,13 +2535,14 @@
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener("click", function () {
         STATE.view = this.getAttribute("data-view");
-        STATE.practiceQ = null;
+        STATE.practiceQ = null; STATE.guidedQ = null;
         renderApp();
       });
     }
     var feedbackBtn = document.getElementById("feedbackBtn");
     if (feedbackBtn) feedbackBtn.addEventListener("click", openFeedbackModal);
     takeChallengeFromUrl();
+    track("app_open", {});
     renderApp();
     native.refreshUnlock();   // in the app: re-check the purchase with Apple, quietly
 
